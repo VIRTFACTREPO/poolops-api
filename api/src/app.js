@@ -12,6 +12,7 @@ import webhookRoutes from './routes/webhooks.js';
 const app = express();
 
 app.use(httpLogger);
+app.use('/webhooks', webhookRoutes);
 app.use(express.json({ limit: '1mb' }));
 
 app.get('/healthz', (_req, res) => ok(res, { service: 'poolops-api' }));
@@ -21,7 +22,6 @@ app.use('/technician', technicianRoutes);
 app.use('/owner', ownerRoutes);
 app.use('/admin', adminRoutes);
 app.use('/shared', sharedRoutes);
-app.use('/webhooks', webhookRoutes);
 
 app.use((req, res) => fail(res, 404, 'NOT_FOUND', `Unknown route: ${req.method} ${req.originalUrl}`));
 
