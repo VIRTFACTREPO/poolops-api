@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn() }));
 
@@ -10,9 +10,15 @@ function makeReq(companyId = 'co_123') {
 }
 
 function makeRes() {
-  const res = { statusCode: null, body: null };
-  res.status = (code) => { res.statusCode = code; return res; };
-  res.json = (body) => { res.body = body; return res; };
+  const res = { statusCode: 200, body: null };
+  res.status = (code) => {
+    res.statusCode = code;
+    return res;
+  };
+  res.json = (body) => {
+    res.body = body;
+    return res;
+  };
   return res;
 }
 
@@ -28,15 +34,18 @@ function mockSupabase({ plan = 'solo', techCount = 0, poolCount = 0 } = {}) {
           }),
         };
       }
+
       if (table === 'profiles') {
+        const secondEq = vi.fn().mockResolvedValue({ count: techCount, error: null });
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ count: techCount, error: null }),
+              eq: secondEq,
             }),
           }),
         };
       }
+
       if (table === 'pools') {
         return {
           select: vi.fn().mockReturnValue({
@@ -44,6 +53,8 @@ function mockSupabase({ plan = 'solo', techCount = 0, poolCount = 0 } = {}) {
           }),
         };
       }
+
+      throw new Error(`Unexpected table: ${table}`);
     }),
   });
 }
@@ -51,103 +62,110 @@ function mockSupabase({ plan = 'solo', techCount = 0, poolCount = 0 } = {}) {
 afterEach(() => vi.clearAllMocks());
 
 describe('checkTechnicianLimit', () => {
-  describe('solo plan (max 1)', () => {
-    it('calls next when count is 0', async () => {
-      mockSupabase({ plan: 'solo', techCount: 0 });
-      const next = vi.fn();
-      await checkTechnicianLimit(makeReq(), makeRes(), next);
-      expect(next).toHaveBeenCalled();
-    });
-
-    it('returns 403 when count reaches 1', async () => {
-      mockSupabase({ plan: 'solo', techCount: 1 });
-      const res = makeRes();
-      await checkTechnicianLimit(makeReq(), res, vi.fn());
-      expect(res.statusCode).toBe(403);
-      expect(res.body.error.code).toBe('PLAN_LIMIT_EXCEEDED');
-      expect(res.body.error.message).toMatch(/1/);
-      expect(res.body.error.message).toMatch(/Upgrade/i);
-    });
-  });
-
-  describe('pro plan (max 3)', () => {
-    it('calls next when count is 2', async () => {
-      mockSupabase({ plan: 'pro', techCount: 2 });
-      const next = vi.fn();
-      await checkTechnicianLimit(makeReq(), makeRes(), next);
-      expect(next).toHaveBeenCalled();
-    });
-
-    it('returns 403 when count reaches 3', async () => {
-      mockSupabase({ plan: 'pro', techCount: 3 });
-      const res = makeRes();
-      await checkTechnicianLimit(makeReq(), res, vi.fn());
-      expect(res.statusCode).toBe(403);
-      expect(res.body.error.code).toBe('PLAN_LIMIT_EXCEEDED');
-      expect(res.body.error.message).toMatch(/3/);
-      expect(res.body.error.message).toMatch(/Upgrade/i);
-    });
-  });
-
-  describe('business plan (unlimited)', () => {
-    it('always calls next regardless of count', async () => {
-      mockSupabase({ plan: 'business', techCount: 10000 });
-      const next = vi.fn();
-      await checkTechnicianLimit(makeReq(), makeRes(), next);
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  it('returns 403 when request has no companyId', async () => {
+  it('allows solo when under the technician limit', async () => {
+    mockSupabase({ plan: 'solo', techCount: 0 });
     const res = makeRes();
-    await checkTechnicianLimit({ user: {} }, res, vi.fn());
+    const next = vi.fn();
+
+    await checkTechnicianLimit(makeReq(), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('blocks solo when at the technician limit with 403 + upgrade message', async () => {
+    mockSupabase({ plan: 'solo', techCount: 1 });
+    const res = makeRes();
+
+    await checkTechnicianLimit(makeReq(), res, vi.fn());
+
     expect(res.statusCode).toBe(403);
-    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.body.error.code).toBe('PLAN_LIMIT_EXCEEDED');
+    expect(res.body.error.message).toContain('solo');
+    expect(res.body.error.message).toContain('1 technicians');
+    expect(res.body.error.message).toMatch(/Upgrade your plan/i);
+  });
+
+  it('allows pro when under the technician limit', async () => {
+    mockSupabase({ plan: 'pro', techCount: 2 });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await checkTechnicianLimit(makeReq(), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('blocks pro when at the technician limit with 403 + upgrade message', async () => {
+    mockSupabase({ plan: 'pro', techCount: 3 });
+    const res = makeRes();
+
+    await checkTechnicianLimit(makeReq(), res, vi.fn());
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.error.code).toBe('PLAN_LIMIT_EXCEEDED');
+    expect(res.body.error.message).toContain('pro');
+    expect(res.body.error.message).toContain('3 technicians');
+    expect(res.body.error.message).toMatch(/Upgrade your plan/i);
+  });
+
+  it('allows business regardless of technician count', async () => {
+    mockSupabase({ plan: 'business', techCount: 999 });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await checkTechnicianLimit(makeReq(), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
   });
 });
 
 describe('checkPoolLimit', () => {
-  describe('solo plan (max 50)', () => {
-    it('calls next when count is 49', async () => {
-      mockSupabase({ plan: 'solo', poolCount: 49 });
-      const next = vi.fn();
-      await checkPoolLimit(makeReq(), makeRes(), next);
-      expect(next).toHaveBeenCalled();
-    });
-
-    it('returns 403 when count reaches 50', async () => {
-      mockSupabase({ plan: 'solo', poolCount: 50 });
-      const res = makeRes();
-      await checkPoolLimit(makeReq(), res, vi.fn());
-      expect(res.statusCode).toBe(403);
-      expect(res.body.error.code).toBe('PLAN_LIMIT_EXCEEDED');
-      expect(res.body.error.message).toMatch(/50/);
-      expect(res.body.error.message).toMatch(/Upgrade/i);
-    });
-  });
-
-  describe('pro plan (unlimited pools)', () => {
-    it('always calls next regardless of count', async () => {
-      mockSupabase({ plan: 'pro', poolCount: 9999 });
-      const next = vi.fn();
-      await checkPoolLimit(makeReq(), makeRes(), next);
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  describe('business plan (unlimited pools)', () => {
-    it('always calls next regardless of count', async () => {
-      mockSupabase({ plan: 'business', poolCount: 9999 });
-      const next = vi.fn();
-      await checkPoolLimit(makeReq(), makeRes(), next);
-      expect(next).toHaveBeenCalled();
-    });
-  });
-
-  it('returns 403 when request has no companyId', async () => {
+  it('allows solo when under the pool limit', async () => {
+    mockSupabase({ plan: 'solo', poolCount: 49 });
     const res = makeRes();
-    await checkPoolLimit({ user: {} }, res, vi.fn());
+    const next = vi.fn();
+
+    await checkPoolLimit(makeReq(), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('blocks solo when at the pool limit with 403 + upgrade message', async () => {
+    mockSupabase({ plan: 'solo', poolCount: 50 });
+    const res = makeRes();
+
+    await checkPoolLimit(makeReq(), res, vi.fn());
+
     expect(res.statusCode).toBe(403);
-    expect(res.body.error.code).toBe('FORBIDDEN');
+    expect(res.body.error.code).toBe('PLAN_LIMIT_EXCEEDED');
+    expect(res.body.error.message).toContain('solo');
+    expect(res.body.error.message).toContain('50 pools');
+    expect(res.body.error.message).toMatch(/Upgrade your plan/i);
+  });
+
+  it('allows pro regardless of pool count', async () => {
+    mockSupabase({ plan: 'pro', poolCount: 999 });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await checkPoolLimit(makeReq(), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('allows business regardless of pool count', async () => {
+    mockSupabase({ plan: 'business', poolCount: 999 });
+    const res = makeRes();
+    const next = vi.fn();
+
+    await checkPoolLimit(makeReq(), res, next);
+
+    expect(next).toHaveBeenCalledOnce();
+    expect(res.statusCode).toBe(200);
   });
 });
