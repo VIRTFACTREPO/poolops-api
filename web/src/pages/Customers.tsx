@@ -74,6 +74,13 @@ export default function Customers() {
           <option>Mike R.</option>
           <option>Sarah K.</option>
         </select>
+
+        <button
+          onClick={() => navigate('/customers/new')}
+          style={{ background: '#F9FAFB', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, color: '#111827', cursor: 'pointer', marginLeft: 'auto' }}
+        >
+          + Add customer
+        </button>
       </div>
 
       <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>

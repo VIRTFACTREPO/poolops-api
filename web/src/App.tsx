@@ -9,6 +9,8 @@ import Team from './pages/Team'
 import Records from './pages/Records'
 import RecordDetail from './pages/RecordDetail'
 import Settings from './pages/Settings'
+import CustomerForm from './pages/CustomerForm'
+import TechnicianForm from './pages/TechnicianForm'
 
 export default function App() {
   return (
@@ -20,7 +22,9 @@ export default function App() {
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetail />} />
+          <Route path="/customers/new" element={<CustomerForm />} />
           <Route path="/team" element={<Team />} />
+          <Route path="/team/new" element={<TechnicianForm />} />
           <Route path="/records" element={<Records />} />
           <Route path="/records/:id" element={<RecordDetail />} />
           <Route path="/settings" element={<Settings />} />
