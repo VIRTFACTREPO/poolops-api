@@ -116,4 +116,76 @@ describe('POST /webhooks/stripe', () => {
     expect(mockUpdate).toHaveBeenCalledWith({ plan: 'solo' });
     expect(mockEq).toHaveBeenCalledWith('id', 'co_456');
   });
+
+  it('defaults plan to solo when metadata.plan is unrecognised', async () => {
+    const { mockUpdate } = makeSupabaseMock();
+    makeStripeConstructEvent(() => ({
+      type: 'customer.subscription.updated',
+      data: { object: { metadata: { company_id: 'co_123', plan: 'enterprise' } } },
+    }));
+
+    const res = await request(buildApp())
+      .post('/webhooks/stripe')
+      .set('content-type', 'application/json')
+      .set('stripe-signature', 'sig_ok')
+      .send('{}');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.plan).toBe('solo');
+    expect(mockUpdate).toHaveBeenCalledWith({ plan: 'solo' });
+  });
+
+  it('skips DB write on subscription.updated when company_id is absent', async () => {
+    const { mockUpdate } = makeSupabaseMock();
+    makeStripeConstructEvent(() => ({
+      type: 'customer.subscription.updated',
+      data: { object: { metadata: {} } },
+    }));
+
+    const res = await request(buildApp())
+      .post('/webhooks/stripe')
+      .set('content-type', 'application/json')
+      .set('stripe-signature', 'sig_ok')
+      .send('{}');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.skipped).toBe(true);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('skips DB write on subscription.deleted when company_id is absent', async () => {
+    const { mockUpdate } = makeSupabaseMock();
+    makeStripeConstructEvent(() => ({
+      type: 'customer.subscription.deleted',
+      data: { object: { metadata: {} } },
+    }));
+
+    const res = await request(buildApp())
+      .post('/webhooks/stripe')
+      .set('content-type', 'application/json')
+      .set('stripe-signature', 'sig_ok')
+      .send('{}');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.skipped).toBe(true);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it('returns 200 skipped for unhandled event types', async () => {
+    const { mockUpdate } = makeSupabaseMock();
+    makeStripeConstructEvent(() => ({
+      type: 'invoice.payment_succeeded',
+      data: { object: { metadata: { company_id: 'co_789' } } },
+    }));
+
+    const res = await request(buildApp())
+      .post('/webhooks/stripe')
+      .set('content-type', 'application/json')
+      .set('stripe-signature', 'sig_ok')
+      .send('{}');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.skipped).toBe(true);
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
 });

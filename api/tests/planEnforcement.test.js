@@ -120,6 +120,15 @@ describe('checkTechnicianLimit', () => {
     expect(next).toHaveBeenCalledOnce();
     expect(res.statusCode).toBe(200);
   });
+
+  it('returns 403 FORBIDDEN when companyId is missing', async () => {
+    const res = makeRes();
+
+    await checkTechnicianLimit({ user: {} }, res, vi.fn());
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
+  });
 });
 
 describe('checkPoolLimit', () => {
@@ -167,5 +176,14 @@ describe('checkPoolLimit', () => {
 
     expect(next).toHaveBeenCalledOnce();
     expect(res.statusCode).toBe(200);
+  });
+
+  it('returns 403 FORBIDDEN when companyId is missing', async () => {
+    const res = makeRes();
+
+    await checkPoolLimit({ user: {} }, res, vi.fn());
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body.error.code).toBe('FORBIDDEN');
   });
 });
