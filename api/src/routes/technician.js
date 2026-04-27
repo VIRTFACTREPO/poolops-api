@@ -12,9 +12,14 @@ import {
 const router = Router();
 router.use(requireAuth, authedRateLimit, requireRole('technician'));
 
+function extractToken(req) {
+  const header = req.headers.authorization || '';
+  return header.startsWith('Bearer ') ? header.slice(7) : null;
+}
+
 router.get('/jobs', async (req, res) => {
   try {
-    const jobs = await getTodaysJobs(req.user.id);
+    const jobs = await getTodaysJobs(extractToken(req));
     return ok(res, jobs);
   } catch (err) {
     console.error('GET /technician/jobs', err);
@@ -24,7 +29,7 @@ router.get('/jobs', async (req, res) => {
 
 router.get('/jobs/:id', async (req, res) => {
   try {
-    const job = await getJobDetail(req.params.id, req.user.id);
+    const job = await getJobDetail(req.params.id, extractToken(req));
     return ok(res, job);
   } catch (err) {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
@@ -39,7 +44,7 @@ router.patch('/jobs/:id', async (req, res) => {
     if (status !== 'in_progress') {
       return fail(res, 400, 'VALIDATION_ERROR', 'Only status=in_progress is supported via this endpoint');
     }
-    const job = await startJob(req.params.id, req.user.id);
+    const job = await startJob(req.params.id, extractToken(req));
     return ok(res, job);
   } catch (err) {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
@@ -51,7 +56,7 @@ router.patch('/jobs/:id', async (req, res) => {
 
 router.post('/jobs/:id/complete', async (req, res) => {
   try {
-    const result = await completeJob(req.params.id, req.user.id, req.body);
+    const result = await completeJob(req.params.id, req.user.id, extractToken(req), req.body);
     return created(res, result);
   } catch (err) {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
@@ -61,24 +66,10 @@ router.post('/jobs/:id/complete', async (req, res) => {
   }
 });
 
-router.get('/profile', async (req, res) => {
-  return fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/profile not yet implemented');
-});
-
-router.patch('/profile', async (req, res) => {
-  return fail(res, 501, 'NOT_IMPLEMENTED', 'PATCH /technician/profile not yet implemented');
-});
-
-router.get('/notifications', async (req, res) => {
-  return fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/notifications not yet implemented');
-});
-
-router.patch('/notifications/:id/read', async (req, res) => {
-  return fail(res, 501, 'NOT_IMPLEMENTED', 'PATCH /technician/notifications/:id/read not yet implemented');
-});
-
-router.get('/stock', async (req, res) => {
-  return fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/stock not yet implemented');
-});
+router.get('/profile', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/profile'));
+router.patch('/profile', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'PATCH /technician/profile'));
+router.get('/notifications', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/notifications'));
+router.patch('/notifications/:id/read', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'PATCH /technician/notifications/:id/read'));
+router.get('/stock', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/stock'));
 
 export default router;

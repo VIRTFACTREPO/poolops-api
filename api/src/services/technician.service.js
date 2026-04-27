@@ -1,11 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+// Create a per-request Supabase client using the user's own JWT.
+// RLS policies in migration 003 handle row-level access for the technician role.
+function makeClient(userToken) {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${userToken}` } },
+  });
+}
 
-export async function getTodaysJobs(technicianId) {
+export async function getTodaysJobs(userToken) {
+  const supabase = makeClient(userToken);
   const today = new Date().toISOString().split('T')[0];
 
   const jobSelect = `id, route_order, status, job_type, scheduled_date, started_at, completed_at,
@@ -15,13 +21,11 @@ export async function getTodaysJobs(technicianId) {
     supabase
       .from('jobs')
       .select(jobSelect)
-      .eq('technician_id', technicianId)
       .eq('scheduled_date', today)
       .order('route_order'),
     supabase
       .from('jobs')
       .select(jobSelect)
-      .eq('technician_id', technicianId)
       .lt('scheduled_date', today)
       .in('status', ['pending', 'in_progress'])
       .order('scheduled_date', { ascending: false })
@@ -31,7 +35,6 @@ export async function getTodaysJobs(technicianId) {
   if (todayResult.error) throw todayResult.error;
   if (outstandingResult.error) throw outstandingResult.error;
 
-  // Merge: outstanding first (overdue), then today
   const seen = new Set();
   const jobs = [...(outstandingResult.data || []), ...(todayResult.data || [])].filter((j) => {
     if (seen.has(j.id)) return false;
@@ -80,7 +83,9 @@ export async function getTodaysJobs(technicianId) {
   });
 }
 
-export async function getJobDetail(jobId, technicianId) {
+export async function getJobDetail(jobId, userToken) {
+  const supabase = makeClient(userToken);
+
   const { data: job, error } = await supabase
     .from('jobs')
     .select(`
@@ -92,7 +97,6 @@ export async function getJobDetail(jobId, technicianId) {
       )
     `)
     .eq('id', jobId)
-    .eq('technician_id', technicianId)
     .maybeSingle();
 
   if (error) throw error;
@@ -117,7 +121,7 @@ export async function getJobDetail(jobId, technicianId) {
         .order('equipment_type'),
       supabase
         .from('service_records')
-        .select('completed_at, is_flagged, lsi_label, lsi_score, readings')
+        .select('completed_at, is_flagged, lsi_label, lsi_score')
         .eq('pool_id', pool.id)
         .order('completed_at', { ascending: false })
         .limit(3),
@@ -146,12 +150,7 @@ export async function getJobDetail(jobId, technicianId) {
     scheduledDate: job.scheduled_date,
     startedAt: job.started_at,
     customer: customer
-      ? {
-          id: customer.id,
-          name: `${customer.last_name}, ${customer.first_name}`,
-          address: customer.address,
-          phone: customer.phone,
-        }
+      ? { id: customer.id, name: `${customer.last_name}, ${customer.first_name}`, address: customer.address, phone: customer.phone }
       : null,
     pool: pool
       ? {
@@ -170,12 +169,13 @@ export async function getJobDetail(jobId, technicianId) {
   };
 }
 
-export async function startJob(jobId, technicianId) {
+export async function startJob(jobId, userToken) {
+  const supabase = makeClient(userToken);
+
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
     .select('id, status')
     .eq('id', jobId)
-    .eq('technician_id', technicianId)
     .maybeSingle();
 
   if (fetchErr) throw fetchErr;
@@ -207,15 +207,13 @@ function readingStatus(value, min, max) {
   return 'good';
 }
 
-export async function completeJob(jobId, technicianId, payload) {
+export async function completeJob(jobId, technicianId, userToken, payload) {
+  const supabase = makeClient(userToken);
+
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
-    .select(`
-      id, company_id, status, started_at,
-      pools ( id, customers ( id ) )
-    `)
+    .select('id, company_id, status, started_at, pools ( id, customers ( id ) )')
     .eq('id', jobId)
-    .eq('technician_id', technicianId)
     .maybeSingle();
 
   if (fetchErr) throw fetchErr;
@@ -270,7 +268,6 @@ export async function completeJob(jobId, technicianId, payload) {
     actual: Number(t.actualAmount || 0),
   }));
 
-  // Generate a unique ref: SR-YYYY-NNNNN
   const year = completedAtDate.getFullYear();
   const { count } = await supabase
     .from('service_records')
