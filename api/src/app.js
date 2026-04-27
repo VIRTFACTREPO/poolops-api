@@ -11,9 +11,17 @@ import webhookRoutes from './routes/webhooks.js';
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(httpLogger);
 app.use('/webhooks', webhookRoutes);
 app.use(express.json({ limit: '1mb' }));
+
+app.get('/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
 
 app.get('/healthz', (_req, res) => ok(res, { service: 'poolops-api' }));
 

@@ -8,19 +8,36 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
 export async function getTodaysJobs(technicianId) {
   const today = new Date().toISOString().split('T')[0];
 
-  // Include today's jobs plus any outstanding (pending/in_progress) from prior days
-  const { data: jobs, error } = await supabase
-    .from('jobs')
-    .select(`
-      id, route_order, status, job_type, scheduled_date, started_at, completed_at,
-      pools ( id, customers ( id, first_name, last_name, address ) )
-    `)
-    .eq('technician_id', technicianId)
-    .or(`scheduled_date.eq.${today},and(scheduled_date.lt.${today},status.in.(pending,in_progress))`)
-    .order('scheduled_date', { ascending: false })
-    .order('route_order');
+  const jobSelect = `id, route_order, status, job_type, scheduled_date, started_at, completed_at,
+    pools ( id, customers ( id, first_name, last_name, address ) )`;
 
-  if (error) throw error;
+  const [todayResult, outstandingResult] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select(jobSelect)
+      .eq('technician_id', technicianId)
+      .eq('scheduled_date', today)
+      .order('route_order'),
+    supabase
+      .from('jobs')
+      .select(jobSelect)
+      .eq('technician_id', technicianId)
+      .lt('scheduled_date', today)
+      .in('status', ['pending', 'in_progress'])
+      .order('scheduled_date', { ascending: false })
+      .order('route_order'),
+  ]);
+
+  if (todayResult.error) throw todayResult.error;
+  if (outstandingResult.error) throw outstandingResult.error;
+
+  // Merge: outstanding first (overdue), then today
+  const seen = new Set();
+  const jobs = [...(outstandingResult.data || []), ...(todayResult.data || [])].filter((j) => {
+    if (seen.has(j.id)) return false;
+    seen.add(j.id);
+    return true;
+  });
 
   const poolIds = jobs.map((j) => j.pools?.id).filter(Boolean);
   const lastVisitsByPool = {};
