@@ -1,0 +1,46 @@
+import pg from 'pg';
+import { env } from './config/env.js';
+
+const { Client } = pg;
+
+const MIGRATIONS = [
+  {
+    id: '004_service_role_grants',
+    sql: `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE
+      companies, profiles, chemical_products, chemical_stock,
+      customers, pools, service_plans, jobs, service_records,
+      booking_requests, inbox_items, notifications, audit_log,
+      sync_queue, pool_equipment
+    TO service_role`,
+  },
+];
+
+export async function runMigrations() {
+  if (!env.DATABASE_URL) {
+    console.log('[migrate] DATABASE_URL not set, skipping migrations');
+    return;
+  }
+
+  const client = new Client({ connectionString: env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+  await client.connect();
+
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS _applied_migrations (
+        id TEXT PRIMARY KEY,
+        applied_at TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+
+    for (const m of MIGRATIONS) {
+      const { rows } = await client.query('SELECT id FROM _applied_migrations WHERE id = $1', [m.id]);
+      if (rows.length > 0) continue;
+
+      await client.query(m.sql);
+      await client.query('INSERT INTO _applied_migrations (id) VALUES ($1)', [m.id]);
+      console.log(`[migrate] applied ${m.id}`);
+    }
+  } finally {
+    await client.end();
+  }
+}
