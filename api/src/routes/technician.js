@@ -12,14 +12,9 @@ import {
 const router = Router();
 router.use(requireAuth, authedRateLimit, requireRole('technician'));
 
-function extractToken(req) {
-  const header = req.headers.authorization || '';
-  return header.startsWith('Bearer ') ? header.slice(7) : null;
-}
-
 router.get('/jobs', async (req, res) => {
   try {
-    const jobs = await getTodaysJobs(extractToken(req));
+    const jobs = await getTodaysJobs(req.user.id);
     return ok(res, jobs);
   } catch (err) {
     console.error('GET /technician/jobs', err);
@@ -29,7 +24,7 @@ router.get('/jobs', async (req, res) => {
 
 router.get('/jobs/:id', async (req, res) => {
   try {
-    const job = await getJobDetail(req.params.id, extractToken(req));
+    const job = await getJobDetail(req.params.id, req.user.id);
     return ok(res, job);
   } catch (err) {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
@@ -44,7 +39,7 @@ router.patch('/jobs/:id', async (req, res) => {
     if (status !== 'in_progress') {
       return fail(res, 400, 'VALIDATION_ERROR', 'Only status=in_progress is supported via this endpoint');
     }
-    const job = await startJob(req.params.id, extractToken(req));
+    const job = await startJob(req.params.id, req.user.id);
     return ok(res, job);
   } catch (err) {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
@@ -56,7 +51,7 @@ router.patch('/jobs/:id', async (req, res) => {
 
 router.post('/jobs/:id/complete', async (req, res) => {
   try {
-    const result = await completeJob(req.params.id, req.user.id, extractToken(req), req.body);
+    const result = await completeJob(req.params.id, req.user.id, req.body);
     return created(res, result);
   } catch (err) {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
