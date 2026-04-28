@@ -24,7 +24,7 @@ export function RequestVisitScreen() {
   const navigation = useNavigation();
   const [formData, setFormData] = useState<FormData>({
     reason: null,
-    notes: '',
+    description: '',
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -60,7 +60,7 @@ export function RequestVisitScreen() {
         body.description = formData.description;
       }
       // Note: Photo upload endpoint /owner/upload-url not yet implemented - sending without photo
-      await getApiClient().post('/owner/booking-request', body);
+      await getApiClient().post('/owner/booking-requests', body);
 
       // Navigate to confirmation, replace stack
       navigation.reset({
@@ -122,13 +122,13 @@ export function RequestVisitScreen() {
             style={styles.notesInput}
             placeholder="Add details about your request..."
             placeholderTextColor={colors.textMuted}
-            value={formData.notes}
+            value={formData.description}
             onChangeText={handleNotesChange}
             multiline
             numberOfLines={4}
             maxLength={200}
           />
-          <Text style={styles.charCount}>{formData.notes.length}/200</Text>
+          <Text style={styles.charCount}>{formData.description.length}/200</Text>
         </View>
       </ScrollView>
 
