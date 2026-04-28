@@ -24,11 +24,11 @@ export default function CustomerDetail() {
     <div>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: '#1E293B', border: '1px solid #334155', display: 'grid', placeItems: 'center', color: '#94A3B8', fontWeight: 700 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 14, background: '#1E293B', border: '1px solid #334155', display: 'grid', placeItems: 'center', color: '#6B7280', fontWeight: 700 }}>
             {title.split(',').map((s) => s.trim()[0]).join('').slice(0, 2).toUpperCase()}
           </div>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: '#F9FAFB' }}>{title}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>{title}</div>
             <div style={{ fontSize: 13, color: '#64748B', marginTop: 3 }}>12 Remuera Rd, Remuera · Active · Weekly · James T.</div>
           </div>
           <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 20, padding: '3px 9px', background: 'rgba(74,222,128,0.1)', color: '#4ADE80' }}>Active</span>
@@ -89,10 +89,10 @@ export default function CustomerDetail() {
       {tab === 'Service History' && (
         <Card title='Recent services'>
           {historyRows.map((r) => (
-            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '130px 1fr auto', alignItems: 'center', gap: 12, borderBottom: '1px solid #1F2937', padding: '10px 0' }}>
+            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '130px 1fr auto', alignItems: 'center', gap: 12, borderBottom: '1px solid #F3F4F6', padding: '10px 0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <TrafficDot status={r.status} />
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#D1D5DB' }}>{r.date}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>{r.date}</div>
               </div>
               <div style={{ fontSize: 12, color: '#64748B' }}>
                 {r.tech} · pH {r.ph} · Cl {r.chlorine} · LSI {r.lsi}
@@ -125,7 +125,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 function Row({ k, v, warn }: { k: string; v: string; warn?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #1F2937' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #F3F4F6' }}>
       <span style={{ fontSize: 12, color: '#64748B' }}>{k}</span>
       <span style={{ fontSize: 12, fontWeight: 500, color: warn ? '#FCD34D' : '#D1D5DB' }}>{v}</span>
     </div>

@@ -12,7 +12,7 @@ export default function RecordDetail() {
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#F9FAFB' }}>Record Detail — {id}</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Record Detail — {id}</h1>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div style={card}>
@@ -38,9 +38,9 @@ export default function RecordDetail() {
           <Title>Treatments</Title>
           <div style={{ display: 'grid', gap: 8 }}>
             {treatments.map((t) => (
-              <div key={t.id} style={{ background: '#0F172A', border: '1px solid #334155', borderRadius: 10, padding: 10 }}>
-                <div style={{ color: '#F9FAFB', fontSize: 13, fontWeight: 600 }}>{t.name}</div>
-                <div style={{ color: '#94A3B8', fontSize: 12 }}>{t.amount} · {t.note}</div>
+              <div key={t.id} style={{ background: '#F9FAFB', border: '1px solid #334155', borderRadius: 10, padding: 10 }}>
+                <div style={{ color: '#111827', fontSize: 13, fontWeight: 600 }}>{t.name}</div>
+                <div style={{ color: '#6B7280', fontSize: 12 }}>{t.amount} · {t.note}</div>
               </div>
             ))}
           </div>
@@ -52,7 +52,7 @@ export default function RecordDetail() {
           </div>
 
           <Title style={{ marginTop: 12 }}>Notes</Title>
-          <div style={{ background: '#0F172A', border: '1px solid #334155', borderRadius: 10, padding: 10, color: '#D1D5DB', fontSize: 13 }}>
+          <div style={{ background: '#F9FAFB', border: '1px solid #334155', borderRadius: 10, padding: 10, color: '#374151', fontSize: 13 }}>
             Customer note: Cloudy water after heavy rain. Requested extra clarification.
           </div>
 
@@ -63,11 +63,11 @@ export default function RecordDetail() {
             style={{
               width: '100%',
               minHeight: 90,
-              background: '#0F172A',
+              background: '#F9FAFB',
               border: '1px solid #334155',
               borderRadius: 10,
               padding: 10,
-              color: '#F9FAFB',
+              color: '#111827',
               fontSize: 13,
             }}
           />
@@ -84,8 +84,8 @@ function Title({ children, style }: { children: React.ReactNode; style?: React.C
 function Row({ k, v, bad }: { k: string; v: string; bad?: boolean }) {
   return (
     <tr>
-      <td style={{ padding: '7px 0', borderBottom: '1px solid #1F2937', color: '#64748B', fontSize: 12 }}>{k}</td>
-      <td style={{ padding: '7px 0', borderBottom: '1px solid #1F2937', color: bad ? '#F87171' : '#D1D5DB', fontSize: 12, textAlign: 'right', fontWeight: 600 }}>{v}</td>
+      <td style={{ padding: '7px 0', borderBottom: '1px solid #F3F4F6', color: '#64748B', fontSize: 12 }}>{k}</td>
+      <td style={{ padding: '7px 0', borderBottom: '1px solid #F3F4F6', color: bad ? '#F87171' : '#D1D5DB', fontSize: 12, textAlign: 'right', fontWeight: 600 }}>{v}</td>
     </tr>
   )
 }
@@ -98,7 +98,7 @@ const card: React.CSSProperties = {
 }
 
 const photo: React.CSSProperties = {
-  background: '#0F172A',
+  background: '#F9FAFB',
   border: '1px dashed #334155',
   borderRadius: 10,
   minHeight: 90,

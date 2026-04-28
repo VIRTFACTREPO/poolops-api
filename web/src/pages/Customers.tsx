@@ -40,7 +40,7 @@ export default function Customers() {
 
   return (
     <div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: '#F9FAFB', marginBottom: 16 }}>Customers</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 16 }}>Customers</div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', minWidth: 220, maxWidth: 320, flex: 1 }}>
@@ -55,7 +55,7 @@ export default function Customers() {
               borderRadius: 8,
               padding: '8px 12px',
               fontSize: 13,
-              color: '#F9FAFB',
+              color: '#111827',
             }}
           />
         </div>
@@ -97,7 +97,7 @@ export default function Customers() {
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
                     color: '#64748B',
-                    background: '#0F172A',
+                    background: '#F9FAFB',
                     borderBottom: '1px solid #334155',
                   }}
                 >
@@ -110,7 +110,7 @@ export default function Customers() {
             {filtered.map((r) => (
               <tr key={r.id} onClick={() => navigate(`/customers/${r.id}`)} style={{ cursor: 'pointer' }}>
                 <td style={td}><StatusDot status={r.status} /></td>
-                <td style={{ ...td, color: '#F9FAFB', fontWeight: 600 }}>{r.name}</td>
+                <td style={{ ...td, color: '#111827', fontWeight: 600 }}>{r.name}</td>
                 <td style={td}>{r.location}</td>
                 <td style={td}><PlanPill plan={r.plan} /></td>
                 <td style={td}>{r.lastService}</td>
@@ -133,7 +133,7 @@ function StatusDot({ status }: { status: Row['status'] }) {
 function PlanPill({ plan }: { plan: Plan }) {
   const style =
     plan === 'Inactive'
-      ? { background: '#1F2937', color: '#64748B', border: '1px solid #334155' }
+      ? { background: '#E5E7EB', color: '#64748B', border: '1px solid #334155' }
       : { background: 'rgba(56,189,248,0.12)', color: '#38BDF8' }
   return <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 20, padding: '3px 9px', ...style }}>{plan}</span>
 }
@@ -141,8 +141,8 @@ function PlanPill({ plan }: { plan: Plan }) {
 const td: React.CSSProperties = {
   padding: '13px 16px',
   fontSize: 13,
-  color: '#94A3B8',
-  borderBottom: '1px solid #1F2937',
+  color: '#6B7280',
+  borderBottom: '1px solid #F3F4F6',
 }
 
 const selectStyle: React.CSSProperties = {
@@ -151,5 +151,5 @@ const selectStyle: React.CSSProperties = {
   borderRadius: 8,
   padding: '8px 12px',
   fontSize: 12,
-  color: '#94A3B8',
+  color: '#6B7280',
 }

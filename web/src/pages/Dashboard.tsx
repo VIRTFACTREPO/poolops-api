@@ -80,8 +80,8 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <section style={{ display: 'grid', gap: 6 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#F9FAFB' }}>{greeting}, Simon</h1>
-        <p style={{ fontSize: 13, color: '#94A3B8' }}>Here’s your live operations snapshot.</p>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: '#111827' }}>{greeting}, Simon</h1>
+        <p style={{ fontSize: 13, color: '#6B7280' }}>Here's your live operations snapshot.</p>
       </section>
 
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
@@ -90,11 +90,11 @@ export default function Dashboard() {
             key={action.id}
             style={{
               textAlign: 'left',
-              background: '#111827',
-              border: '1px solid #1F2937',
+              background: '#FFFFFF',
+              border: '1px solid #E5E7EB',
               borderRadius: 12,
               padding: '14px 14px',
-              color: '#F9FAFB',
+              color: '#111827',
               cursor: 'pointer',
             }}
           >
@@ -108,10 +108,10 @@ export default function Dashboard() {
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-          border: '1px solid #1F2937',
+          border: '1px solid #E5E7EB',
           borderRadius: 12,
           overflow: 'hidden',
-          background: '#111827',
+          background: '#FFFFFF',
         }}
       >
         <StatCell label='Automations' value={stats.automations} />
@@ -127,12 +127,12 @@ export default function Dashboard() {
               return (
                 <div key={row.id} style={{ display: 'grid', gap: 6 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                    <span style={{ color: '#E5E7EB' }}>{row.name}</span>
-                    <span style={{ color: '#94A3B8' }}>
+                    <span style={{ color: '#374151' }}>{row.name}</span>
+                    <span style={{ color: '#6B7280' }}>
                       {row.done}/{row.assigned}
                     </span>
                   </div>
-                  <div style={{ height: 8, background: '#1F2937', borderRadius: 99, overflow: 'hidden' }}>
+                  <div style={{ height: 8, background: '#E5E7EB', borderRadius: 99, overflow: 'hidden' }}>
                     <div
                       style={{
                         width: `${pct}%`,
@@ -155,18 +155,18 @@ export default function Dashboard() {
                 style={{
                   display: 'grid',
                   gap: 3,
-                  border: '1px solid #3F1D1D',
-                  background: '#1F1414',
+                  border: '1px solid #FECACA',
+                  background: '#FEF2F2',
                   borderRadius: 10,
                   padding: 10,
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                  <span style={{ color: '#FCA5A5', fontWeight: 600 }}>{row.pool}</span>
+                  <span style={{ color: '#DC2626', fontWeight: 600 }}>{row.pool}</span>
                   <span style={{ color: '#6B7280' }}>{row.time}</span>
                 </div>
-                <div style={{ fontSize: 13, color: '#F3F4F6' }}>
-                  {row.reading}: <strong>{row.value}</strong> <span style={{ color: '#94A3B8' }}>(target {row.range})</span>
+                <div style={{ fontSize: 13, color: '#111827' }}>
+                  {row.reading}: <strong>{row.value}</strong> <span style={{ color: '#6B7280' }}>(target {row.range})</span>
                 </div>
               </div>
             ))}
@@ -185,11 +185,11 @@ export default function Dashboard() {
                   justifyContent: 'space-between',
                   gap: 12,
                   fontSize: 13,
-                  borderBottom: '1px solid #1F2937',
+                  borderBottom: '1px solid #F3F4F6',
                   paddingBottom: 8,
                 }}
               >
-                <span style={{ color: '#D1D5DB' }}>{row.text}</span>
+                <span style={{ color: '#374151' }}>{row.text}</span>
                 <span style={{ color: '#6B7280', whiteSpace: 'nowrap' }}>{row.time}</span>
               </div>
             ))}
@@ -202,8 +202,8 @@ export default function Dashboard() {
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ background: '#111827', border: '1px solid #1F2937', borderRadius: 12, padding: 14 }}>
-      <h2 style={{ fontSize: 14, fontWeight: 600, color: '#F9FAFB', marginBottom: 12 }}>{title}</h2>
+    <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 14 }}>
+      <h2 style={{ fontSize: 14, fontWeight: 600, color: '#111827', marginBottom: 12 }}>{title}</h2>
       {children}
     </div>
   )
@@ -224,11 +224,11 @@ function StatCell({
     <div
       style={{
         padding: '14px 16px',
-        borderLeft: withBorder ? '1px solid #1F2937' : undefined,
+        borderLeft: withBorder ? '1px solid #E5E7EB' : undefined,
       }}
     >
       <div style={{ fontSize: 12, color: '#6B7280' }}>{label}</div>
-      <div style={{ fontSize: 24, fontWeight: 700, color: highlight ? '#FCA5A5' : '#F9FAFB', marginTop: 4 }}>{value}</div>
+      <div style={{ fontSize: 24, fontWeight: 700, color: highlight ? '#EF4444' : '#111827', marginTop: 4 }}>{value}</div>
     </div>
   )
 }

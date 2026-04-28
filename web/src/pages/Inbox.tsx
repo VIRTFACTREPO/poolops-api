@@ -74,7 +74,7 @@ export default function Inbox() {
 
   return (
     <div>
-      <div style={{ fontSize: 20, fontWeight: 700, color: '#F9FAFB', letterSpacing: '-0.3px', marginBottom: 20 }}>
+      <div style={{ fontSize: 20, fontWeight: 700, color: '#111827', letterSpacing: '-0.3px', marginBottom: 20 }}>
         Inbox <span style={{ fontSize: 13, fontWeight: 500, color: '#64748B', marginLeft: 6 }}>2 items need action</span>
       </div>
 
@@ -109,8 +109,8 @@ export default function Inbox() {
                   <span style={pillFor(item.type)}>{pillLabel(item.type)}</span>
                   <span style={{ fontSize: 11, color: '#64748B', marginLeft: 'auto' }}>{item.time}</span>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#F9FAFB' }}>{item.customer}</div>
-                <div style={{ fontSize: 12, color: '#94A3B8', lineHeight: 1.45, marginTop: 6 }}>{item.summary}</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{item.customer}</div>
+                <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.45, marginTop: 6 }}>{item.summary}</div>
                 <div style={{ fontSize: 11, color: '#64748B', marginTop: 8 }}>{item.meta}</div>
                 {booking ? null : null}
               </button>
@@ -148,19 +148,19 @@ function BookingDetail({ item }: { item: InboxItem }) {
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 17, fontWeight: 700, color: '#F9FAFB' }}>{item.customer} — Booking Request</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>{item.customer} — Booking Request</div>
           <div style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>42 Ponsonby Rd, Ponsonby · Submitted 11:12am</div>
         </div>
         <button style={secondaryBtn}>View history</button>
       </div>
 
       <SectionLabel>Customer message</SectionLabel>
-      <div style={{ background: '#0F172A', borderLeft: '3px solid #38BDF8', borderRadius: '0 8px 8px 0', padding: '10px 14px', color: '#94A3B8', fontSize: 13, fontStyle: 'italic' }}>
+      <div style={{ background: '#F9FAFB', borderLeft: '3px solid #38BDF8', borderRadius: '0 8px 8px 0', padding: '10px 14px', color: '#6B7280', fontSize: 13, fontStyle: 'italic' }}>
         “Pool looks cloudy after the storm last night. Can someone come out today or tomorrow? We have guests on the weekend.”
       </div>
 
       <SectionLabel>Pool context</SectionLabel>
-      <div style={{ background: '#0F172A', border: '1px solid #334155', borderRadius: 12, padding: '12px 14px' }}>
+      <div style={{ background: '#F9FAFB', border: '1px solid #334155', borderRadius: 12, padding: '12px 14px' }}>
         <MetaRow k='Last service' v='5 days ago · James T.' />
         <MetaRow k='pH' v='7.4 — Good' good />
         <MetaRow k='Chlorine' v='1.8 — Good' good />
@@ -188,7 +188,7 @@ function FlaggedDetail({ item }: { item: InboxItem }) {
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 17, fontWeight: 700, color: '#F9FAFB' }}>{item.customer} — Flagged Reading</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: '#111827' }}>{item.customer} — Flagged Reading</div>
           <div style={{ fontSize: 13, color: '#64748B', marginTop: 4 }}>{item.meta}</div>
         </div>
         <span style={{ ...pillFor('flagged'), alignSelf: 'flex-start' }}>Flagged reading</span>
@@ -200,7 +200,7 @@ function FlaggedDetail({ item }: { item: InboxItem }) {
       </div>
 
       <SectionLabel>Recent context</SectionLabel>
-      <div style={{ background: '#0F172A', border: '1px solid #334155', borderRadius: 12, padding: '12px 14px' }}>
+      <div style={{ background: '#F9FAFB', border: '1px solid #334155', borderRadius: 12, padding: '12px 14px' }}>
         <MetaRow k='Technician' v='James T.' />
         <MetaRow k='Recorded at' v='9:42am today' />
         <MetaRow k='Previous reading' v='1.7 ppm (last week)' />
@@ -221,7 +221,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function MetaRow({ k, v, good }: { k: string; v: string; good?: boolean }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #1F2937' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid #F3F4F6' }}>
       <span style={{ fontSize: 12, color: '#64748B' }}>{k}</span>
       <span style={{ fontSize: 12, fontWeight: 500, color: good ? '#4ADE80' : '#D1D5DB' }}>{v}</span>
     </div>
@@ -237,7 +237,7 @@ function pillLabel(type: InboxType) {
 function pillFor(type: InboxType): React.CSSProperties {
   if (type === 'booking') return { ...pillBase, background: 'rgba(56,189,248,0.12)', color: '#38BDF8' }
   if (type === 'flagged') return { ...pillBase, background: 'rgba(245,158,11,0.12)', color: '#FCD34D' }
-  return { ...pillBase, background: '#1F2937', color: '#64748B', border: '1px solid #334155' }
+  return { ...pillBase, background: '#E5E7EB', color: '#64748B', border: '1px solid #334155' }
 }
 
 const pillBase: React.CSSProperties = {
@@ -249,7 +249,7 @@ const pillBase: React.CSSProperties = {
 
 const secondaryBtn: React.CSSProperties = {
   background: '#1E293B',
-  color: '#94A3B8',
+  color: '#6B7280',
   border: '1px solid #334155',
   borderRadius: 8,
   padding: '8px 14px',
@@ -259,12 +259,12 @@ const secondaryBtn: React.CSSProperties = {
 }
 
 const field: React.CSSProperties = {
-  background: '#0F172A',
+  background: '#F9FAFB',
   border: '1px solid #334155',
   borderRadius: 8,
   padding: '8px 12px',
   fontSize: 13,
-  color: '#F9FAFB',
+  color: '#111827',
   flex: 1,
 }
 

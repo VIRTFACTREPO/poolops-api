@@ -10,8 +10,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../theme/tokens';
-import { getApiClient } from '../services/api';
+import { colors, spacing, borderRadius } from '../../theme/tokens';
+import { getApiClient } from '../../services/api';
 
 interface Notification {
   id: string;

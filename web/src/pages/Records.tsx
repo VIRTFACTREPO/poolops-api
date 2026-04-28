@@ -42,7 +42,7 @@ export default function Records() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#F9FAFB' }}>Service Records</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Service Records</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={() => setFlaggedOnly((v) => !v)}
@@ -81,7 +81,7 @@ export default function Records() {
             {filtered.map((r) => (
               <tr key={r.id} onClick={() => navigate(`/records/${r.id}`)} style={{ cursor: 'pointer' }}>
                 <td style={td}>{r.date}</td>
-                <td style={{ ...td, color: '#F9FAFB', fontWeight: 600 }}>{r.customer}</td>
+                <td style={{ ...td, color: '#111827', fontWeight: 600 }}>{r.customer}</td>
                 <td style={td}>{r.technician}</td>
                 <td style={td}><Traffic value={r.ph} type='ph' /></td>
                 <td style={td}><Traffic value={r.chlorine} type='chlorine' /></td>
@@ -106,7 +106,7 @@ function Traffic({ value, type }: { value: number; type: 'ph' | 'chlorine' | 'ls
   if (type === 'chlorine') ok = value >= 1 && value <= 3
   if (type === 'lsi') ok = value >= -0.5 && value <= 0.5
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#D1D5DB', fontSize: 12 }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#374151', fontSize: 12 }}>
       <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? '#22C55E' : '#EF4444' }} />
       {value}
     </span>
@@ -137,13 +137,13 @@ const th: React.CSSProperties = {
   textTransform: 'uppercase',
   letterSpacing: 0.5,
   color: '#64748B',
-  background: '#0F172A',
+  background: '#F9FAFB',
   borderBottom: '1px solid #334155',
 }
 
 const td: React.CSSProperties = {
   padding: '13px 16px',
   fontSize: 13,
-  color: '#94A3B8',
-  borderBottom: '1px solid #1F2937',
+  color: '#6B7280',
+  borderBottom: '1px solid #F3F4F6',
 }

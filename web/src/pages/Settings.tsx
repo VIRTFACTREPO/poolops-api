@@ -7,7 +7,7 @@ export default function Settings() {
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#F9FAFB' }}>Settings</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Settings</h1>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {(['Company', 'Chemicals', 'Target ranges', 'Report branding', 'Billing'] as Tab[]).map((t) => (
@@ -102,9 +102,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #1F2937' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #F3F4F6' }}>
       <span style={{ fontSize: 12, color: '#64748B' }}>{label}</span>
-      <span style={{ fontSize: 12, color: '#D1D5DB', fontWeight: 500 }}>{value}</span>
+      <span style={{ fontSize: 12, color: '#374151', fontWeight: 500 }}>{value}</span>
     </div>
   )
 }

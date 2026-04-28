@@ -5,7 +5,7 @@ export default function CustomerForm() {
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#F9FAFB' }}>Add / Edit Customer</h1>
+      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Add / Edit Customer</h1>
 
       <Section title='1) Contact'>
         <Fields>
@@ -67,7 +67,7 @@ export default function CustomerForm() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 14, padding: 14 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', marginBottom: 10 }}>{title}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', marginBottom: 10 }}>{title}</div>
       {children}
     </div>
   )
@@ -78,10 +78,10 @@ function Fields({ children }: { children: React.ReactNode }) {
 }
 
 const field: React.CSSProperties = {
-  background: '#0F172A',
+  background: '#F9FAFB',
   border: '1px solid #334155',
   borderRadius: 8,
   padding: '10px 12px',
-  color: '#F9FAFB',
+  color: '#111827',
   fontSize: 13,
 }
