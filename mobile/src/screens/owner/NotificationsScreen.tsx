@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius } from '../theme/tokens';
+import { getApiClient } from '../services/api';
 
-// Mock notifications data (will be replaced with real API when available)
-// API endpoint: GET /owner/notifications (stubbed, not yet implemented)
 interface Notification {
   id: string;
   type: 'visit-update' | 'schedule-change' | 'message' | 'schedule-update';
@@ -23,93 +22,55 @@ interface Notification {
   isRead: boolean;
 }
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: '1',
-    type: 'visit-update',
-    title: 'Visit completed',
-    body: 'Peters, Sarah — Service completed. Updated report available.',
-    timestamp: '10 minutes ago',
-    isRead: false,
-  },
-  {
-    id: '2',
-    type: 'schedule-change',
-    title: 'Schedule updated',
-    body: 'Your next service was moved to Friday 2pm at your request.',
-    timestamp: '2 hours ago',
-    isRead: false,
-  },
-  {
-    id: '3',
-    type: 'message',
-    title: 'Message from technician',
-    body: "Simon: The pH was high. I've adjusted it. Let me know if you have questions.",
-    timestamp: '5 hours ago',
-    isRead: true,
-  },
-  {
-    id: '4',
-    type: 'schedule-update',
-    title: 'Upcoming service scheduled',
-    body: 'Chen, Michael — Service scheduled for Thursday 10am.',
-    timestamp: 'Yesterday',
-    isRead: true,
-  },
-];
-
 export function OwnerNotificationsScreen() {
   const navigation = useNavigation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // TODO: Wire up to GET /owner/notifications when API is ready
-      // For now, use mock data
-      setNotifications(MOCK_NOTIFICATIONS);
+      const res = await getApiClient().get<Notification[]>('/owner/notifications');
+      setNotifications(res);
     } catch (err) {
       console.error('Failed to fetch notifications:', err);
       setError('Unable to load notifications');
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
-
-  const handleNotificationPress = (notification: Notification) => {
-    // Navigate based on notification type
-    switch (notification.type) {
-      case 'visit-update':
-      case 'schedule-change':
-        // Navigate to job/service detail
-        break;
-      case 'message':
-        // Navigate to messages/inbox
-        break;
-      case 'schedule-update':
-        // Navigate to schedule
-        break;
-      default:
-        break;
+  const markAllRead = async () => {
+    try {
+      await getApiClient().patch('/owner/notifications/read-all', {});
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
     }
   };
 
-  const getTypeColors = (type: string) => {
-    const colorsMap: Record<string, { bg: string; border: string; icon: string }> = {
-      'visit-update': { bg: '#D1FAE5', border: colors.success, icon: 'checkmark-circle' },
-      'schedule-change': { bg: '#FEF3C7', border: colors.warning, icon: 'time' },
-      'message': { bg: '#DBEAFE', border: colors.primary, icon: 'chatbubble' },
-      'schedule-update': { bg: '#E0F2FE', border: colors.primary, icon: 'calendar' },
-    };
-    return colorsMap[type] || { bg: '#F3F4F6', border: colors.textMuted, icon: 'help-circle' };
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  // Call markAllRead when screen becomes active
+  useEffect(() => {
+    const focusUnsub = navigation.addListener('focus', () => {
+      markAllRead();
+    });
+    return () => focusUnsub();
+  }, [navigation]);
+
+  const handleNotificationPress = (notification: Notification) => {
+    if (
+      notification.type === 'visit-update' ||
+      notification.type === 'schedule-change'
+    ) {
+      navigation.navigate('ServiceReportDetail' as never);
+    } else {
+      navigation.navigate('OwnerHome' as never);
+    }
   };
 
   if (loading) {
@@ -146,9 +107,8 @@ export function OwnerNotificationsScreen() {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.center}>
           <View style={styles.emptyState}>
-            <Ionicons name="mail-outline" size={64} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>No notifications</Text>
-            <Text style={styles.emptyText}>You're all caught up!</Text>
+            <Ionicons name="bell-outline" size={48} color="#E5E7EB" />
+            <Text style={styles.emptyTitle}>No notifications yet</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -157,11 +117,8 @@ export function OwnerNotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* Header */}
+      {/* Header - tab screen, no back arrow */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         {unreadCount > 0 && (
           <View style={styles.badge}>
@@ -170,9 +127,11 @@ export function OwnerNotificationsScreen() {
         )}
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+      >
         {notifications.map((notification) => {
-          const typeColors = getTypeColors(notification.type);
           return (
             <TouchableOpacity
               key={notification.id}
@@ -182,19 +141,28 @@ export function OwnerNotificationsScreen() {
               ]}
               onPress={() => handleNotificationPress(notification)}
             >
-              <View style={[styles.icon, { backgroundColor: typeColors.bg }]}>
-                <Ionicons
-                  name={typeColors.icon}
-                  size={24}
-                  color={typeColors.border}
-                />
+              <View style={styles.icon}>
+                {notification.type === 'visit-update' && (
+                  <Ionicons name="checkmark-circle" size={24} color={colors.successDark} />
+                )}
+                {notification.type === 'schedule-change' && (
+                  <Ionicons name="time" size={24} color={colors.warningDark} />
+                )}
+                {notification.type === 'message' && (
+                  <Ionicons name="chatbubble" size={24} color={colors.text} />
+                )}
+                {notification.type === 'schedule-update' && (
+                  <Ionicons name="calendar" size={24} color={colors.primaryDark} />
+                )}
               </View>
               <View style={styles.body}>
                 <Text style={styles.title}>{notification.title}</Text>
                 <Text style={styles.bodyText}>{notification.body}</Text>
                 <Text style={styles.timestamp}>{notification.timestamp}</Text>
               </View>
-              {!notification.isRead && <View style={styles.unreadDot} />}
+              {!notification.isRead && (
+                <View style={styles.unreadDot} />
+              )}
             </TouchableOpacity>
           );
         })}
@@ -202,6 +170,15 @@ export function OwnerNotificationsScreen() {
     </SafeAreaView>
   );
 }
+
+// Shadow object defined before StyleSheet.create to avoid self-reference
+const shadowSm = {
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.05,
+  shadowRadius: 2,
+  elevation: 1,
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -241,18 +218,13 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
-    padding: spacing.xl * 2,
+    paddingVertical: spacing.lg * 2,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  emptyText: {
     fontSize: 14,
-    color: colors.textMuted,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginTop: spacing.lg,
   },
   header: {
     height: 56,
@@ -261,21 +233,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    justifyContent: 'center',
     gap: spacing.md,
   },
-  backBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
+    color: '#111827',
   },
   badge: {
     width: 24,
@@ -300,26 +264,33 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    borderRadius: 10,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.md,
-    ...styles.shadowSm,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    ...shadowSm,
   },
   cardRead: {
-    opacity: 0.7,
+    backgroundColor: '#FFFFFF',
   },
   cardUnread: {
-    borderLeftWidth: 3,
+    backgroundColor: '#EFF6FF',
+    borderLeftWidth: 4,
+    borderLeftColor: '#0EA5E9',
   },
   icon: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     borderRadius: borderRadius.full,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    borderColor: '#E5E7EB',
+    borderWidth: 1,
   },
   body: {
     flex: 1,
@@ -327,32 +298,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.xs,
+    color: '#111827',
+    marginBottom: 4,
   },
   bodyText: {
     fontSize: 13,
-    color: colors.text,
+    fontWeight: '400',
+    color: '#6B7280',
     lineHeight: 18,
-    marginBottom: spacing.xxs,
+    marginBottom: 2,
   },
   timestamp: {
     fontSize: 11,
-    color: colors.textMuted,
+    color: '#9CA3AF',
+    textAlign: 'right',
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: '#0EA5E9',
     marginLeft: spacing.xs,
     marginTop: spacing.sm,
-  },
-  shadowSm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
 });
