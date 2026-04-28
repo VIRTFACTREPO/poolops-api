@@ -15,9 +15,10 @@ import { getApiClient } from '../../services/api';
 
 interface Notification {
   id: string;
-  type: 'visit-update' | 'schedule-change' | 'message' | 'schedule-update';
+  type: 'service_complete' | 'booking_confirmed' | 'request_received';
   title: string;
   body: string;
+  jobId?: string;
   timestamp: string;
   isRead: boolean;
 }
@@ -62,12 +63,15 @@ export function OwnerNotificationsScreen() {
     return () => focusUnsub();
   }, [navigation]);
 
+  // Wire tab badge to unread count
+  useEffect(() => {
+    const count = notifications.filter((n) => !n.isRead).length;
+    navigation.setOptions({ tabBarBadge: count > 0 ? count : undefined });
+  }, [navigation, notifications]);
+
   const handleNotificationPress = (notification: Notification) => {
-    if (
-      notification.type === 'visit-update' ||
-      notification.type === 'schedule-change'
-    ) {
-      navigation.navigate('ServiceReportDetail' as never);
+    if (notification.type === 'service_complete') {
+      (navigation as any).navigate('ServiceReportDetail', { jobId: notification.jobId });
     } else {
       navigation.navigate('OwnerHome' as never);
     }
@@ -142,17 +146,14 @@ export function OwnerNotificationsScreen() {
               onPress={() => handleNotificationPress(notification)}
             >
               <View style={styles.icon}>
-                {notification.type === 'visit-update' && (
+                {notification.type === 'service_complete' && (
                   <Ionicons name="checkmark-circle" size={24} color={colors.successDark} />
                 )}
-                {notification.type === 'schedule-change' && (
-                  <Ionicons name="time" size={24} color={colors.warningDark} />
-                )}
-                {notification.type === 'message' && (
-                  <Ionicons name="chatbubble" size={24} color={colors.text} />
-                )}
-                {notification.type === 'schedule-update' && (
+                {notification.type === 'booking_confirmed' && (
                   <Ionicons name="calendar" size={24} color={colors.primaryDark} />
+                )}
+                {notification.type === 'request_received' && (
+                  <Ionicons name="chatbubble" size={24} color={colors.text} />
                 )}
               </View>
               <View style={styles.body}>

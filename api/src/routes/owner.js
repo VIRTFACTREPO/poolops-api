@@ -15,6 +15,7 @@ router.get('/service-records', stub('get', '/owner/service-records'));
 router.get('/booking-requests', stub('get', '/owner/booking-requests'));
 router.post('/booking-requests', stub('post', '/owner/booking-requests'));
 router.get('/notifications', stub('get', '/owner/notifications'));
+router.patch('/notifications/read-all', stub('patch', '/owner/notifications/read-all'));
 router.patch('/notifications/:id/read', stub('patch', '/owner/notifications/:id/read'));
 
 export default router;
