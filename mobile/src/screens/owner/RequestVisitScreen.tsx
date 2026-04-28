@@ -17,7 +17,7 @@ type VisitReason = 'water-issue' | 'extra-visit' | 'event-prep' | 'equipment-pro
 
 interface FormData {
   reason: VisitReason | null;
-  notes: string;
+  description: string;
 }
 
 export function RequestVisitScreen() {
@@ -31,7 +31,7 @@ export function RequestVisitScreen() {
   const reasons: { id: VisitReason; label: string; icon: string }[] = [
     { id: 'water-issue', label: 'Water issue', icon: 'water' },
     { id: 'extra-visit', label: 'Extra visit', icon: 'calendar' },
-    { id: 'event-prep', label: 'Event prep', icon: 'party' },
+    { id: 'event-prep', label: 'Event prep', icon: 'sparkles' },
     { id: 'equipment-problem', label: 'Equipment problem', icon: 'construct' },
     { id: 'other', label: 'Other', icon: 'help-circle' },
   ];
@@ -42,7 +42,7 @@ export function RequestVisitScreen() {
 
   const handleNotesChange = (text: string) => {
     if (text.length <= 200) {
-      setFormData(prev => ({ ...prev, notes: text }));
+      setFormData(prev => ({ ...prev, description: text }));
     }
   };
 
@@ -55,10 +55,12 @@ export function RequestVisitScreen() {
     setIsLoading(true);
 
     try {
-      await getApiClient().post('/owner/booking-request', {
-        reason: formData.reason,
-        notes: formData.notes || undefined,
-      });
+      const body: { reason: VisitReason; description?: string } = { reason: formData.reason };
+      if (formData.description) {
+        body.description = formData.description;
+      }
+      // Note: Photo upload endpoint /owner/upload-url not yet implemented - sending without photo
+      await getApiClient().post('/owner/booking-request', body);
 
       // Navigate to confirmation, replace stack
       navigation.reset({
@@ -252,6 +254,7 @@ const styles = StyleSheet.create({
   reasonTileActive: {
     borderColor: colors.primary,
     backgroundColor: '#EFF6FF',
+    borderWidth: 2,
   },
   reasonIcon: {
     width: 40,
