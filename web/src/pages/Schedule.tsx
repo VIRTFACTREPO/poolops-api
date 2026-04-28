@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 type ViewMode = 'day' | 'week'
@@ -7,9 +8,31 @@ type JobState = 'pending' | 'in_progress' | 'complete' | 'flagged'
 type Job = {
   id: string
   customer: string
+  address: string
   area: string
   state: JobState
   note: string
+  techName: string
+}
+
+type ServiceRecord = {
+  id: string
+  ph: number | null
+  free_chlorine: number | null
+  alkalinity: number | null
+  calcium_hardness: number | null
+  cyanuric_acid: number | null
+  lsi_score: number | null
+  is_flagged: boolean
+  notes: string | null
+  office_note: string | null
+  completed_at: string | null
+}
+
+type JobDetail = {
+  job: Job
+  record: ServiceRecord | null
+  loading: boolean
 }
 
 type Technician = {
@@ -65,6 +88,8 @@ export default function Schedule() {
   const [techs, setTechs] = useState<Technician[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [detail, setDetail] = useState<JobDetail | null>(null)
+  const navigate = useNavigate()
 
   const selectedDate = useMemo(() => {
     const d = new Date()
@@ -122,9 +147,11 @@ export default function Schedule() {
         byTech.get(j.technician_id)!.jobs.push({
           id: j.id,
           customer: customer ? `${customer.last_name}, ${customer.first_name}` : 'Unknown',
+          address: customer?.address || '',
           area: customer?.address?.split(',').slice(-2, -1)[0]?.trim() || '',
           state: jobState(j.status, isFlagged),
           note: jobNote(j.status, isFlagged, j.completed_at),
+          techName: profileMap.get(j.technician_id) || 'Unknown',
         })
       }
 
@@ -165,8 +192,129 @@ export default function Schedule() {
     await supabase.from('jobs').update({ technician_id: toTechId }).eq('id', jobId)
   }
 
+  const openDetail = async (job: Job) => {
+    setDetail({ job, record: null, loading: true })
+    const { data } = await supabase
+      .from('service_records')
+      .select('id, ph, free_chlorine, alkalinity, calcium_hardness, cyanuric_acid, lsi_score, is_flagged, notes, office_note, completed_at')
+      .eq('job_id', job.id)
+      .maybeSingle()
+    setDetail({ job, record: data ?? null, loading: false })
+  }
+
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
+      {detail && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 40, background: 'rgba(0,0,0,0.25)' }}
+          onClick={() => setDetail(null)}
+        />
+      )}
+      {detail && (
+        <div style={{
+          position: 'fixed', top: 0, right: 0, bottom: 0, width: 400, zIndex: 50,
+          background: '#FFFFFF', borderLeft: '1px solid #E5E7EB',
+          display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 24px rgba(0,0,0,0.08)',
+        }}>
+          {/* Panel header */}
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>{detail.job.customer}</div>
+              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>{detail.job.address}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 600, borderRadius: 99, padding: '3px 10px',
+                  background: stateStyle[detail.job.state].bg,
+                  border: `1px solid ${stateStyle[detail.job.state].border}`,
+                  color: stateStyle[detail.job.state].title,
+                }}>
+                  {detail.job.state === 'in_progress' ? 'In progress' : detail.job.state.charAt(0).toUpperCase() + detail.job.state.slice(1)}
+                </span>
+                <span style={{ fontSize: 11, color: '#6B7280' }}>· {detail.job.techName}</span>
+              </div>
+            </div>
+            <button onClick={() => setDetail(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
+          </div>
+
+          {/* Panel body */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {detail.loading && <div style={{ textAlign: 'center', color: '#6B7280', fontSize: 13, paddingTop: 40 }}>Loading…</div>}
+
+            {!detail.loading && !detail.record && (
+              <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, paddingTop: 40 }}>No service record yet.</div>
+            )}
+
+            {!detail.loading && detail.record && (() => {
+              const r = detail.record!
+              const readings = [
+                { label: 'pH', value: r.ph, min: 7.2, max: 7.8 },
+                { label: 'Free Chlorine', value: r.free_chlorine, min: 1.0, max: 3.0 },
+                { label: 'Alkalinity', value: r.alkalinity, min: 80, max: 120 },
+                { label: 'Calcium Hardness', value: r.calcium_hardness, min: 200, max: 400 },
+                { label: 'Cyanuric Acid', value: r.cyanuric_acid, min: 30, max: 50 },
+              ]
+              return (
+                <>
+                  {r.is_flagged && (
+                    <div style={{ background: '#FFF1F2', border: '1px solid #FECDD3', borderLeft: '4px solid #EF4444', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#B91C1C', fontWeight: 500 }}>
+                      ⚑ Flagged reading
+                    </div>
+                  )}
+
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6B7280', marginBottom: 10 }}>Chemical Readings</div>
+                    <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, overflow: 'hidden' }}>
+                      {readings.map((rd, i) => {
+                        if (rd.value == null) return null
+                        const inRange = rd.value >= rd.min && rd.value <= rd.max
+                        return (
+                          <div key={rd.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 14px', borderBottom: i < readings.length - 1 ? '1px solid #E5E7EB' : 'none' }}>
+                            <span style={{ fontSize: 12, color: '#374151' }}>{rd.label}</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: inRange ? '#15803D' : '#B91C1C' }}>{rd.value}</span>
+                          </div>
+                        )
+                      })}
+                      {r.lsi_score != null && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 14px', borderTop: '1px solid #E5E7EB' }}>
+                          <span style={{ fontSize: 12, color: '#374151' }}>LSI Score</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: Math.abs(r.lsi_score) <= 0.5 ? '#15803D' : '#B91C1C' }}>{r.lsi_score.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {r.notes && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6B7280', marginBottom: 8 }}>Tech Notes</div>
+                      <div style={{ fontSize: 13, color: '#374151', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '10px 14px', lineHeight: 1.5 }}>{r.notes}</div>
+                    </div>
+                  )}
+
+                  {r.office_note && (
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6B7280', marginBottom: 8 }}>Office Note</div>
+                      <div style={{ fontSize: 13, color: '#374151', background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, padding: '10px 14px', lineHeight: 1.5 }}>{r.office_note}</div>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
+
+          {/* Panel footer */}
+          {detail.record && (
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB' }}>
+              <button
+                onClick={() => navigate(`/records/${detail.record!.id}`)}
+                style={{ width: '100%', background: '#111827', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                View full service record →
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -225,7 +373,8 @@ export default function Schedule() {
                       key={job.id}
                       draggable
                       onDragStart={onDragStart(job.id, tech.id)}
-                      style={{ borderRadius: 8, padding: '7px 10px', minWidth: 120, border: `1px solid ${s.border}`, background: s.bg, cursor: 'grab' }}
+                      onClick={() => openDetail(job)}
+                      style={{ borderRadius: 8, padding: '7px 10px', minWidth: 120, border: `1px solid ${s.border}`, background: s.bg, cursor: 'pointer' }}
                     >
                       <div style={{ fontSize: 11, fontWeight: 600, color: s.title }}>{job.customer}</div>
                       <div style={{ fontSize: 10, marginTop: 2, color: s.sub }}>{job.area}</div>
