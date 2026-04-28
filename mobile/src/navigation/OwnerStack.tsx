@@ -5,7 +5,7 @@ import { colors } from '../theme/tokens';
 
 // Import screens
 import { OwnerHomeScreen } from '../screens/OwnerHomeScreen';
-import { NotificationsScreen } from '../screens/NotificationsScreen';
+import { OwnerNotificationsScreen } from '../screens/owner/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ServiceHistoryScreen } from '../screens/owner/ServiceHistoryScreen';
 import { ServiceReportDetail } from '../screens/owner/ServiceReportDetail';
@@ -15,7 +15,7 @@ import { RequestVisitScreen, RequestConfirmScreen } from '../screens/owner/Reque
 export type OwnerStackParamList = {
   OwnerHome: undefined;
   ServiceHistory: undefined;
-  Notifications: undefined;
+  OwnerNotifications: undefined;
   Profile: undefined;
   ServiceReportDetail: { jobId?: string };
   RequestVisit: undefined;
@@ -43,8 +43,8 @@ export function OwnerStack() {
         options={{ animation: 'slide_from_right' }}
       />
       <Stack.Screen
-        name="Notifications"
-        component={NotificationsScreen}
+        name="OwnerNotifications"
+        component={OwnerNotificationsScreen}
         options={{ animation: 'slide_from_right' }}
       />
       <Stack.Screen
