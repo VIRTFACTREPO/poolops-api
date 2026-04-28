@@ -40,7 +40,7 @@ export function RequestVisitScreen() {
     setFormData(prev => ({ ...prev, reason }));
   };
 
-  const handleNotesChange = (text: string) => {
+  const handleDescriptionChange = (text: string) => {
     if (text.length <= 200) {
       setFormData(prev => ({ ...prev, description: text }));
     }
@@ -119,11 +119,11 @@ export function RequestVisitScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Tell us more (optional)</Text>
           <TextInput
-            style={styles.notesInput}
+            style={styles.descriptionInput}
             placeholder="Add details about your request..."
             placeholderTextColor={colors.textMuted}
             value={formData.description}
-            onChangeText={handleNotesChange}
+            onChangeText={handleDescriptionChange}
             multiline
             numberOfLines={4}
             maxLength={200}
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   reasonLabelActive: {
     color: colors.primary,
   },
-  notesInput: {
+  descriptionInput: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: colors.border,
