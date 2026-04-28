@@ -156,7 +156,7 @@ export function OwnerNotificationsScreen() {
                 )}
               </View>
               <View style={styles.body}>
-                <Text style={styles.title}>{notification.title}</Text>
+                <Text style={[styles.title, notification.isRead && styles.titleRead]}>{notification.title}</Text>
                 <Text style={styles.bodyText}>{notification.body}</Text>
                 <Text style={styles.timestamp}>{notification.timestamp}</Text>
               </View>
@@ -300,6 +300,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     marginBottom: 4,
+  },
+  titleRead: {
+    color: '#374151',
+    fontWeight: '500',
   },
   bodyText: {
     fontSize: 13,
