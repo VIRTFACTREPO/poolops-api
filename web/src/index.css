@@ -3,10 +3,10 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #0F172A;
+  background: #F5F5F3;
   font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
-  color: #F9FAFB;
+  color: #111827;
   -webkit-font-smoothing: antialiased;
 }
 

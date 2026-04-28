@@ -9,7 +9,7 @@ export default function AppShell() {
       <Sidebar />
       <div style={{ flex: 1, marginLeft: 220, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Topbar />
-        <main style={{ flex: 1, background: '#0F172A', padding: 28 }}>
+        <main style={{ flex: 1, background: '#F5F5F3', padding: 28 }}>
           <Breadcrumbs />
           <Outlet />
         </main>
