@@ -9,6 +9,7 @@ import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { ServiceHistoryScreen } from '../screens/owner/ServiceHistoryScreen';
 import { ServiceReportDetail } from '../screens/owner/ServiceReportDetail';
+import { RequestVisitScreen, RequestConfirmScreen } from '../screens/owner/RequestVisitScreen';
 
 // Types
 export type OwnerStackParamList = {
@@ -18,6 +19,7 @@ export type OwnerStackParamList = {
   Profile: undefined;
   ServiceReportDetail: { jobId?: string };
   RequestVisit: undefined;
+  RequestConfirm: undefined;
 };
 
 const Stack = createNativeStackNavigator<OwnerStackParamList>();
@@ -57,7 +59,12 @@ export function OwnerStack() {
       />
       <Stack.Screen
         name="RequestVisit"
-        component={NotificationsScreen} // Placeholder - wire up when M18 is created
+        component={RequestVisitScreen}
+        options={{ animation: 'slide_from_right' }}
+      />
+      <Stack.Screen
+        name="RequestConfirm"
+        component={RequestConfirmScreen}
         options={{ animation: 'slide_from_right' }}
       />
     </Stack.Navigator>
