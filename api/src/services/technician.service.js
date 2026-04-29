@@ -9,7 +9,7 @@ export async function getTodaysJobs(technicianId) {
   const today = new Date().toISOString().split('T')[0];
 
   const jobSelect = `id, route_order, status, job_type, scheduled_date, started_at, completed_at,
-    pools ( id, customers ( id, first_name, last_name, address ) )`;
+    job_pools ( pool_id, pools ( id, customers ( id, first_name, last_name, address ) ) )`;
 
   const [todayResult, outstandingResult] = await Promise.all([
     supabase
@@ -38,7 +38,7 @@ export async function getTodaysJobs(technicianId) {
     return true;
   });
 
-  const poolIds = jobs.map((j) => j.pools?.id).filter(Boolean);
+  const poolIds = jobs.flatMap((j) => (j.job_pools || []).map((jp) => jp.pool_id)).filter(Boolean);
   const lastVisitsByPool = {};
 
   if (poolIds.length > 0) {
@@ -56,9 +56,10 @@ export async function getTodaysJobs(technicianId) {
   }
 
   return jobs.map((job) => {
-    const pool = job.pools;
-    const customer = pool?.customers;
-    const lastVisit = pool ? lastVisitsByPool[pool.id] : null;
+    const jobPools = job.job_pools || [];
+    const firstPool = jobPools[0]?.pools;
+    const customer = firstPool?.customers;
+    const firstLastVisit = firstPool ? lastVisitsByPool[firstPool.id] : null;
 
     return {
       id: job.id,
@@ -71,24 +72,26 @@ export async function getTodaysJobs(technicianId) {
       customer: customer
         ? { name: `${customer.last_name}, ${customer.first_name}`, address: customer.address }
         : null,
-      pool: pool ? { id: pool.id } : null,
-      lastVisit: lastVisit
-        ? { date: lastVisit.completed_at, isFlagged: lastVisit.is_flagged, lsiLabel: lastVisit.lsi_label }
+      pools: jobPools.map((jp) => ({ id: jp.pool_id })),
+      lastVisit: firstLastVisit
+        ? { date: firstLastVisit.completed_at, isFlagged: firstLastVisit.is_flagged, lsiLabel: firstLastVisit.lsi_label }
         : null,
     };
   });
 }
 
 export async function getJobDetail(jobId, technicianId) {
-
   const { data: job, error } = await supabase
     .from('jobs')
     .select(`
       id, status, job_type, scheduled_date, started_at,
-      pools (
-        id, volume_litres, pool_type, surface_type, indoor_outdoor,
-        gate_access, warnings, equipment_notes,
-        customers ( id, first_name, last_name, address, phone )
+      job_pools (
+        pool_id,
+        pools (
+          id, volume_litres, pool_type, surface_type, indoor_outdoor,
+          gate_access, warnings, equipment_notes,
+          customers ( id, first_name, last_name, address, phone )
+        )
       )
     `)
     .eq('id', jobId)
@@ -102,42 +105,55 @@ export async function getJobDetail(jobId, technicianId) {
     throw err;
   }
 
-  const pool = job.pools;
-  const customer = pool?.customers;
-  let equipment = [];
-  let lastVisits = [];
+  const jobPools = job.job_pools || [];
+  const firstPool = jobPools[0]?.pools;
+  const customer = firstPool?.customers;
 
-  if (pool?.id) {
-    const [equipResult, visitsResult] = await Promise.all([
-      supabase
-        .from('pool_equipment')
-        .select('id, name, equipment_type, manufacturer, model')
-        .eq('pool_id', pool.id)
-        .eq('active', true)
-        .order('equipment_type'),
-      supabase
-        .from('service_records')
-        .select('completed_at, is_flagged, lsi_label, lsi_score')
-        .eq('pool_id', pool.id)
-        .order('completed_at', { ascending: false })
-        .limit(3),
-    ]);
+  const poolDetails = await Promise.all(
+    jobPools.map(async (jp) => {
+      const pool = jp.pools;
+      if (!pool?.id) return null;
 
-    equipment = (equipResult.data || []).map((e) => ({
-      id: e.id,
-      name: e.name,
-      type: e.equipment_type,
-      manufacturer: e.manufacturer,
-      model: e.model,
-    }));
+      const [equipResult, visitsResult] = await Promise.all([
+        supabase
+          .from('pool_equipment')
+          .select('id, name, equipment_type, manufacturer, model')
+          .eq('pool_id', pool.id)
+          .eq('active', true)
+          .order('equipment_type'),
+        supabase
+          .from('service_records')
+          .select('completed_at, is_flagged, lsi_label, lsi_score')
+          .eq('pool_id', pool.id)
+          .order('completed_at', { ascending: false })
+          .limit(3),
+      ]);
 
-    lastVisits = (visitsResult.data || []).map((r) => ({
-      date: r.completed_at,
-      isFlagged: r.is_flagged,
-      lsiLabel: r.lsi_label,
-      lsiScore: r.lsi_score,
-    }));
-  }
+      return {
+        id: pool.id,
+        volumeLitres: pool.volume_litres,
+        poolType: pool.pool_type,
+        surfaceType: pool.surface_type,
+        indoorOutdoor: pool.indoor_outdoor,
+        gateAccess: pool.gate_access,
+        warnings: pool.warnings,
+        equipmentNotes: pool.equipment_notes,
+        equipment: (equipResult.data || []).map((e) => ({
+          id: e.id,
+          name: e.name,
+          type: e.equipment_type,
+          manufacturer: e.manufacturer,
+          model: e.model,
+        })),
+        lastVisits: (visitsResult.data || []).map((r) => ({
+          date: r.completed_at,
+          isFlagged: r.is_flagged,
+          lsiLabel: r.lsi_label,
+          lsiScore: r.lsi_score,
+        })),
+      };
+    }),
+  );
 
   return {
     id: job.id,
@@ -148,20 +164,7 @@ export async function getJobDetail(jobId, technicianId) {
     customer: customer
       ? { id: customer.id, name: `${customer.last_name}, ${customer.first_name}`, address: customer.address, phone: customer.phone }
       : null,
-    pool: pool
-      ? {
-          id: pool.id,
-          volumeLitres: pool.volume_litres,
-          poolType: pool.pool_type,
-          surfaceType: pool.surface_type,
-          indoorOutdoor: pool.indoor_outdoor,
-          gateAccess: pool.gate_access,
-          warnings: pool.warnings,
-          equipmentNotes: pool.equipment_notes,
-        }
-      : null,
-    equipment,
-    lastVisits,
+    pools: poolDetails.filter(Boolean),
   };
 }
 
@@ -202,10 +205,12 @@ function readingStatus(value, min, max) {
   return 'good';
 }
 
+// payload.pools: [{ poolId, readings, lsi, treatments }]
+// notes and completedAt are top-level in payload
 export async function completeJob(jobId, technicianId, payload) {
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
-    .select('id, company_id, status, started_at, pools ( id, customers ( id ) )')
+    .select('id, company_id, status, started_at, job_pools ( pool_id, pools ( id, customers ( id ) ) )')
     .eq('id', jobId)
     .eq('technician_id', technicianId)
     .maybeSingle();
@@ -222,76 +227,92 @@ export async function completeJob(jobId, technicianId, payload) {
     throw err;
   }
 
-  const { readings, lsi, treatments, notes, completedAt } = payload;
+  const { pools: poolReadings, notes, completedAt } = payload;
   const completedAtDate = completedAt ? new Date(completedAt) : new Date();
   const startedAt = job.started_at ? new Date(job.started_at) : completedAtDate;
   const durationSeconds = Math.max(0, Math.round((completedAtDate - startedAt) / 1000));
 
+  const jobPoolMap = new Map((job.job_pools || []).map((jp) => [jp.pool_id, jp]));
+
   const targets = {
-    ph: { min: 7.2, max: 7.6 },
-    chlorine: { min: 1.0, max: 3.0 },
-    alkalinity: { min: 80, max: 120 },
-    calcium: { min: 200, max: 400 },
-    stabiliser: { min: 30, max: 50 },
+    ph:         { min: 7.2, max: 7.6 },
+    chlorine:   { min: 1.0, max: 3.0 },
+    alkalinity: { min: 80,  max: 120  },
+    calcium:    { min: 200, max: 400  },
+    stabiliser: { min: 30,  max: 50   },
   };
 
-  const ph = Number(readings?.ph ?? 0);
-  const chlorine = Number(readings?.freeChlorine ?? 0);
-  const alkalinity = Number(readings?.alkalinity ?? 0);
-  const calcium = Number(readings?.calciumHardness ?? 0);
-  const stabiliser = Number(readings?.cyanuricAcid ?? 0);
-
-  const readingsRecord = {
-    ph: { value: ph, status: readingStatus(ph, targets.ph.min, targets.ph.max) },
-    chlorine: { value: chlorine, status: readingStatus(chlorine, targets.chlorine.min, targets.chlorine.max) },
-    alkalinity: { value: alkalinity, status: readingStatus(alkalinity, targets.alkalinity.min, targets.alkalinity.max) },
-    calcium: { value: calcium, status: readingStatus(calcium, targets.calcium.min, targets.calcium.max) },
-    stabiliser: { value: stabiliser, status: readingStatus(stabiliser, targets.stabiliser.min, targets.stabiliser.max) },
-    custom: [],
-  };
-
-  const flaggedReadings = ['ph', 'chlorine', 'alkalinity', 'calcium', 'stabiliser'].filter(
-    (k) => readingsRecord[k].status !== 'good',
-  );
-
-  const treatmentsRecord = (treatments || []).map((t) => ({
-    product_id: null,
-    product_name: t.name,
-    unit: t.unit,
-    recommended: t.recommendedAmount,
-    actual: Number(t.actualAmount || 0),
-  }));
-
-  const year = completedAtDate.getFullYear();
-  const { count } = await supabase
+  const { count: existingCount } = await supabase
     .from('service_records')
     .select('*', { count: 'exact', head: true });
-  const ref = `SR-${year}-${String((count || 0) + 1).padStart(4, '0')}`;
+  const year = completedAtDate.getFullYear();
 
-  const { data: serviceRecord, error: insertErr } = await supabase
-    .from('service_records')
-    .insert({
+  const records = [];
+  for (let i = 0; i < (poolReadings || []).length; i++) {
+    const pr = poolReadings[i];
+
+    if (!jobPoolMap.has(pr.poolId)) {
+      const err = new Error(`Pool ${pr.poolId} is not part of job ${jobId}`);
+      err.code = 'VALIDATION_ERROR';
+      throw err;
+    }
+
+    const jp = jobPoolMap.get(pr.poolId);
+    const customerId = jp.pools.customers.id;
+
+    const ph        = Number(pr.readings?.ph             ?? 0);
+    const chlorine  = Number(pr.readings?.freeChlorine   ?? 0);
+    const alkalinity = Number(pr.readings?.alkalinity    ?? 0);
+    const calcium   = Number(pr.readings?.calciumHardness ?? 0);
+    const stabiliser = Number(pr.readings?.cyanuricAcid  ?? 0);
+
+    const readingsRecord = {
+      ph:         { value: ph,         status: readingStatus(ph,         targets.ph.min,         targets.ph.max)         },
+      chlorine:   { value: chlorine,   status: readingStatus(chlorine,   targets.chlorine.min,   targets.chlorine.max)   },
+      alkalinity: { value: alkalinity, status: readingStatus(alkalinity, targets.alkalinity.min, targets.alkalinity.max) },
+      calcium:    { value: calcium,    status: readingStatus(calcium,    targets.calcium.min,    targets.calcium.max)    },
+      stabiliser: { value: stabiliser, status: readingStatus(stabiliser, targets.stabiliser.min, targets.stabiliser.max) },
+      custom: [],
+    };
+
+    const flaggedReadings = ['ph', 'chlorine', 'alkalinity', 'calcium', 'stabiliser'].filter(
+      (k) => readingsRecord[k].status !== 'good',
+    );
+
+    const ref = `SR-${year}-${String((existingCount || 0) + records.length + 1).padStart(4, '0')}`;
+
+    records.push({
       ref,
-      job_id: jobId,
-      pool_id: job.pools.id,
-      company_id: job.company_id,
-      technician_id: technicianId,
-      customer_id: job.pools.customers.id,
-      completed_at: completedAtDate.toISOString(),
+      job_id:           jobId,
+      pool_id:          pr.poolId,
+      company_id:       job.company_id,
+      technician_id:    technicianId,
+      customer_id:      customerId,
+      completed_at:     completedAtDate.toISOString(),
       duration_seconds: durationSeconds,
-      readings: readingsRecord,
-      lsi_score: lsi?.score ?? 0,
-      lsi_label: lsi?.description ?? 'Unknown',
-      treatments: treatmentsRecord,
-      photo_urls: { before: null, after: null, additional: [] },
-      customer_note: notes?.customer || null,
-      office_note: notes?.office || null,
-      is_flagged: flaggedReadings.length > 0,
+      readings:         readingsRecord,
+      lsi_score:        pr.lsi?.score       ?? 0,
+      lsi_label:        pr.lsi?.description ?? 'Unknown',
+      treatments: (pr.treatments || []).map((t) => ({
+        product_id:    null,
+        product_name:  t.name,
+        unit:          t.unit,
+        recommended:   t.recommendedAmount,
+        actual:        Number(t.actualAmount || 0),
+      })),
+      photo_urls:       { before: null, after: null, additional: [] },
+      customer_note:    notes?.customer || null,
+      office_note:      notes?.office   || null,
+      is_flagged:       flaggedReadings.length > 0,
       flagged_readings: flaggedReadings,
-      locked: true,
-    })
-    .select('id, ref')
-    .single();
+      locked:           true,
+    });
+  }
+
+  const { data: inserted, error: insertErr } = await supabase
+    .from('service_records')
+    .insert(records)
+    .select('id, ref, pool_id');
 
   if (insertErr) throw insertErr;
 
@@ -300,5 +321,5 @@ export async function completeJob(jobId, technicianId, payload) {
     .update({ status: 'complete', completed_at: completedAtDate.toISOString() })
     .eq('id', jobId);
 
-  return { serviceRecordId: serviceRecord.id, ref: serviceRecord.ref };
+  return inserted.map((r) => ({ serviceRecordId: r.id, ref: r.ref, poolId: r.pool_id }));
 }

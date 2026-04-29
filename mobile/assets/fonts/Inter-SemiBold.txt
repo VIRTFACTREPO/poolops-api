@@ -1,0 +1,4 @@
+# Inter SemiBold Font - Placeholder
+# This file is a placeholder for the Inter SemiBold font
+# Download from: https://fonts.google.com/specimen/Inter
+# Place in: /assets/fonts/Inter-SemiBold.ttf

@@ -1,0 +1,4 @@
+# Inter Bold Font - Placeholder
+# This file is a placeholder for the Inter Bold font
+# Download from: https://fonts.google.com/specimen/Inter
+# Place in: /assets/fonts/Inter-Bold.ttf

@@ -1,0 +1,4 @@
+# Inter Regular Font - Placeholder
+# This file is a placeholder for the Inter Regular font
+# Download from: https://fonts.google.com/specimen/Inter
+# Place in: /assets/fonts/Inter-Regular.ttf
