@@ -82,6 +82,9 @@ const stateStyle: Record<JobState, { bg: string; border: string; title: string; 
   flagged:     { bg: '#FFF1F2', border: '#FECDD3',  title: '#B91C1C', sub: '#EF4444' },
 }
 
+type PoolOption = { id: string; label: string }
+type ProfileOption = { id: string; name: string }
+
 export default function Schedule() {
   const [view, setView] = useState<ViewMode>('day')
   const [offset, setOffset] = useState(0)
@@ -89,6 +92,14 @@ export default function Schedule() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [detail, setDetail] = useState<JobDetail | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [showAddJob, setShowAddJob] = useState(false)
+  const [, setAddJobPreTech] = useState<string>('')
+  const [pools, setPools] = useState<PoolOption[]>([])
+  const [profiles, setProfiles] = useState<ProfileOption[]>([])
+  const [addForm, setAddForm] = useState({ poolId: '', techId: '', date: '' })
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const selectedDate = useMemo(() => {
@@ -163,7 +174,45 @@ export default function Schedule() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [selectedDate])
+  }, [selectedDate, refreshKey])
+
+  const openAddJob = async (preTechId = '') => {
+    setAddJobPreTech(preTechId)
+    setAddForm({ poolId: '', techId: preTechId, date: toISODate(selectedDate) })
+    setAddError(null)
+    setShowAddJob(true)
+
+    const [poolsRes, profilesRes] = await Promise.all([
+      supabase.from('pools').select('id, customers(first_name, last_name)'),
+      supabase.from('profiles').select('id, full_name'),
+    ])
+    setPools((poolsRes.data || []).map((p) => {
+      const c = p.customers as unknown as { first_name: string; last_name: string } | null
+      return { id: p.id, label: c ? `${c.last_name}, ${c.first_name}` : p.id }
+    }).sort((a, b) => a.label.localeCompare(b.label)))
+    setProfiles((profilesRes.data || []).map((p) => ({ id: p.id, name: p.full_name as string })).sort((a, b) => a.name.localeCompare(b.name)))
+  }
+
+  const submitAddJob = async () => {
+    if (!addForm.poolId || !addForm.techId || !addForm.date) {
+      setAddError('All fields are required.')
+      return
+    }
+    setAdding(true)
+    setAddError(null)
+    const maxOrder = techs.flatMap((t) => t.jobs).length
+    const { error: err } = await supabase.from('jobs').insert({
+      pool_id: addForm.poolId,
+      technician_id: addForm.techId,
+      scheduled_date: addForm.date,
+      status: 'pending',
+      route_order: maxOrder + 1,
+    })
+    setAdding(false)
+    if (err) { setAddError(err.message); return }
+    setShowAddJob(false)
+    setRefreshKey((k) => k + 1)
+  }
 
   const onDragStart = (jobId: string, fromTechId: string) => (event: React.DragEvent<HTMLDivElement>) => {
     event.dataTransfer.setData('application/json', JSON.stringify({ jobId, fromTechId }))
@@ -315,6 +364,44 @@ export default function Schedule() {
         </div>
       )}
 
+      {showAddJob && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.4)' }} onClick={() => setShowAddJob(false)} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 70, background: '#FFFFFF', borderRadius: 14, width: 400, boxShadow: '0 8px 40px rgba(0,0,0,0.18)', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>Add job</span>
+              <button onClick={() => setShowAddJob(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: 20, lineHeight: 1, padding: 4 }}>✕</button>
+            </div>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <label style={formLabel}>
+                Customer / Pool
+                <select style={formSelect} value={addForm.poolId} onChange={(e) => setAddForm((f) => ({ ...f, poolId: e.target.value }))}>
+                  <option value=''>Select a pool…</option>
+                  {pools.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </select>
+              </label>
+              <label style={formLabel}>
+                Technician
+                <select style={formSelect} value={addForm.techId} onChange={(e) => setAddForm((f) => ({ ...f, techId: e.target.value }))}>
+                  <option value=''>Select technician…</option>
+                  {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </label>
+              <label style={formLabel}>
+                Date
+                <input type='date' style={formSelect} value={addForm.date} onChange={(e) => setAddForm((f) => ({ ...f, date: e.target.value }))} />
+              </label>
+              {addError && <div style={{ fontSize: 12, color: '#B91C1C' }}>{addError}</div>}
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #E5E7EB' }}>
+              <button onClick={submitAddJob} disabled={adding} style={{ width: '100%', background: '#111827', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '10px 0', fontSize: 13, fontWeight: 600, cursor: adding ? 'not-allowed' : 'pointer', opacity: adding ? 0.6 : 1 }}>
+                {adding ? 'Adding…' : 'Add job'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -330,7 +417,7 @@ export default function Schedule() {
           <button style={view === 'week' ? viewBtnActive : viewBtn} onClick={() => setView('week')}>Week</button>
         </div>
 
-        <button style={addJobBtn}>+ Add job</button>
+        <button style={addJobBtn} onClick={() => openAddJob()}>+ Add job</button>
       </div>
 
       <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden' }}>
@@ -382,7 +469,7 @@ export default function Schedule() {
                     </div>
                   )
                 })}
-                <button style={addSlotBtn}>+ Add job</button>
+                <button style={addSlotBtn} onClick={() => openAddJob(tech.id)}>+ Add job</button>
               </div>
             </div>
           )
@@ -415,3 +502,5 @@ const viewBtn: React.CSSProperties = { padding: '6px 14px', fontSize: 12, fontWe
 const viewBtnActive: React.CSSProperties = { ...viewBtn, background: '#111827', color: '#FFFFFF' }
 const addJobBtn: React.CSSProperties = { height: 32, padding: '0 16px', background: '#111827', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#FFFFFF', cursor: 'pointer' }
 const addSlotBtn: React.CSSProperties = { border: '1px dashed #D1D5DB', borderRadius: 8, padding: '7px 10px', cursor: 'pointer', fontSize: 11, color: '#6B7280', background: 'transparent', height: 'fit-content' }
+const formLabel: React.CSSProperties = { fontSize: 12, fontWeight: 600, color: '#374151', display: 'flex', flexDirection: 'column', gap: 6 }
+const formSelect: React.CSSProperties = { fontSize: 13, color: '#111827', border: '1px solid #D1D5DB', borderRadius: 8, padding: '8px 10px', background: '#F9FAFB', outline: 'none', width: '100%' }
