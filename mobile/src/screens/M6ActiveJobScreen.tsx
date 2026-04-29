@@ -281,8 +281,8 @@ function ActiveJobContent() {
     if (!jobId) return;
     const loadJob = async () => {
       try {
-        const res = await getApiClient().get(`/technician/jobs/${jobId}`);
-        const jobPools = Array.isArray(res?.pools) ? res.pools : [];
+        const res = await getApiClient().get(`/technician/jobs/${jobId}`) as Record<string, unknown>;
+        const jobPools = Array.isArray(res?.pools) ? (res.pools as any[]) : [];
         const normalized: PoolSnapshot[] = jobPools.map((pool: any, index: number) => ({
           poolId: String(pool?.id ?? pool?.poolId ?? `pool-${index + 1}`),
           name: pool?.name,

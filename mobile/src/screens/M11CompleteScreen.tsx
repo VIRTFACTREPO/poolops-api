@@ -122,8 +122,8 @@ export function M11CompleteScreen() {
         <Text style={styles.cardTitle}>{`Pool ${Math.min(activePoolIndex + 1, Math.max(pools.length, 1))} of ${Math.max(pools.length, 1)} — ${pools[activePoolIndex]?.name ?? pools[activePoolIndex]?.type ?? 'Pool'}`}</Text>
         {pools.length > 1 && (
           <View style={styles.poolStepRow}>
-            <TouchableOpacity onPress={() => setActivePoolIndex((prev) => Math.max(0, prev - 1))}><Text style={styles.poolStepBtn}>Previous</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setActivePoolIndex((prev) => Math.min(pools.length - 1, prev + 1))}><Text style={styles.poolStepBtn}>Next</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setActivePoolIndex(Math.max(0, activePoolIndex - 1))}><Text style={styles.poolStepBtn}>Previous</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setActivePoolIndex(Math.min(pools.length - 1, activePoolIndex + 1))}><Text style={styles.poolStepBtn}>Next</Text></TouchableOpacity>
           </View>
         )}
         <Text style={styles.cardBody}>FC {displayReadings?.freeChlorine || '—'} · pH {displayReadings?.ph || '—'} · TA {displayReadings?.alkalinity || '—'}</Text>
