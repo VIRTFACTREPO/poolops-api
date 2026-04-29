@@ -83,7 +83,7 @@ const stateStyle: Record<JobState, { bg: string; border: string; title: string; 
 }
 
 type PoolOption = { id: string; label: string }
-type ProfileOption = { id: string; name: string }
+type ProfileOption = { id: string; name: string; companyId: string | null }
 
 export default function Schedule() {
   const [view, setView] = useState<ViewMode>('day')
@@ -184,13 +184,13 @@ export default function Schedule() {
 
     const [poolsRes, profilesRes] = await Promise.all([
       supabase.from('pools').select('id, customers(first_name, last_name)'),
-      supabase.from('profiles').select('id, full_name'),
+      supabase.from('profiles').select('id, full_name, company_id'),
     ])
     setPools((poolsRes.data || []).map((p) => {
       const c = p.customers as unknown as { first_name: string; last_name: string } | null
       return { id: p.id, label: c ? `${c.last_name}, ${c.first_name}` : p.id }
     }).sort((a, b) => a.label.localeCompare(b.label)))
-    setProfiles((profilesRes.data || []).map((p) => ({ id: p.id, name: p.full_name as string })).sort((a, b) => a.name.localeCompare(b.name)))
+    setProfiles((profilesRes.data || []).map((p) => ({ id: p.id, name: p.full_name as string, companyId: p.company_id as string | null })).sort((a, b) => a.name.localeCompare(b.name)))
   }
 
   const submitAddJob = async () => {
@@ -200,6 +200,9 @@ export default function Schedule() {
     }
     setAdding(true)
     setAddError(null)
+    const tech = profiles.find((p) => p.id === addForm.techId)
+    const companyId = tech?.companyId
+    if (!companyId) { setAddError('Could not determine company for selected technician.'); setAdding(false); return }
     const maxOrder = techs.flatMap((t) => t.jobs).length
     const { error: err } = await supabase.from('jobs').insert({
       pool_id: addForm.poolId,
@@ -207,6 +210,7 @@ export default function Schedule() {
       scheduled_date: addForm.date,
       status: 'pending',
       route_order: maxOrder + 1,
+      company_id: companyId,
     })
     setAdding(false)
     if (err) { setAddError(err.message); return }
