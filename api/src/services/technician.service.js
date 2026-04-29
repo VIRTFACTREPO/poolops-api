@@ -9,7 +9,7 @@ export async function getTodaysJobs(technicianId) {
   const today = new Date().toISOString().split('T')[0];
 
   const jobSelect = `id, route_order, status, job_type, scheduled_date, started_at, completed_at,
-    job_pools ( pool_id, pools ( id, customers ( id, first_name, last_name, address ) ) )`;
+    pools ( id, customers ( id, first_name, last_name, address ) )`;
 
   const [todayResult, outstandingResult] = await Promise.all([
     supabase
@@ -38,7 +38,7 @@ export async function getTodaysJobs(technicianId) {
     return true;
   });
 
-  const poolIds = jobs.flatMap((j) => (j.job_pools || []).map((jp) => jp.pool_id)).filter(Boolean);
+  const poolIds = jobs.flatMap((j) => (j.pools || []).map((p) => p.id)).filter(Boolean);
   const lastVisitsByPool = {};
 
   if (poolIds.length > 0) {
@@ -56,8 +56,8 @@ export async function getTodaysJobs(technicianId) {
   }
 
   return jobs.map((job) => {
-    const jobPools = job.job_pools || [];
-    const firstPool = jobPools[0]?.pools;
+    const jobPools = job.pools || [];
+    const firstPool = jobPools[0];
     const customer = firstPool?.customers;
     const firstLastVisit = firstPool ? lastVisitsByPool[firstPool.id] : null;
 
@@ -72,7 +72,7 @@ export async function getTodaysJobs(technicianId) {
       customer: customer
         ? { name: `${customer.last_name}, ${customer.first_name}`, address: customer.address }
         : null,
-      pools: jobPools.map((jp) => ({ id: jp.pool_id })),
+      pools: jobPools.map((p) => ({ id: p.id })),
       lastVisit: firstLastVisit
         ? { date: firstLastVisit.completed_at, isFlagged: firstLastVisit.is_flagged, lsiLabel: firstLastVisit.lsi_label }
         : null,
@@ -85,13 +85,10 @@ export async function getJobDetail(jobId, technicianId) {
     .from('jobs')
     .select(`
       id, status, job_type, scheduled_date, started_at,
-      job_pools (
-        pool_id,
-        pools (
-          id, volume_litres, pool_type, surface_type, indoor_outdoor,
-          gate_access, warnings, equipment_notes,
-          customers ( id, first_name, last_name, address, phone )
-        )
+      pools (
+        id, volume_litres, pool_type, surface_type, indoor_outdoor,
+        gate_access, warnings, equipment_notes,
+        customers ( id, first_name, last_name, address, phone )
       )
     `)
     .eq('id', jobId)
@@ -105,13 +102,12 @@ export async function getJobDetail(jobId, technicianId) {
     throw err;
   }
 
-  const jobPools = job.job_pools || [];
-  const firstPool = jobPools[0]?.pools;
+  const jobPools = job.pools || [];
+  const firstPool = jobPools[0];
   const customer = firstPool?.customers;
 
   const poolDetails = await Promise.all(
-    jobPools.map(async (jp) => {
-      const pool = jp.pools;
+    jobPools.map(async (pool) => {
       if (!pool?.id) return null;
 
       const [equipResult, visitsResult] = await Promise.all([
@@ -210,7 +206,7 @@ function readingStatus(value, min, max) {
 export async function completeJob(jobId, technicianId, payload) {
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
-    .select('id, company_id, status, started_at, job_pools ( pool_id, pools ( id, customers ( id ) ) )')
+    .select('id, company_id, status, started_at, pools ( id, customers ( id ) )')
     .eq('id', jobId)
     .eq('technician_id', technicianId)
     .maybeSingle();
@@ -232,7 +228,7 @@ export async function completeJob(jobId, technicianId, payload) {
   const startedAt = job.started_at ? new Date(job.started_at) : completedAtDate;
   const durationSeconds = Math.max(0, Math.round((completedAtDate - startedAt) / 1000));
 
-  const jobPoolMap = new Map((job.job_pools || []).map((jp) => [jp.pool_id, jp]));
+  const jobPoolMap = new Map((job.pools || []).map((p) => [p.id, p]));
 
   const targets = {
     ph:         { min: 7.2, max: 7.6 },
@@ -258,7 +254,7 @@ export async function completeJob(jobId, technicianId, payload) {
     }
 
     const jp = jobPoolMap.get(pr.poolId);
-    const customerId = jp.pools.customers.id;
+    const customerId = jp.customers.id;
 
     const ph        = Number(pr.readings?.ph             ?? 0);
     const chlorine  = Number(pr.readings?.freeChlorine   ?? 0);

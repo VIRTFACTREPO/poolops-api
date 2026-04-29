@@ -143,7 +143,7 @@ export default function Schedule() {
       const { data: jobs, error: jobErr } = await supabase
         .from('jobs')
         .select(`id, status, completed_at, route_order, technician_id,
-          job_pools ( pool_id, pools ( pool_type, customers ( first_name, last_name, address ) ) )`)
+          pools ( id, pool_type, customers ( first_name, last_name, address ) )`)
         .eq('scheduled_date', date)
         .order('route_order')
 
@@ -162,10 +162,9 @@ export default function Schedule() {
 
       for (const j of jobs || []) {
         const techName = profileMap.get(j.technician_id) || 'Unknown'
-        type RawPool = { pool_type: string; customers: { first_name: string; last_name: string; address: string } }
-        type RawJobPool = { pool_id: string; pools: RawPool | null }
-        const jPools = j.job_pools as unknown as RawJobPool[]
-        const firstPool = jPools?.[0]?.pools
+        type RawPool = { id: string; pool_type: string; customers: { first_name: string; last_name: string; address: string } }
+        const jPools = j.pools as unknown as RawPool[]
+        const firstPool = jPools?.[0]
         const customer = firstPool?.customers
 
         if (!byTech.has(j.technician_id)) {
