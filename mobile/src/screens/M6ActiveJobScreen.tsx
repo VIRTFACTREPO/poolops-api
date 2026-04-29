@@ -282,16 +282,20 @@ function ActiveJobContent() {
     const loadJob = async () => {
       try {
         const res = await getApiClient().get(`/technician/jobs/${jobId}`) as Record<string, unknown>;
-        const jobPools = Array.isArray(res?.pools) ? (res.pools as any[]) : [];
-        const normalized: PoolSnapshot[] = jobPools.map((pool: any, index: number) => ({
+        const rawPools: any[] = Array.isArray(res?.pools)
+          ? (res.pools as any[])
+          : res?.pool
+          ? [res.pool]
+          : [];
+        const normalized: PoolSnapshot[] = rawPools.map((pool: any, index: number) => ({
           poolId: String(pool?.id ?? pool?.poolId ?? `pool-${index + 1}`),
           name: pool?.name,
-          type: pool?.type,
+          type: pool?.poolType ?? pool?.type,
           volumeLitres: pool?.volumeLitres ?? pool?.volume,
           gateAccess: pool?.gateAccess,
           warnings: Array.isArray(pool?.warnings) ? pool.warnings : [],
-          equipment: Array.isArray(pool?.equipment) ? pool.equipment : [],
-          lastVisits: Array.isArray(pool?.lastVisits) ? pool.lastVisits : [],
+          equipment: Array.isArray(res?.equipment) ? (res.equipment as any[]) : [],
+          lastVisits: Array.isArray(res?.lastVisits) ? (res.lastVisits as any[]) : [],
         }));
         setPools(normalized);
       } catch {
@@ -299,7 +303,8 @@ function ActiveJobContent() {
       }
     };
     loadJob();
-  }, [jobId, setPools]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId]);
 
   const activeTabMeta = useMemo(() => TAB_META.find((t) => t.key === currentTab) ?? TAB_META[0], [currentTab]);
 
