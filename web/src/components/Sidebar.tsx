@@ -62,20 +62,6 @@ const NAV = [
   },
 ]
 
-const navItemStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 10,
-  padding: '9px 12px',
-  borderRadius: 10,
-  marginBottom: 2,
-  cursor: 'pointer',
-  fontSize: 13,
-  fontWeight: 500,
-  color: '#9CA3AF',
-  transition: 'background 0.15s, color 0.15s',
-}
-
 export default function Sidebar() {
   return (
     <div style={{
@@ -90,6 +76,34 @@ export default function Sidebar() {
       left: 0,
       bottom: 0,
     }}>
+      <style>{`
+        .nav-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 9px 12px;
+          border-radius: 10px;
+          margin-bottom: 2px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 500;
+          color: #9CA3AF;
+          text-decoration: none;
+          transition: background 0.15s, color 0.15s;
+        }
+        .nav-item:hover {
+          background: #1F2937;
+          color: #D1D5DB;
+        }
+        .nav-item.active {
+          background: #1F2937;
+          color: #F9FAFB;
+        }
+        .sidebar-user:hover {
+          background: #1F2937;
+        }
+      `}</style>
+
       {/* Logo */}
       <div style={{
         padding: '20px 20px 16px',
@@ -123,25 +137,7 @@ export default function Sidebar() {
             key={item.to}
             to={item.to}
             end={item.end}
-            style={({ isActive }) => ({
-              ...navItemStyle,
-              background: isActive ? '#1F2937' : undefined,
-              color: isActive ? '#F9FAFB' : '#9CA3AF',
-            })}
-            onMouseEnter={(e) => {
-              const el = e.currentTarget
-              if (!el.getAttribute('aria-current')) {
-                el.style.background = '#1F2937'
-                el.style.color = '#D1D5DB'
-              }
-            }}
-            onMouseLeave={(e) => {
-              const el = e.currentTarget
-              if (!el.getAttribute('aria-current')) {
-                el.style.background = ''
-                el.style.color = '#9CA3AF'
-              }
-            }}
+            className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
           >
             {item.icon}
             {item.label}
@@ -162,17 +158,15 @@ export default function Sidebar() {
 
       {/* User row */}
       <div style={{ padding: '16px 10px', borderTop: '1px solid #1F2937' }}>
-        <div style={{
+        <div className="sidebar-user" style={{
           display: 'flex',
           alignItems: 'center',
           gap: 10,
           padding: '8px 12px',
           borderRadius: 10,
           cursor: 'pointer',
-        }}
-          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = '#1F2937' }}
-          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = '' }}
-        >
+          transition: 'background 0.15s',
+        }}>
           <div style={{
             width: 30,
             height: 30,
