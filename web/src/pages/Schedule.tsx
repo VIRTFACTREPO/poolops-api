@@ -320,7 +320,7 @@ export default function Schedule() {
       records: (data || []).map((r) => ({
         id: r.id,
         pool_id: r.pool_id,
-        poolType: (r.pools as { pool_type: string } | null)?.pool_type ?? null,
+        poolType: (r.pools as unknown as { pool_type: string } | null)?.pool_type ?? null,
         readings: r.readings as PoolReading,
         lsi_score: r.lsi_score,
         is_flagged: r.is_flagged,
