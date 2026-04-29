@@ -50,8 +50,8 @@ export default function Customers() {
             placeholder='Search customers...'
             style={{
               width: '100%',
-              background: '#1E293B',
-              border: '1px solid #334155',
+              background: '#F9FAFB',
+              border: '1px solid #D1D5DB',
               borderRadius: 8,
               padding: '8px 12px',
               fontSize: 13,
@@ -77,13 +77,13 @@ export default function Customers() {
 
         <button
           onClick={() => navigate('/customers/new')}
-          style={{ background: '#F9FAFB', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, color: '#111827', cursor: 'pointer', marginLeft: 'auto' }}
+          style={{ background: '#111827', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 12, fontWeight: 700, color: '#F9FAFB', cursor: 'pointer', marginLeft: 'auto' }}
         >
           + Add customer
         </button>
       </div>
 
-      <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -98,7 +98,7 @@ export default function Customers() {
                     letterSpacing: 0.5,
                     color: '#64748B',
                     background: '#F9FAFB',
-                    borderBottom: '1px solid #334155',
+                    borderBottom: '1px solid #E5E7EB',
                   }}
                 >
                   {h}
@@ -133,8 +133,8 @@ function StatusDot({ status }: { status: Row['status'] }) {
 function PlanPill({ plan }: { plan: Plan }) {
   const style =
     plan === 'Inactive'
-      ? { background: '#E5E7EB', color: '#64748B', border: '1px solid #334155' }
-      : { background: 'rgba(56,189,248,0.12)', color: '#38BDF8' }
+      ? { background: '#F3F4F6', color: '#6B7280', border: '1px solid #E5E7EB' }
+      : { background: '#E0F2FE', color: '#0284C7' }
   return <span style={{ fontSize: 10, fontWeight: 600, borderRadius: 20, padding: '3px 9px', ...style }}>{plan}</span>
 }
 
@@ -146,10 +146,10 @@ const td: React.CSSProperties = {
 }
 
 const selectStyle: React.CSSProperties = {
-  background: '#1E293B',
-  border: '1px solid #334155',
+  background: '#F9FAFB',
+  border: '1px solid #D1D5DB',
   borderRadius: 8,
   padding: '8px 12px',
   fontSize: 12,
-  color: '#6B7280',
+  color: '#374151',
 }

@@ -72,7 +72,7 @@ const navItemStyle: React.CSSProperties = {
   cursor: 'pointer',
   fontSize: 13,
   fontWeight: 500,
-  color: '#6B7280',
+  color: '#9CA3AF',
   transition: 'background 0.15s, color 0.15s',
 }
 
@@ -126,11 +126,11 @@ export default function Sidebar() {
             style={({ isActive }) => ({
               ...navItemStyle,
               background: isActive ? '#1F2937' : undefined,
-              color: isActive ? '#F9FAFB' : '#6B7280',
+              color: isActive ? '#F9FAFB' : '#9CA3AF',
             })}
             onMouseEnter={(e) => {
               const el = e.currentTarget
-              if (!el.classList.contains('active')) {
+              if (!el.getAttribute('aria-current')) {
                 el.style.background = '#1F2937'
                 el.style.color = '#D1D5DB'
               }
@@ -139,7 +139,7 @@ export default function Sidebar() {
               const el = e.currentTarget
               if (!el.getAttribute('aria-current')) {
                 el.style.background = ''
-                el.style.color = ''
+                el.style.color = '#9CA3AF'
               }
             }}
           >

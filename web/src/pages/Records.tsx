@@ -47,9 +47,9 @@ export default function Records() {
           <button
             onClick={() => setFlaggedOnly((v) => !v)}
             style={{
-              background: flaggedOnly ? '#F9FAFB' : '#1E293B',
-              color: flaggedOnly ? '#111827' : '#94A3B8',
-              border: '1px solid #334155',
+              background: flaggedOnly ? '#111827' : '#F3F4F6',
+              color: flaggedOnly ? '#F9FAFB' : '#374151',
+              border: '1px solid #E5E7EB',
               borderRadius: 8,
               padding: '8px 12px',
               fontSize: 12,
@@ -61,14 +61,14 @@ export default function Records() {
           </button>
           <button
             onClick={exportCsv}
-            style={{ background: '#F9FAFB', color: '#111827', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+            style={{ background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
           >
             Export CSV
           </button>
         </div>
       </div>
 
-      <div style={{ background: '#1E293B', border: '1px solid #334155', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -121,8 +121,8 @@ function StatusPill({ flagged }: { flagged: boolean }) {
         fontWeight: 600,
         borderRadius: 20,
         padding: '3px 9px',
-        background: flagged ? 'rgba(239,68,68,0.12)' : 'rgba(74,222,128,0.1)',
-        color: flagged ? '#F87171' : '#4ADE80',
+        background: flagged ? '#FEF2F2' : '#F0FDF4',
+        color: flagged ? '#DC2626' : '#16A34A',
       }}
     >
       {flagged ? 'Flagged' : 'Good'}
@@ -138,7 +138,7 @@ const th: React.CSSProperties = {
   letterSpacing: 0.5,
   color: '#64748B',
   background: '#F9FAFB',
-  borderBottom: '1px solid #334155',
+  borderBottom: '1px solid #E5E7EB',
 }
 
 const td: React.CSSProperties = {
