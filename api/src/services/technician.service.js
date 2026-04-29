@@ -152,6 +152,9 @@ export async function getJobDetail(jobId, technicianId) {
   );
 
   return {
+  const firstPool = poolDetails.filter(Boolean)[0] || null;
+
+  return {
     id: job.id,
     status: job.status,
     jobType: job.job_type,
@@ -160,7 +163,18 @@ export async function getJobDetail(jobId, technicianId) {
     customer: customer
       ? { id: customer.id, name: `${customer.last_name}, ${customer.first_name}`, address: customer.address, phone: customer.phone }
       : null,
-    pools: poolDetails.filter(Boolean),
+    pool: firstPool ? {
+      id: firstPool.id,
+      volumeLitres: firstPool.volumeLitres,
+      poolType: firstPool.poolType,
+      surfaceType: firstPool.surfaceType,
+      indoorOutdoor: firstPool.indoorOutdoor,
+      gateAccess: firstPool.gateAccess,
+      warnings: firstPool.warnings,
+      equipmentNotes: firstPool.equipmentNotes,
+    } : null,
+    equipment: firstPool?.equipment || [],
+    lastVisits: firstPool?.lastVisits || [],
   };
 }
 
