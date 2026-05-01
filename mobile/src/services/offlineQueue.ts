@@ -102,21 +102,23 @@ async function dispatchItem(item: QueueItem): Promise<DispatchResult> {
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   let url: string;
+  let method: string = 'POST';
   switch (item.type) {
     case 'JOB_COMPLETE':
-      url = `${API_BASE_URL}/api/technician/jobs/${item.jobId}/complete`;
+      url = `${API_BASE_URL}/technician/jobs/${item.jobId}/complete`;
       break;
     case 'JOB_START':
-      url = `${API_BASE_URL}/api/technician/jobs/${item.jobId}/start`;
+      url = `${API_BASE_URL}/technician/jobs/${item.jobId}`;
+      method = 'PATCH';
       break;
     case 'PHOTO_UPLOAD':
-      url = `${API_BASE_URL}/api/jobs/${item.jobId}/photos`;
+      url = `${API_BASE_URL}/jobs/${item.jobId}/photos`;
       break;
   }
 
   try {
     const response = await fetch(url, {
-      method: 'POST',
+      method,
       headers,
       body: JSON.stringify(item.payload),
     });

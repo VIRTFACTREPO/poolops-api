@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3003/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3003';
 
 interface ApiRequestOptions extends RequestInit {
   params?: Record<string, string | number>;
