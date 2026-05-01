@@ -9,7 +9,7 @@ export async function getTodaysJobs(technicianId) {
   const today = new Date().toISOString().split('T')[0];
 
   const jobSelect = `id, route_order, status, job_type, scheduled_date, started_at, completed_at,
-    pools ( id, customers ( id, first_name, last_name, address ) )`;
+    job_pools ( pools ( id, customers ( id, first_name, last_name, address ) ) )`;
 
   const [todayResult, outstandingResult] = await Promise.all([
     supabase
@@ -38,7 +38,7 @@ export async function getTodaysJobs(technicianId) {
     return true;
   });
 
-  const poolIds = jobs.flatMap((j) => (j.pools || []).map((p) => p.id)).filter(Boolean);
+  const poolIds = jobs.flatMap((j) => (j.job_pools || []).map((jp) => jp.pools?.id).filter(Boolean));
   const lastVisitsByPool = {};
 
   if (poolIds.length > 0) {
@@ -56,7 +56,7 @@ export async function getTodaysJobs(technicianId) {
   }
 
   return jobs.map((job) => {
-    const jobPools = job.pools || [];
+    const jobPools = (job.job_pools || []).map((jp) => jp.pools).filter(Boolean);
     const firstPool = jobPools[0];
     const customer = firstPool?.customers;
     const firstLastVisit = firstPool ? lastVisitsByPool[firstPool.id] : null;
@@ -85,10 +85,12 @@ export async function getJobDetail(jobId, technicianId) {
     .from('jobs')
     .select(`
       id, status, job_type, scheduled_date, started_at,
-      pools (
-        id, volume_litres, pool_type, surface_type, indoor_outdoor,
-        gate_access, warnings, equipment_notes,
-        customers ( id, first_name, last_name, address, phone )
+      job_pools (
+        pools (
+          id, volume_litres, pool_type, surface_type, indoor_outdoor,
+          gate_access, warnings, equipment_notes,
+          customers ( id, first_name, last_name, address, phone )
+        )
       )
     `)
     .eq('id', jobId)
@@ -102,7 +104,7 @@ export async function getJobDetail(jobId, technicianId) {
     throw err;
   }
 
-  const jobPools = job.pools || [];
+  const jobPools = (job.job_pools || []).map((jp) => jp.pools).filter(Boolean);
   const firstPool = jobPools[0];
   const customer = firstPool?.customers;
 
@@ -219,7 +221,7 @@ function readingStatus(value, min, max) {
 export async function completeJob(jobId, technicianId, payload) {
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
-    .select('id, company_id, status, started_at, pools ( id, customers ( id ) )')
+    .select('id, company_id, status, started_at, job_pools ( pools ( id, customers ( id ) ) )')
     .eq('id', jobId)
     .eq('technician_id', technicianId)
     .maybeSingle();
@@ -241,7 +243,7 @@ export async function completeJob(jobId, technicianId, payload) {
   const startedAt = job.started_at ? new Date(job.started_at) : completedAtDate;
   const durationSeconds = Math.max(0, Math.round((completedAtDate - startedAt) / 1000));
 
-  const jobPoolMap = new Map((job.pools || []).map((p) => [p.id, p]));
+  const jobPoolMap = new Map((job.job_pools || []).map((jp) => jp.pools).filter(Boolean).map((p) => [p.id, p]));
 
   const targets = {
     ph:         { min: 7.2, max: 7.6 },
