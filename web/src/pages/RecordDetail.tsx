@@ -51,11 +51,18 @@ export default function RecordDetail() {
     async function load() {
       const { data, error: err } = await supabase
         .from('service_records')
-        .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, customers(first_name, last_name, address), profiles!technician_id(full_name), pools(pool_type, volume_litres)')
+        .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, technician_id, customers(first_name, last_name, address), pools(pool_type, volume_litres)')
         .eq('id', id)
         .single()
       if (err) { setError(err.message); setLoading(false); return }
       const r = data as any
+
+      let techName: string | null = null
+      if (r.technician_id) {
+        const { data: profile } = await supabase.from('profiles').select('full_name').eq('id', r.technician_id).single()
+        techName = (profile as any)?.full_name ?? null
+      }
+
       const rec: Record = {
         id: r.id,
         ref: r.ref,
@@ -68,7 +75,7 @@ export default function RecordDetail() {
         customer_note: r.customer_note,
         office_note: r.office_note,
         customers: r.customers as Record['customers'],
-        profiles: r.profiles as Record['profiles'],
+        profiles: techName ? { full_name: techName } : null,
         pools: r.pools as Record['pools'],
       }
       setRecord(rec)
