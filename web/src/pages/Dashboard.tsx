@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 type TeamRow = { id: string; name: string; done: number; assigned: number }
 type FlaggedRow = { id: string; pool: string; reading: string; value: string; range: string; time: string }
+type ActivityRow = { id: string; text: string; time: string; flagged: boolean }
 
 const quickActions = [
-  { id: 'add-job', label: 'Add Job', hint: 'Create a new service job' },
-  { id: 'add-customer', label: 'Add Customer', hint: 'Add a new customer profile' },
-  { id: 'view-schedule', label: 'View Schedule', hint: "See today's route plan" },
-  { id: 'view-inbox', label: 'View Inbox', hint: 'Review incoming requests' },
+  { id: 'add-job',       label: 'Add Job',       hint: 'Create a new service job',   path: '/schedule' },
+  { id: 'add-customer',  label: 'Add Customer',  hint: 'Add a new customer profile', path: '/customers/new' },
+  { id: 'view-schedule', label: 'View Schedule', hint: "See today's route plan",      path: '/schedule' },
+  { id: 'view-inbox',    label: 'View Inbox',    hint: 'Review incoming requests',    path: '/inbox' },
 ]
 
 const READING_META: Record<string, { label: string; min: number; max: number }> = {
@@ -34,10 +36,12 @@ function todayLocal(): string {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [jobsToday, setJobsToday] = useState(0)
   const [flaggedCount, setFlaggedCount] = useState(0)
   const [teamProgress, setTeamProgress] = useState<TeamRow[]>([])
   const [flaggedReadings, setFlaggedReadings] = useState<FlaggedRow[]>([])
+  const [activity, setActivity] = useState<ActivityRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -51,6 +55,7 @@ export default function Dashboard() {
         { data: profiles },
         { data: todayJobs },
         { data: flaggedRecs },
+        { data: recentRecs },
       ] = await Promise.all([
         supabase.from('jobs').select('*', { count: 'exact', head: true }).eq('scheduled_date', today),
         supabase.from('service_records').select('*', { count: 'exact', head: true }).eq('is_flagged', true),
@@ -62,6 +67,11 @@ export default function Dashboard() {
           .eq('is_flagged', true)
           .order('completed_at', { ascending: false })
           .limit(5),
+        supabase
+          .from('service_records')
+          .select('id, ref, completed_at, is_flagged, customers(first_name, last_name)')
+          .order('completed_at', { ascending: false })
+          .limit(8),
       ])
 
       if (!active) return
@@ -107,6 +117,21 @@ export default function Dashboard() {
         setFlaggedReadings(rows)
       }
 
+      if (recentRecs) {
+        setActivity(
+          (recentRecs as any[]).map((rec) => {
+            const c = rec.customers
+            const who = c ? `${c.last_name}, ${c.first_name}` : 'Unknown customer'
+            return {
+              id: rec.id,
+              text: `${rec.ref ?? 'Record'} completed · ${who}`,
+              time: relativeTime(rec.completed_at),
+              flagged: rec.is_flagged,
+            }
+          }),
+        )
+      }
+
       setLoading(false)
     }
 
@@ -132,6 +157,7 @@ export default function Dashboard() {
         {quickActions.map((action) => (
           <button
             key={action.id}
+            onClick={() => navigate(action.path)}
             style={{ textAlign: 'left', background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: '14px 14px', color: '#111827', cursor: 'pointer' }}
           >
             <div style={{ fontSize: 14, fontWeight: 600 }}>{action.label}</div>
@@ -188,6 +214,39 @@ export default function Dashboard() {
                     {row.reading}: <strong>{row.value}</strong>{' '}
                     <span style={{ color: '#6B7280' }}>(target {row.range})</span>
                   </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </section>
+
+      <section>
+        <Card title='Recent Activity'>
+          {loading ? (
+            <div style={{ fontSize: 13, color: '#9CA3AF' }}>Loading…</div>
+          ) : activity.length === 0 ? (
+            <div style={{ fontSize: 13, color: '#9CA3AF' }}>No recent activity.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: 0 }}>
+              {activity.map((row, i) => (
+                <div
+                  key={row.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 12,
+                    fontSize: 13,
+                    padding: '9px 0',
+                    borderBottom: i < activity.length - 1 ? '1px solid #F3F4F6' : undefined,
+                  }}
+                >
+                  <span style={{ color: '#374151' }}>
+                    {row.flagged && <span style={{ color: '#DC2626', marginRight: 6 }}>⚑</span>}
+                    {row.text}
+                  </span>
+                  <span style={{ color: '#9CA3AF', whiteSpace: 'nowrap', fontSize: 12 }}>{row.time}</span>
                 </div>
               ))}
             </div>
