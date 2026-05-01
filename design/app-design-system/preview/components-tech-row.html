@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .row { display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:12px; background:#fff; border:1px solid var(--po-border-soft); }
+  .row .tech-av { width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; }
+  .row .name { font-size:12px; font-weight:600; color:#111827; min-width:70px; }
+  .track { flex:1; height:5px; background:#E5E7EB; border-radius:99px; overflow:hidden; }
+  .fill { height:100%; border-radius:99px; }
+  .count { font-size:11px; color:#9CA3AF; min-width:36px; text-align:right; font-variant-numeric: tabular-nums; }
+  .spec { font-size:10px; color: var(--po-placeholder); font-family: var(--po-font-mono); margin-top:4px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <div class="tech-av" style="background:#0EA5E9;">JT</div>
+    <div class="name">James T.</div>
+    <div class="track"><div class="fill" style="width:80%;background:#0EA5E9;"></div></div>
+    <div class="count">8 / 10</div>
+  </div>
+  <div class="row">
+    <div class="tech-av" style="background:#8B5CF6;">MK</div>
+    <div class="name">Marama K.</div>
+    <div class="track"><div class="fill" style="width:55%;background:#8B5CF6;"></div></div>
+    <div class="count">6 / 11</div>
+  </div>
+  <div class="row">
+    <div class="tech-av" style="background:#22C55E;">SL</div>
+    <div class="name">Sam L.</div>
+    <div class="track"><div class="fill" style="width:100%;background:#22C55E;"></div></div>
+    <div class="count">9 / 9</div>
+  </div>
+  <div class="spec">Technician avatar colours — blue · purple · green — consistent across W3 · W4 · W14</div>
+</div>
+</body>
+</html>

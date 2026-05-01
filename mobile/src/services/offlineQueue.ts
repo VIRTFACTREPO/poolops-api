@@ -104,10 +104,10 @@ async function dispatchItem(item: QueueItem): Promise<DispatchResult> {
   let url: string;
   switch (item.type) {
     case 'JOB_COMPLETE':
-      url = `${API_BASE_URL}/api/jobs/${item.jobId}/complete`;
+      url = `${API_BASE_URL}/api/technician/jobs/${item.jobId}/complete`;
       break;
     case 'JOB_START':
-      url = `${API_BASE_URL}/api/jobs/${item.jobId}/start`;
+      url = `${API_BASE_URL}/api/technician/jobs/${item.jobId}/start`;
       break;
     case 'PHOTO_UPLOAD':
       url = `${API_BASE_URL}/api/jobs/${item.jobId}/photos`;

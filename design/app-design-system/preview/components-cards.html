@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .wrap { padding: 22px 28px; display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .c { background:#fff; border:1px solid rgba(0,0,0,0.07); border-radius:14px; padding:14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04); }
+  .c-hover { border-color: rgba(14,165,233,0.35); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .c-access { background:#FFFBEB; border:1px solid #FDE68A; border-left: 4px solid #F59E0B; }
+  .c-dark { background:#1E293B; border:1px solid #334155; color:#F9FAFB; box-shadow:none; }
+  .ttl { font-weight:700; font-size:13px; color:#111827; }
+  .sub { font-size:11px; color:#6B7280; margin-top:2px; }
+  .eyebrow { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#B45309; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="c"><div class="ttl">Smith, David</div><div class="sub">12 Remuera Rd · Remuera</div></div>
+  <div class="c c-hover"><div class="ttl">Hover state</div><div class="sub">Border deepens, 150ms</div></div>
+  <div class="c c-access"><div class="eyebrow">Access notes</div><div style="font-size:12px;color:#92400E;">Gate code 4521 · Dog in yard Tue</div></div>
+  <div class="c c-dark"><div class="ttl" style="color:#F9FAFB;">Dark card</div><div class="sub" style="color:#94A3B8;">#1E293B · no shadow</div></div>
+</div>
+</body>
+</html>

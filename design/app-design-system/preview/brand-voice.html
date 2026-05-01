@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 22px 28px; display:flex; flex-direction:column; gap:12px; }
+  .tag { display:inline-flex; align-items:center; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; font-family: var(--po-font-mono); text-transform:uppercase; letter-spacing:0.5px; }
+  .row { display:flex; gap:10px; align-items:flex-start; }
+  .quote { flex:1; font-size:13px; color:#111827; line-height:1.5; font-style:italic; }
+  .note { font-size: 11px; color: #6B7280; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <span class="tag" style="background:#F0FDF4;color:#15803D;">OWNER</span>
+    <div class="quote">"Your pool water is in excellent balance. No action needed from you."</div>
+  </div>
+  <div class="row">
+    <span class="tag" style="background:#F3F4F6;color:#374151;">TECH</span>
+    <div class="quote">"pH high — treat with 250ml hydrochloric acid. Mark complete when dosed."</div>
+  </div>
+  <div class="row">
+    <span class="tag" style="background:#111827;color:#fff;">ADMIN</span>
+    <div class="quote">"2 flagged readings. Smith, David · pH 8.2 at 9:42am."</div>
+  </div>
+  <div class="note">Plain-English to owners · Operational to techs · Direct to admins · ANZ spelling throughout · No emoji · Sentence case</div>
+</div>
+</body>
+</html>

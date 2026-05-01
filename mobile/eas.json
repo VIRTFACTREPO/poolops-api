@@ -1,0 +1,52 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://poolops-api-production.up.railway.app"
+      }
+    },
+    "development:sim": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://poolops-api-production.up.railway.app"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "enterpriseProvisioning": "adhoc"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://poolops-api-production.up.railway.app"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://poolops-api-production.up.railway.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

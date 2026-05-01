@@ -14,6 +14,7 @@ type Job = {
   note: string
   techName: string
   poolCount: number
+  isOverdue?: boolean
 }
 
 type PoolReading = {
@@ -98,7 +99,7 @@ function poolTypeLabel(type: string): string {
 }
 
 const stateStyle: Record<JobState, { bg: string; border: string; title: string; sub: string }> = {
-  pending:     { bg: '#EFF6FF', border: '#BFDBFE',  title: '#1E40AF', sub: '#3B82F6' },
+  pending:     { bg: '#EFF6FF', border: '#BFDBFE',  title: '#1E40AF', sub: '#0EA5E9' },
   in_progress: { bg: '#F0F9FF', border: '#7DD3FC',  title: '#0369A1', sub: '#0EA5E9' },
   complete:    { bg: '#F0FDF4', border: '#BBF7D0',  title: '#15803D', sub: '#22C55E' },
   flagged:     { bg: '#FFF1F2', border: '#FECDD3',  title: '#B91C1C', sub: '#EF4444' },
@@ -139,19 +140,45 @@ export default function Schedule() {
 
     async function load() {
       const date = toISODate(selectedDate)
+      const today = toISODate(new Date())
+      const isToday = date === today
 
-      const { data: jobs, error: jobErr } = await supabase
-        .from('jobs')
-        .select(`id, status, completed_at, route_order, technician_id,
-          pools ( id, pool_type, customers ( first_name, last_name, address ) )`)
-        .eq('scheduled_date', date)
-        .order('route_order')
+      const jobSelect = `id, status, completed_at, route_order, technician_id,
+        pools ( id, pool_type, customers ( first_name, last_name, address ) )`
 
-      if (jobErr) throw jobErr
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      type RawJob = Record<string, any>
 
-      const techIds = [...new Set((jobs || []).map((j) => j.technician_id))]
+      const [scheduledRes, overdueRes] = await Promise.all([
+        supabase.from('jobs').select(jobSelect).eq('scheduled_date', date).order('route_order'),
+        isToday
+          ? supabase.from('jobs').select(jobSelect).lt('scheduled_date', today).in('status', ['pending', 'in_progress']).order('scheduled_date', { ascending: false }).order('route_order')
+          : Promise.resolve({ data: [], error: null }),
+      ])
+
+      if (scheduledRes.error) throw scheduledRes.error
+      if (overdueRes.error) throw overdueRes.error
+
+      const scheduledJobs = (scheduledRes.data || []) as RawJob[]
+      const overdueJobs = (overdueRes.data || []) as RawJob[]
+      const overdueIds = new Set(overdueJobs.map((j) => j.id))
+
+      const seen = new Set<string>()
+      const jobs: (RawJob & { _isOverdue: boolean })[] = []
+      for (const j of [...overdueJobs, ...scheduledJobs]) {
+        if (seen.has(j.id)) continue
+        seen.add(j.id)
+        jobs.push({ ...j, _isOverdue: overdueIds.has(j.id) })
+      }
+
+      if (!jobs.length) {
+        if (!cancelled) setTechs([])
+        return
+      }
+
+      const techIds = [...new Set(jobs.map((j) => j.technician_id))]
       const [recordsRes, profilesRes] = await Promise.all([
-        supabase.from('service_records').select('job_id, is_flagged').in('job_id', (jobs || []).map((j) => j.id)),
+        supabase.from('service_records').select('job_id, is_flagged').in('job_id', jobs.map((j) => j.id)),
         supabase.from('profiles').select('id, full_name').in('id', techIds),
       ])
 
@@ -186,6 +213,7 @@ export default function Schedule() {
           note: jobNote(j.status, isFlagged, j.completed_at),
           techName: profileMap.get(j.technician_id) || 'Unknown',
           poolCount: jPools?.length ?? 1,
+          isOverdue: j._isOverdue ?? false,
         })
       }
 
@@ -584,7 +612,12 @@ export default function Schedule() {
                       onClick={() => openDetail(job)}
                       style={{ borderRadius: 8, padding: '7px 10px', minWidth: 120, border: `1px solid ${s.border}`, background: s.bg, cursor: 'pointer' }}
                     >
-                      <div style={{ fontSize: 11, fontWeight: 600, color: s.title }}>{job.customer}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: s.title }}>{job.customer}</div>
+                        {job.isOverdue && (
+                          <span style={{ fontSize: 9, fontWeight: 700, background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', borderRadius: 4, padding: '1px 5px', lineHeight: 1.4 }}>OVERDUE</span>
+                        )}
+                      </div>
                       <div style={{ fontSize: 10, marginTop: 2, color: s.sub }}>{job.area}</div>
                       {job.poolCount > 1 && (
                         <div style={{ fontSize: 10, marginTop: 2, color: s.sub, opacity: 0.75 }}>Pool + Spa</div>

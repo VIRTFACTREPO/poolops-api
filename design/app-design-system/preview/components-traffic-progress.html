@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 24px 28px; display:flex; flex-direction:column; gap:16px; }
+  .row { display:flex; align-items:center; gap:12px; }
+  .ph { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:500; color:#374151; }
+  .dot { width:10px; height:10px; border-radius:50%; }
+  .small-dot { width:7px; height:7px; border-radius:50%; }
+  .track { flex:1; height:6px; background:#E5E7EB; border-radius:99px; overflow:hidden; }
+  .fill { height:100%; border-radius:99px; }
+  .spec { font-size:10px; color: var(--po-placeholder); font-family: var(--po-font-mono); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <span class="ph"><span class="dot" style="background:#22C55E"></span>pH 7.4 <small style="color:#9CA3AF;font-weight:400;">Good</small></span>
+    <span class="ph"><span class="dot" style="background:#F59E0B"></span>Cl 0.9 <small style="color:#9CA3AF;font-weight:400;">Low</small></span>
+    <span class="ph"><span class="dot" style="background:#EF4444"></span>pH 8.1 <small style="color:#9CA3AF;font-weight:400;">High</small></span>
+  </div>
+  <div style="font-size:11px; color:var(--po-placeholder); text-transform:uppercase; letter-spacing:.5px;">Progress</div>
+  <div class="row"><div class="track"><div class="fill" style="width:60%; background:#111827;"></div></div><span style="font-size:12px; font-weight:600;">6 / 14</span></div>
+  <div class="row"><div class="track"><div class="fill" style="width:100%; background:#22C55E;"></div></div><span style="font-size:12px; font-weight:600; color:#15803D;">Done</span></div>
+  <div class="spec">Traffic light 10px · always paired w/ text · progress 6px · fill #111827 default</div>
+</div>
+</body>
+</html>

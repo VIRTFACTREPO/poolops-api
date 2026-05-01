@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 20px 24px; }
+  .scale { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+  .cell { border-radius: 8px; overflow: hidden; border: 1px solid var(--po-border-soft); background:#fff; }
+  .cell .tile { height: 36px; }
+  .cell .meta { padding: 5px 6px 6px; }
+  .cell .name { font-size: 10px; font-weight: 600; color: var(--po-text-heading); }
+  .cell .hex { font-family: var(--po-font-mono); font-size: 9px; color: var(--po-placeholder); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="scale">
+    <div class="cell"><div class="tile" style="background:#FFFFFF"></div><div class="meta"><div class="name">White</div><div class="hex">#FFFFFF</div></div></div>
+    <div class="cell"><div class="tile" style="background:#F5F5F3"></div><div class="meta"><div class="name">App bg</div><div class="hex">#F5F5F3</div></div></div>
+    <div class="cell"><div class="tile" style="background:#F9FAFB"></div><div class="meta"><div class="name">Surface 2</div><div class="hex">#F9FAFB</div></div></div>
+    <div class="cell"><div class="tile" style="background:#F3F4F6"></div><div class="meta"><div class="name">Surface 3</div><div class="hex">#F3F4F6</div></div></div>
+    <div class="cell"><div class="tile" style="background:#E5E7EB"></div><div class="meta"><div class="name">Border</div><div class="hex">#E5E7EB</div></div></div>
+    <div class="cell"><div class="tile" style="background:#9CA3AF"></div><div class="meta"><div class="name">Placeholder</div><div class="hex">#9CA3AF</div></div></div>
+    <div class="cell"><div class="tile" style="background:#6B7280"></div><div class="meta"><div class="name">Secondary</div><div class="hex">#6B7280</div></div></div>
+    <div class="cell"><div class="tile" style="background:#374151"></div><div class="meta"><div class="name">Body</div><div class="hex">#374151</div></div></div>
+  </div>
+</div>
+</body>
+</html>

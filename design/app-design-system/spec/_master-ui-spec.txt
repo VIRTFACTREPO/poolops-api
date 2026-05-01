@@ -1,0 +1,1134 @@
+PoolOps
+Master UI Specification
+
+Complete build reference for all screens across Mobile (Technician), Mobile (Pool Owner) and Web Dashboard (Admin). This document is the authoritative source for all UI decisions, component behaviour, navigation flows and interaction patterns. Charlie builds directly from this spec.
+Version 1.0  ·  April 2026  ·  MVP Scope
+
+
+## [Heading1] 1. Platform Overview
+PoolOps is a purpose-built operations platform for pool maintenance businesses. It replaces paper dockets, WhatsApp scheduling and spreadsheet records with a single platform that understands pool chemistry, service workflows and compliance requirements.
+
+
+## [Heading2] 1.1 Architecture
+Two surfaces, three user types.
+
+Surfaces
+Mobile app
+iOS + Android. Role determined at login. Technician sees run sheet and service tools. Pool owner sees service history and booking options. Same app, different views.
+Web dashboard
+React / Next.js. Dark mode by default. Full operational portal for business owner, operations manager and admin staff. One login, all features.
+
+User types
+Pool Technician
+Field worker. 10–20 pools per day. Uses mobile exclusively. Run sheet, chemical logging, job completion, photo capture.
+Pool Owner
+Customer. Uses mobile to view service history, reports, and request extra visits.
+PoolOps User
+Business owner / ops / admin. Uses web dashboard for scheduling, customers, records, team and settings.
+
+
+## [Heading2] 1.2 Screen inventory (MVP)
+26 screens total across v1.
+
+TECHNICIAN MOBILE
+M2  Login
+M4  Today Run Sheet
+M5  Pool Brief
+M6  Active Job (tab container: M7 Readings, M8 Treatment, M9 Photos, M10 Notes, M11 Complete)
+M13  Notifications
+M14  Profile & Settings
+
+POOL OWNER MOBILE
+M15  Owner Home
+M16  Service History
+M17  Service Report Detail
+M18  Request a Visit
+M21  Notifications
+
+WEB DASHBOARD (ADMIN)
+W3  Dashboard Home
+W4  Schedule
+W6  Inbox
+W7  Customer List
+W8  Customer Detail
+W10  Add / Edit Customer
+W12  Service Record List
+W13  Service Record Detail
+W14  Technician List
+W16  Add / Edit Technician
+W26  Company Settings
+
+
+## [Heading1] 2. Design Language
+
+## [Heading2] 2.1 Aesthetic direction
+Refined operational minimalism. The product should feel like a precision instrument — calm, uncluttered and immediate. Every element earns its place. The reference aesthetic is the Velix AI Agent dashboard: near-white neomorphic card language, muted accent states, near-black active indicators, and icon-only navigation with a dark pill active state.
+The mobile app uses the light mode palette throughout. The web dashboard defaults to dark mode for reduced eye strain during long operational use.
+
+
+## [Heading2] 2.2 Colour palette
+LIGHT MODE (MOBILE + LIGHT WEB)
+Primary
+Pool Blue
+#0EA5E9 — primary actions, links, active states
+Deep Blue
+#0369A1 — hover states, pressed buttons
+Light Blue
+#E0F2FE — backgrounds, highlights, selected states
+
+Status
+Green (Good)
+#22C55E — readings in range, healthy status, complete
+Amber (Caution)
+#F59E0B — slightly out of range, monitor, warnings
+Red (Action)
+#EF4444 — out of range, urgent, flagged
+Grey (Neutral)
+#6B7280 — done/inactive, secondary info
+
+Neutrals
+#FFFFFF
+White — card backgrounds
+#F5F5F3
+App background — warm near-white (Velix base)
+#F9FAFB
+Off-white — input backgrounds, secondary surfaces
+#F3F4F6
+Light grey — chip backgrounds, disabled
+#E5E7EB
+Border grey — all borders and dividers
+#9CA3AF
+Placeholder / secondary labels
+#374151
+Body text
+#111827
+Headings, primary text, active states, CTA buttons
+
+DARK MODE (WEB DASHBOARD)
+Dark palette
+#0F172A
+Page background
+#111827
+Sidebar and topbar
+#1E293B
+Card background
+#334155
+Card borders
+#1F2937
+Row dividers
+#F9FAFB
+Primary text
+#D1D5DB
+Body text
+#94A3B8
+Secondary text
+#64748B
+Muted / labels
+#475569
+Disabled / hints
+
+
+## [Heading2] 2.3 Typography
+Font
+Primary
+Inter — Google Fonts. Clean, readable at small sizes, professional.
+iOS fallback
+SF Pro
+Monospace
+System monospace for record IDs and timer displays
+
+MOBILE SCALE
+
+H1
+24px / 700 / #111827
+H2
+20px / 600 / #111827
+H3
+16px / 600 / #374151
+Body
+14px / 400 / #374151
+Small
+12px / 400 / #6B7280
+Label
+11px / 500 uppercase / #9CA3AF
+Button
+15px / 600
+
+WEB SCALE
+
+H1
+28px / 700
+H2
+22px / 600
+H3
+18px / 600
+Body
+14px / 400
+Small
+12px / 400
+Table
+13px / 400
+
+
+## [Heading2] 2.4 Spacing
+Base unit: 4px. All spacing values are multiples of the base unit.
+Scale
+xs
+4px
+sm
+8px
+md
+16px
+lg
+24px
+xl
+32px
+2xl
+48px
+Card padding mobile
+16px
+Card padding web
+20px
+Screen padding mobile
+16px
+Screen padding web
+24–28px
+
+
+## [Heading2] 2.5 Component library
+
+## [Heading3] Buttons
+Primary button
+Background
+#111827 (dark / near-black — NOT Pool Blue)
+Text
+#FFFFFF explicitly set on span element — never inherit
+Border radius
+12–14px
+Padding
+14–16px 20px
+Font
+15px / 700
+Mobile
+Full-width
+Implementation
+Use div not button element. Set all colours inline. Never rely on CSS class inheritance for button text colour.
+
+Secondary button
+Background
+#F3F4F6
+Text
+#111827
+Border
+1px #E5E7EB
+Border radius
+10–14px
+
+Destructive button
+Background
+#FEF2F2
+Text
+#EF4444
+Border
+1px #FCA5A5
+Note: CRITICAL: All sticky footer CTAs and primary buttons must use fully inline styles. Never use CSS class inheritance for button background or text colour. The rendering environment may suppress class-based colour rules. Always set background-color and color explicitly on the element.
+
+
+## [Heading3] Cards
+Light mode card
+Background
+#FFFFFF
+Border
+1px solid rgba(0,0,0,0.07)
+Border radius
+14–18px (larger = more prominent)
+Shadow
+0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)
+Hover (tappable)
+Border transitions to rgba(0,0,0,0.12)
+
+Dark mode card
+Background
+#1E293B
+Border
+1px solid #334155
+Border radius
+14px
+Hover
+Background transitions to #243447
+
+
+## [Heading3] Status badges / pills
+Light mode
+Green
+bg #F0FDF4 / text #16A34A / border #BBF7D0
+Amber
+bg #FFFBEB / text #D97706 / border #FDE68A
+Red
+bg #FEF2F2 / text #DC2626 / border #FECACA
+Grey
+bg #F9FAFB / text #6B7280 / border #E5E7EB
+Border radius
+20px (pill shape)
+Padding
+4px 10px
+Font
+11px / 500
+
+Dark mode
+Green
+bg rgba(74,222,128,0.10) / text #4ADE80
+Amber
+bg rgba(245,158,11,0.12) / text #FCD34D
+Red
+bg rgba(239,68,68,0.12) / text #F87171
+Blue
+bg rgba(56,189,248,0.12) / text #38BDF8
+Grey
+bg #1F2937 / text #64748B / border #334155
+
+
+## [Heading3] Traffic light indicators
+
+Size
+7–10px diameter circle
+Green
+#22C55E — reading in range
+Amber
+#F59E0B — slightly out of range
+Red
+#EF4444 — out of range, action required
+Rule
+Always paired with text label. Never colour alone.
+
+
+## [Heading3] Inputs (forms)
+Light mode
+Background
+#F9FAFB (light) or #0F172A (dark)
+Border
+1px #E5E7EB (light) or 1px #334155 (dark)
+Border radius
+8px
+Padding
+10–12px 12–14px
+Focus border
+#111827 (light) or #64748B (dark)
+Placeholder
+#9CA3AF (light) or #475569 (dark)
+Error border
+#EF4444
+
+
+## [Heading3] Toggle switches
+
+Size
+42px wide x 24px tall
+On state
+bg #F9FAFB (light) or #F9FAFB (dark) / thumb #111827
+Off state
+bg #E5E7EB (light) or #334155 (dark) / thumb #9CA3AF
+Transition
+200ms ease on background and thumb position
+
+
+## [Heading2] 2.6 Navigation patterns
+
+## [Heading3] Mobile — bottom nav
+Icon-only. Active item: dark pill background (#111827) with white icon. Inactive: #9CA3AF icon, no background. Home pill (iOS indicator) always below nav on white background.
+Bottom nav rules
+Visible on
+Top-level screens only: M4 Run Sheet, M13 Notifications, M14 Profile (technician); M15 Home, M16 History, M21 Notifications (owner)
+Hidden on
+All drill-down screens: M5, M6 and all tabs, M17, M18. These use a back arrow in the header instead.
+CTA conflict
+Any screen with a sticky primary CTA at the bottom does not show the nav bar. The CTA owns that space.
+
+
+## [Heading3] Mobile — header patterns
+
+Top-level
+Logo left, bell + avatar right. No back button.
+Drill-down
+Back button (32x32 rounded square) left, centred title, optional action right.
+Active job
+Back button left, owner name + address centre, live timer (green pill) right.
+
+
+## [Heading3] Web — sidebar navigation
+
+Width
+220px fixed
+Background
+#111827
+Active item
+bg #1F2937 / text #F9FAFB
+Inactive
+text #6B7280
+Hover
+bg #1F2937 / text #D1D5DB
+Badge (Inbox)
+#EF4444 pill, right-aligned on nav item
+User row
+Fixed at bottom, avatar + name + company
+
+
+## [Heading3] Breadcrumbs (web)
+Drill-down screens show breadcrumb in topbar: "Section > Item". Parent is muted (#64748B), separator is ›, current page is white. Clicking parent navigates back.
+
+
+## [Heading2] 2.7 Iconography
+
+Library
+Heroicons — open source, MIT licence, React-compatible
+Style
+Outline
+Navigation icons
+18–20px, stroke 1.5px
+Inline icons
+14–16px, stroke 1.5–2px
+Colour
+Inherits from parent text colour. Always set explicitly on SVG stroke attribute.
+
+
+## [Heading1] 3. Technician Mobile Screens
+The technician app is the primary field tool. All screens prioritise speed and one-handed operation. Every primary action is a large touch target. No screen requires more than 3 taps to complete its core task.
+
+## [Heading2] M2 — Login
+Full screen, vertically centred, #F5F5F3 background.
+Layout
+Logo block
+Droplet icon mark (32px, #F5F5F3 on #111827 rounded square) + "PoolOps" wordmark + tagline "Pool smarter. Always." in #9CA3AF. Centred, occupies upper 40% of screen.
+Form block
+Email input, password input (with eye toggle), LOG IN primary button, Forgot password link in #0EA5E9.
+Footer note
+Divider + "New pool owner? Wait for invite from your pool company." in #9CA3AF. Prevents confusion about self-registration.
+Behaviour
+Role routing
+No role selector on screen. Role is set by admin when creating account. On successful login, server returns role. Technician routes to M4, pool owner routes to M15.
+Error state
+Both fields get red border. Error message below button: "Incorrect email or password" in #EF4444.
+
+
+## [Heading2] M4 — Today Run Sheet
+The technician home screen. Opens every morning. Shows all pools for today in route order.
+Header
+Left
+Hamburger menu icon (3 bars, bottom bar shorter)
+Centre
+Date string "Monday 31 March" 16px/600
+Right
+Bell with red dot badge if unread notifications
+Progress strip
+Background
+#EDEDEB (slightly darker than page)
+Content
+"6 of 14 complete" label + full-width progress bar (5px, #111827 fill) + percentage in #111827
+Job cards
+Next up card
+1.5px border rgba(0,0,0,0.10), 18px radius, larger shadow. "NEXT UP" dot + label in #111827. Owner name 17px/700. Address 13px/#6B7280. Start button (dark pill). Flag badge if previous visit had out-of-range readings.
+Pending cards
+1px border rgba(0,0,0,0.07), 16px radius, standard shadow. Owner name 15px/600. Address 13px/#6B7280. Status pill (green "On schedule" or red "Overdue").
+Completed cards
+#EDEDEB background, 14px radius. All text #9CA3AF. Green check circle left. Completion time right. 60% opacity.
+Section divider
+"COMPLETED" label 10px/600 uppercase #9CA3AF above completed cards.
+Behaviour
+Pull to refresh
+Syncs schedule changes from office
+Schedule change toast
+Toast notification when admin updates the run sheet
+Tap any card
+Navigates to M5 Pool Brief
+Start button
+On next-up card only. Navigates to M5 then triggers M6 on Start Job tap.
+
+
+## [Heading2] M5 — Pool Brief
+Pre-arrival context screen. Shown between M4 and M6. Gives the technician everything they need before starting the job.
+Header
+Left
+Back button (32x32, #F3F4F6 background)
+Centre
+Owner name 15px/700 + address 11px/#9CA3AF
+Right
+Timer pill (00:00, grey) — starts counting when job begins
+Content sections (scroll order)
+1. Navigate button
+Full-width white card. Map pin icon. "Navigate to pool" + address. Dark arrow right. Opens native Maps app.
+2. Access notes
+ONLY shown if access notes exist. Amber tint bg (#FFFBEB), amber left border (4px #F59E0B), amber border (#FDE68A). Warning icon + "ACCESS NOTES" label. Gate code, warnings, key location rows.
+3. Pool specs
+Pill chips: volume, surface type, pool type, indoor/outdoor. #F3F4F6 bg.
+4. Equipment
+White card. Pump, filter, chlorinator rows. Key/value layout.
+5. Last 3 visits
+White card. Date + summary + coloured dot per row.
+6. Trend chart
+pH (near-black line) and Chlorine (green line) for last 3 visits. Shaded target zone band.
+Footer
+Start Job button
+Sticky. White background footer (#FFFFFF, never inherit). Full-width dark button. All inline styles. Play icon left. White text explicit.
+No bottom nav
+This is a drill-down screen. Back arrow handles return.
+
+
+## [Heading2] M6 — Active Job (Tab Container)
+Wrapper screen for the active job. Five tabs: Readings, Treatment, Photos, Notes, Complete. The timer runs from the moment Start Job is tapped on M5.
+Header
+Left
+Back button. Tap shows abandon confirmation bottom sheet.
+Centre
+Owner name + address
+Right
+Timer pill with pulsing green dot. Shows elapsed time in HH:MM:SS.
+Tab bar
+Style
+White background, 1px #E5E7EB bottom border. Active: #111827 text + 2px bottom border. Inactive: #9CA3AF.
+Completion dots
+Small green dot (top-right of tab) when that tab has data entered. Shows progress at a glance.
+Icons
+Small icon above label for each tab. Readings: grid, Treatment: flask, Photos: camera, Notes: pencil, Complete: checkmark.
+Sticky CTA
+Label changes per tab
+Readings: "Next — Treatment", Treatment: "Next — Photos", Photos: "Next — Notes", Notes: "Next — Review", Complete: "Mark complete"
+Colour change
+Complete tab: CTA turns green (#22C55E). All other tabs: #111827.
+Implementation
+All inline styles. JS updates background-color on tab switch. White background footer, explicit.
+Abandon confirmation sheet
+Trigger
+Back button tap during active job
+Content
+"Abandon this job?" heading + "Your readings will not be saved" body + Abandon (destructive) + Keep working (primary) buttons.
+
+
+## [Heading2] M7 — Chemical Readings (Tab)
+Reading fields
+Order
+pH, Free chlorine, Total alkalinity, Calcium hardness, Stabiliser / CYA, + Add custom reading link
+Each field
+Coloured dot left (traffic light), label, numeric input (64px wide, large font), target range right
+Out-of-range
+Input border turns red, target range shows "LOW" or "HIGH" in red. Dot turns red.
+Use last readings
+Right-aligned link. Pre-fills all fields from previous visit.
+LSI section (appears after all 5 fields)
+Card
+#FFFBEB background, amber border. "LSI WATER BALANCE" label + large score number + plain English description.
+Score colours
++0.3 to +0.5: red (Scaling). +0.1 to +0.3: amber (Slightly scaling). -0.1 to +0.1: green (Well balanced). -0.3 to -0.1: amber (Slightly corrosive). -0.5 to -0.3: red (Corrosive).
+Recommendations section (appears after LSI)
+Card
+#F0F9FF background, blue border. "RECOMMENDED TREATMENT" label + bulleted chemical recommendations.
+Pre-fills
+Treatment tab is pre-filled from these recommendations when technician navigates to it.
+
+
+## [Heading2] M8 — Treatment Entry (Tab)
+
+Pre-filled rows
+From M7 recommendations. Each row: chemical name, recommended amount, actual amount input, unit.
+Add another
+Text link + plus icon. Opens free-text chemical + quantity.
+Stock preview
+Bottom section: "STOCK AFTER THIS JOB" with remaining amounts. Low stock shown in #F59E0B.
+Stock deduction
+Happens on Mark Complete (M11), not when entering treatment.
+
+
+## [Heading2] M9 — Photo Capture (Tab)
+
+Layout
+2-column grid: Before cell, After cell. Equal size, square aspect ratio.
+Empty state
+Dashed border (#E5E7EB), camera icon, label, "Tap to add" sub.
+Taken state
+#F0FDF4 bg, #BBF7D0 border, green check circle, "Before ✓" label.
+Additional
+"Add additional photo" link below grid.
+All optional
+Helper text: "All photos optional but recommended".
+
+
+## [Heading2] M10 — Job Notes (Tab)
+
+Customer note
+Person icon (#15803D) + "CUSTOMER NOTE" label + "In report" green pill. Textarea. Goes in automated report to pool owner.
+Office note
+Lock icon (#B91C1C) + "OFFICE NOTE" label + "Internal only" red pill. Textarea. Visible to PoolOps web users only, never to pool owner.
+Visual distinction
+The two sections must be clearly differentiated. The "Internal only" label is the last line of defence before a sensitive note reaches a customer.
+
+
+## [Heading2] M11 — Job Complete (Tab)
+
+Summary cards
+Four stacked cards: Readings (all values + traffic dots + LSI), Treatment (chemicals + amounts), Photos (thumbnails or "not taken"), Notes (customer note preview + office note indicator).
+Mark Complete CTA
+Full-width, green (#22C55E), 56px height, checkmark icon. Inline styles.
+Edit link
+"← go back and edit" text link below CTA in #9CA3AF.
+On complete
+Service record saved, automated report sent to pool owner, stock deducted, flagged readings auto-alert to dashboard, job greyed on run sheet, return to M4.
+Lock
+Record is locked after submission. Only PoolOps web users can add notes post-submission.
+
+
+## [Heading2] M13 — Notifications
+Top-level screen accessible from bottom nav. Shows schedule changes, low stock alerts, office messages, and job completion confirmations.
+
+Header
+"Notifications" 20px/700 + "Mark all read" link right.
+Unread cards
+Left border 3px colour-coded: blue (#111827) for schedule/office messages, amber (#F59E0B) for stock alerts. Coloured unread dot top-right.
+Read cards
+No border accent. Slightly muted title.
+Notification types
+Schedule change (calendar icon, blue), Low stock (warning icon, amber), Office message (chat icon, grey), Job flag reviewed (check icon, green).
+Tap
+Routes to relevant screen (schedule, record, etc.).
+
+
+## [Heading2] M14 — Profile & Settings
+Top-level screen. Shows account details and notification preferences.
+
+Hero
+Large avatar (72px, #111827 bg, white initials), full name, role pill ("Technician · Company name").
+Account section
+Personal details (email visible), Change password.
+Notification toggles
+Schedule changes (on), Low stock alerts (on), Office messages (on), SMS for schedule changes (off by default). All interactive.
+App section
+App version display, Check for updates.
+Logout
+Destructive button style (red tint) at bottom. Full width.
+
+
+## [Heading1] 4. Pool Owner Mobile Screens
+The owner app is a passive confidence tool. Pool owners are not technical. All readings are shown with plain-English interpretations. The primary goal of every screen is to give the owner confidence that their pool is being looked after.
+
+## [Heading2] M15 — Owner Home
+Header
+Left
+PoolOps logo (dot + wordmark)
+Right
+Bell (with red dot if unread) + avatar initials circle
+Content
+Greeting block
+"Good morning" in #9CA3AF + owner first name in 22px/700.
+Status hero card
+Dominant element. White card, 20px radius, large shadow. Status indicator dot + label ("Pool is healthy" in #15803D). Pool address top-right. "Your pool looks great" title. Last service / next visit grid (2-col). View service report CTA (dark, full-width). Card border can be amber if readings were flagged.
+Readings strip
+Horizontally scrollable row of reading pills: pH, Chlorine, Alkalinity, LSI. Each pill has a coloured dot + label + value. All green for healthy pool.
+Request a visit
+Full-width secondary button (#F3F4F6 bg, #111827 text, explicit). Plus icon left.
+Service history
+"Service history" section title + "View all" link. Two most recent service cards.
+Navigation
+Bottom nav tabs
+Home (active), History, Request, Notifications, Profile
+Icons
+House, document, plus-circle, bell, person
+
+
+## [Heading2] M16 — Service History
+
+Header
+Back button + "Service History" centred title.
+Filter tabs
+Pills: All (active), This year, Last 3 months. Active pill: #111827 bg, white text.
+Month separators
+"MARCH 2026" label above each month group.
+History cards
+Document icon, date + time, technician name, status mini-pill (green "All readings good" or amber "pH slightly high").
+Flagged card
+Left border 3px #F59E0B on any card with a flagged reading.
+Tap
+Navigates to M17 Service Report Detail.
+
+
+## [Heading2] M17 — Service Report Detail
+Full service record. Written entirely in plain English. No pool jargon that a non-technical owner would not understand.
+
+Header
+Back button + "Service Report" centred title + PDF download icon (right).
+Meta
+Date + technician + address.
+Water readings card
+Each chemical: name, value, coloured dot + "Good" / "Low" / "High" text. Plain English labels — not "ppm" on its own.
+Water balance card
+LSI score large + colour-coded label + plain-English explanation (e.g. "No corrosion or scaling risk. Your pool water is in excellent balance.").
+Treatment card
+Each chemical added in plain English: "Added 400ml liquid chlorine". If nothing added: "No chemicals needed this visit" — not an empty section.
+Photos card
+Before/After thumbnails. If not taken: placeholder cell shown (not hidden).
+Note card
+Technician customer note in italic. Not shown if no note.
+PDF button
+Quiet text link with download icon. Secondary action — not a prominent CTA.
+No bottom nav
+Drill-down screen. Back arrow returns to M16.
+
+
+## [Heading2] M18 — Request a Visit
+
+Header
+Back button + "Request a Visit" centred title.
+Reason grid
+2-column grid of reason tiles. Water issue, Extra routine visit, Event prep, Equipment problem, Other. Selected tile: #111827 border, #F9FAFB bg. Interactive — tap to select.
+Description
+Optional textarea. "Tell us more (optional)" label.
+Photo attach
+Optional. Tap to open camera. Helps technician come prepared.
+CTA
+Sticky footer. "Send request" button. All inline styles. Creates inbox item in W6.
+After submit
+Confirmation state: request sent + estimated response time. Owner receives push notification when visit is confirmed.
+
+
+## [Heading2] M21 — Notifications (Owner)
+
+Header
+"Notifications" title + "Mark all read" link.
+Notification types
+Service complete (green border, checkmark icon), Visit confirmed (dark border, calendar icon), Request received (grey, send icon), Flagged reading alert (amber border, warning icon).
+Copy tone
+Written from owner perspective: "Your pool was serviced" not "Job completed". "Your technician noted pH was slightly high and treated it. No action needed from you." — always reassuring.
+Read state
+No left border, 65% opacity.
+
+
+## [Heading1] 5. Web Dashboard — Admin Portal
+Dark mode by default. Left sidebar navigation. All screens use the same app shell. The dashboard is designed for sustained operational use — it should be comfortable to look at for hours.
+
+## [Heading2] 5.1 App shell
+Sidebar
+Width
+220px fixed
+Background
+#111827
+Logo block
+White droplet mark (28px rounded square) + "PoolOps" wordmark. Border bottom #1F2937.
+Nav items
+Dashboard, Schedule, Inbox (badge), Customers, Records, Team, Settings. 44px height. 10px border-radius. Active: #1F2937 bg, #F9FAFB text.
+User row
+Fixed bottom. Avatar circle + name + company. Hover shows #1F2937 bg.
+Topbar
+Height
+56px. #111827 bg. Sticky.
+Left
+Page title 14px/600 #F9FAFB
+Right
+Date string, divider, bell icon (with red dot), avatar circle
+Content area
+Background
+#0F172A
+Padding
+28px all sides
+Max width
+None — fills available space
+
+
+## [Heading2] W3 — Dashboard Home
+
+Greeting
+"Good morning, [name]" in #6B7280 + "Today's Operations" page title.
+Quick actions
+4 equal-width cards: New job, Add customer, Export records, Create report. Each has an icon in a dark square + label. Last card uses white icon bg to indicate primary action.
+Stat cards
+3-column grid. Active automations, Jobs complete (X/Y), Flagged readings. Each has mini bar graph, large numeral. Flagged count in #EF4444.
+Team progress
+Card with technician rows: avatar, name, progress bar, X/Y count, status pill (On route blue, Done green).
+Flagged readings
+Card with coloured dot rows. Inline Confirm button for booking requests.
+Activity feed
+Full-width card. 2-column grid of recent completions with green check icons.
+
+
+## [Heading2] W4 — Schedule
+Controls bar
+Left
+Prev/next arrows + Today button + date label
+Right
+Day/Week toggle + Add job button (white bg, #111827 text)
+Schedule grid
+Layout
+Technician column (160px) + jobs area (flex). One row per technician.
+Job cards
+Pending: dark blue tint bg, blue border. Complete: dark green tint, faded. Flagged: dark red tint, red border. LSI warning: dark amber tint, amber border.
+Drag and drop
+Cards can be dragged between technician rows to reassign. Drop zone highlights on hover. Run sheets update automatically on reassign.
+Add slot
+Dashed border card at end of each technician row.
+Legend
+Below grid. Explains 4 card states.
+
+
+## [Heading2] W6 — Inbox
+Layout
+Structure
+2-panel: list (340px) left, detail panel right. Clicking a card loads full context on right without page navigation.
+Filter tabs
+All, Booking requests, Flagged readings. Active: white pill.
+Inbox cards
+Booking request
+Blue left border 3px. Type badge, customer name, message preview, last service context.
+Flagged reading
+Amber left border 3px. Reading detail, technician, time.
+Resolved
+No border, reduced opacity.
+Detail panel
+Booking request
+Customer name + address, message (blue quoted block), pool context card (last service + readings), inline Confirm visit form (date/time/technician selectors + Confirm button).
+Confirm action
+Owner notified via push + email. Item removed from inbox. Visit added to technician run sheet.
+
+
+## [Heading2] W7 — Customer List
+Toolbar
+Left
+Search input (live filter), Plan filter dropdown, Technician filter dropdown
+Right
+Export button, Add customer button (white primary)
+Table
+Columns
+Status dot, Name, Location, Plan, Last service (+ inline flag pill if flagged), Technician, Chevron
+Status dot
+8px circle. Green = active + healthy. Amber = flagged reading. Red = overdue / inactive.
+Hover
+Row background transitions to #243447. Cursor pointer.
+Tap
+Navigates to W8 Customer Detail.
+
+
+## [Heading2] W8 — Customer Detail
+Header
+Breadcrumb
+"Customers > Smith, David" in topbar. Parent muted, clickable.
+Page header
+Avatar (initials, 48px rounded square) + name 20px/700 + status pill + action buttons (Compliance PDF, Add note, Edit).
+Tabs
+Overview
+2-column: contact details card + pool summary card. Recent services list below.
+Pool
+Full pool profile: volume, type, surface, equipment, access notes.
+Service history
+Full chronological list. All service records for this customer.
+Billing
+v2 placeholder tab.
+Service history rows
+Colour dot
+Green = good, amber = warning, red = flagged.
+Status pill
+Good / Warning / Flagged right-aligned.
+Tap
+Navigates to W13 Service Record Detail.
+
+
+## [Heading2] W10 — Add / Edit Customer
+Layout
+Structure
+Centred, max-width 720px. Five collapsible form sections.
+Sections
+Contact details, Pool details, Access notes, Service plan, Chemical products.
+Section cards
+Each section is a dark card with icon + title + subtitle in header. Form fields inside.
+Special fields
+Warnings field
+Amber-tinted input with warning icon left. Signals the operational weight of this data to the admin.
+Chemical products
+Inline-editable list. Each row: product name (editable), unit dropdown, Remove button. "Add chemical" link below.
+Pool volume
+Required field. Hint text: "Used for all dosage calculations".
+Footer (sticky)
+Actions
+Cancel + Save + Save & invite owner
+Save & invite owner
+Dark button. Sends email invitation for pool owner to download app. Creates portal account.
+
+
+## [Heading2] W12 — Service Record List
+
+Toolbar
+Search, technician filter, date filter, Flagged only toggle, Export CSV button.
+Flagged toggle
+Interactive. When on: red-tinted bg and border, red dot. Cannot be missed.
+Table columns
+Date, Customer, Technician, pH (with dot), Chlorine (with dot), LSI (with dot), Status pill, Chevron.
+Reading dots
+Inline coloured dot beside each value. Fastest possible scan for problems.
+Default sort
+Date descending (most recent first).
+Tap row
+Navigates to W13 Service Record Detail.
+
+
+## [Heading2] W13 — Service Record Detail
+Layout
+Structure
+2-column: full record left (wider), contextual panel right (380px).
+Breadcrumb
+"Records > Smith, David · 31 Mar 9:42am".
+Left column
+Readings card
+Table: chemical, reading value, target range, traffic dot + status text. "1 out of range" pill in header.
+LSI card
+Large score + plain English label + explanation sentence.
+Treatment card
+Each chemical: green check circle + name + amount added.
+Photos card
+Before/After grid. "Not taken" state renders as dark greyed placeholder, not empty space.
+Notes card
+Customer note (blue left border, italic). Office note (red-tinted left border, "Internal only" red label).
+Right column
+Flag alert (if flagged)
+First element. Red tinted card, flag icon, reading detail, auto-alert timestamp.
+Job details card
+Date, time, duration, technician, pool volume, record ID (monospace).
+Stock used card
+Chemicals + amounts. Low stock shown in amber.
+Edit office note button
+Dark outline button. Business owner can add/edit the office note post-submission.
+
+
+## [Heading2] W14 — Technician List
+Summary strip
+Layout
+4-column stat strip: On route count, Done count, Jobs complete (X/Y), Flagged today.
+Technician cards (3-column grid)
+Header
+Colour-coded avatar (each tech gets a consistent colour: blue, purple, green) + name + role + live status + flag badge if flagged today.
+Progress bar
+Matches avatar colour. X / Y jobs count.
+Stats row
+Total jobs, Flags this month, Average time per pool. 3-column grid.
+Current job
+Coloured dot + customer name + address + time since start. Done state shows last job.
+Actions
+Edit button + Message button top-right of card.
+Done state
+Card at 85% opacity. Progress bar full green.
+Colour consistency
+Each technician's colour is used consistently across W14, W4 Schedule, and W3 progress bars. Build system to assign and persist these.
+
+
+## [Heading2] W16 — Add / Edit Technician
+
+Live preview
+Card at top of form showing avatar initials and display name. Updates in real time as name is typed.
+Role selector
+2-card grid: Technician, Admin. Each card shows title + description of permissions. Selected card: white border.
+Notification toggles
+Schedule changes (on), Low stock (on), Office messages (on), SMS (off).
+Footer
+Single CTA: "Save & send invitation". Sends email invite to download app.
+
+
+## [Heading2] W26 — Company Settings
+Layout
+Structure
+Settings sub-navigation (200px, sticky left) + content area right.
+Sub-nav sections
+Company: Company profile, Chemicals, Target ranges, Report branding. Account: User management, Notifications, Billing & subscription.
+Company profile
+Fields
+Company name, phone, email, address, logo upload.
+Logo upload
+Dashed border drag-and-drop area. PNG or SVG, max 2MB.
+Chemical products
+Inline editing
+All fields editable directly in table. Product name, unit dropdown (ml/L/g/kg), stock alert threshold.
+Purpose
+Populates treatment entry dropdown in M8. Must be configured before technicians can log treatments.
+Add / remove
+"Add chemical product" text button below table. X button on each row.
+Target ranges
+Fields
+Min/max inputs for pH, Free chlorine, Total alkalinity, Calcium hardness, Stabiliser / CYA.
+Purpose
+Used for traffic light indicators and LSI calculations across all pools by default.
+v2
+Per-pool overrides deferred to v2.
+Report branding toggles
+Options
+Company logo on PDFs (on), Include technician name (on), Include chemical dosage details (off by default), Include LSI score (on).
+Billing card
+Content
+Current plan badge, plan name, feature summary, next billing date, price.
+Actions
+Manage billing (links to Stripe), Upgrade plan.
+Sticky save footer
+Content
+Hint: "Changes are saved per section" + Discard changes + Save changes buttons.
+
+
+## [Heading1] 6. Key Flows & Interactions
+
+## [Heading2] 6.1 Technician completes a service job
+Flow
+Step 1
+M2 Login → role detected → M4 Run Sheet
+Step 2
+Tap job card → M5 Pool Brief. Review access notes, pool specs, last readings.
+Step 3
+Tap Navigate → native Maps opens. Return to app.
+Step 4
+Tap Start Job → M6 Active Job. Timer starts.
+Step 5
+M7 Enter readings → traffic lights update live → LSI and recommendations appear.
+Step 6
+M8 Confirm treatment → adjust quantities if needed.
+Step 7
+M9 Capture before/after photos (optional).
+Step 8
+M10 Add customer note (visible to owner) and office note (internal).
+Step 9
+M11 Review summary → tap Mark Complete.
+On complete
+Record saved, report sent to owner, stock deducted, flags auto-sent to W3, return to M4 with job greyed.
+Edge cases
+No internet
+Data saved locally. Syncs when connection restored.
+Extreme readings
+Red reading triggers auto-alert to W6 Inbox on job completion.
+Abandon job
+Back button → confirmation sheet → data not saved, return to M4.
+
+
+## [Heading2] 6.2 Admin handles booking request
+Flow
+Owner submits
+M18 → creates item in W6 Inbox. Owner sees confirmation.
+Admin sees
+W6 Inbox badge increments. Item appears in list with blue left border.
+Admin opens
+Detail panel shows message, photo, pool context (last service + readings).
+Admin confirms
+Selects date, time, technician. Taps Confirm.
+On confirm
+Owner push notification sent. Visit added to technician run sheet. Item removed from inbox.
+
+
+## [Heading2] 6.3 Admin onboards new customer
+Flow
+Step 1
+W7 Customer List → Add customer button → W10 form.
+Step 2
+Fill contact, pool, access, service plan, chemicals.
+Step 3
+Tap "Save & invite owner" → owner receives email invitation.
+Step 4
+Pool automatically added to assigned technician route on next scheduled day.
+Owner onboarding
+Owner clicks email link, sets password, gains access to M15 Owner Home.
+
+
+## [Heading2] 6.4 LSI water balance
+The Langelier Saturation Index is the single most important differentiator from generic tools. It must be calculated and displayed correctly in v1.
+Display locations
+M7 Readings tab
+Appears after all 5 readings entered. Score + colour-coded label + plain English.
+M11 Job Complete
+Shown in readings summary card.
+M17 Owner Report
+Shown in Water Balance section with full plain-English explanation.
+W13 Record Detail
+Shown in LSI card. Score + label + explanation.
+Scale
++0.3 to +0.5
+#EF4444 — Scaling — may cause calcium deposits
++0.1 to +0.3
+#F59E0B — Slightly scaling
+-0.1 to +0.1
+#22C55E — Well balanced
+-0.3 to -0.1
+#F59E0B — Slightly corrosive
+-0.5 to -0.3
+#EF4444 — Corrosive — may damage surfaces
+
+
+## [Heading1] 7. Implementation Rules
+
+## [Heading2] 7.1 Buttons and CTAs
+Never use CSS class inheritance for button text colour or background. Always set inline.
+Use div elements for sticky CTAs, not button elements, to avoid browser default style conflicts.
+All sticky footers must have explicit background-color: #ffffff (light) or #0F172A (dark). Never transparent or inherited.
+Primary CTA icon SVG stroke must be set to #ffffff explicitly on the SVG attribute.
+Test every button in the browser without hover to verify colour is correct at rest.
+
+
+## [Heading2] 7.2 Mobile screens
+All phone frames use border-radius: 50px with overflow: hidden.
+Dynamic island: 120px wide, 34px tall, #111827, border-radius: 20px. Always centred.
+Home pill: 120px wide, 4px tall, #111827. Always on white background below nav.
+Status bar icons always rendered as inline SVG, never as images.
+Bottom nav height: 10px top padding + icon area (32px) + 14px bottom padding. White background.
+Safe area: home pill area provides bottom safe area buffer. Do not pad separately.
+
+
+## [Heading2] 7.3 Colour rules
+Never use Pool Blue (#0EA5E9) as a primary action colour on mobile. Use #111827.
+Pool Blue is used only for: links, active tab underlines, selected states, connection status pills.
+Traffic light indicators always paired with text. Never colour alone.
+Amber access notes card: background #FFFBEB, left border 4px #F59E0B, border #FDE68A.
+Customer note / office note are visually distinct. Customer = blue-tinted border. Office = red-tinted.
+
+
+## [Heading2] 7.4 Web dashboard
+Sidebar is position: fixed, not sticky. Main content has margin-left: 220px.
+Topbar is position: sticky, top: 0, z-index: 10.
+Dark mode translucent colour fills for pills (rgba not solid hex) to sit naturally on dark surfaces.
+Table rows: hover background #243447. Cursor pointer on clickable rows.
+Breadcrumb in topbar on all drill-down screens.
+Forms max-width: 720px (add/edit customer), 520px (add/edit technician). Left-aligned, not centred.
+
+
+## [Heading2] 7.5 Navigation rules
+Bottom nav hidden on all drill-down screens. Back arrow in header handles return.
+Sticky CTA and bottom nav never coexist. CTA owns the bottom of drill-down screens.
+Active job (M6) back button shows abandon confirmation, never immediately navigates.
+Web breadcrumbs: parent is clickable and muted (#64748B). Separator is ›. Current page is white.
+
+
+## [Heading2] 7.6 Data and state
+Pool owner never sees office notes. This must be enforced at the API level, not just UI.
+Service records are locked after submission. Web users can only add/edit office notes post-lock.
+Stock deduction happens on Mark Complete, not when treatment amounts are entered.
+Flagged readings trigger auto-alerts on job completion. Inbox badge increments, dashboard updates.
+Schedule changes made by admin auto-push to technician run sheet with toast notification.
+
+
+## [Heading2] 7.7 File reference
+All screens have been designed as HTML files. Use these as the primary visual reference during build.
+HTML files
+poolops-m2-login.html
+M2 Login
+poolops-m4-run-sheet.html
+M4 Today Run Sheet
+poolops-m5-pool-brief.html
+M5 Pool Brief (v3)
+poolops-m6-active-job.html
+M6 Active Job (all 5 tabs, interactive)
+poolops-m13-m14.html
+M13 Notifications + M14 Profile
+poolops-owner-screens.html
+M15 + M16 + M17 + M18 + M21 (switcher)
+poolops-w3-dashboard-dark.html
+W3 Dashboard Home (dark mode)
+poolops-w4-schedule.html
+W4 Schedule
+poolops-w6-w7-w8.html
+W6 Inbox + W7 Customer List + W8 Customer Detail (switcher)
+poolops-w10-w16.html
+W10 Add Customer + W16 Add Technician (switcher)
+poolops-w12-w13.html
+W12 Record List + W13 Record Detail (switcher)
+poolops-w14-team.html
+W14 Technician List
+poolops-w26-settings.html
+W26 Company Settings
+PoolOps-Design-System.docx
+Full design system including Section 10: Velix visual direction
+
+PoolOps Master UI Specification · Version 1.0 · April 2026 · MVP Scope · Confidential

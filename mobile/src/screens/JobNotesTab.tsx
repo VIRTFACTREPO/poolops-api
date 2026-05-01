@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.07)',
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
     overflow: 'hidden',
   },
   noteHeader: {

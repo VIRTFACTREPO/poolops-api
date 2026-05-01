@@ -98,7 +98,15 @@ export function RunSheetScreen({ onPullRefresh }: RunSheetScreenProps) {
     try {
       const response = await getApiClient().get<{ ok: boolean; data: ApiJob[] }>('/technician/jobs');
       const mapped = (response.data ?? []).map((j, i) => mapApiJob(j, i));
-      setJobs(applyLocalCompleted(mapped));
+      let seenNextUp = false;
+      const deduped = mapped.map((job) => {
+        if (job.status === 'next-up') {
+          if (seenNextUp) return { ...job, status: 'pending-on-schedule' as const };
+          seenNextUp = true;
+        }
+        return job;
+      });
+      setJobs(applyLocalCompleted(deduped));
     } catch (err) {
       console.error('Failed to fetch jobs:', err);
     } finally {
@@ -339,7 +347,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   header: {
-    padding: spacing.base * 0.75,
+    padding: 12,
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -434,8 +442,8 @@ const styles = StyleSheet.create({
   // NEXT UP Card
   cardNext: {
     backgroundColor: '#ffffff',
-    borderRadius: borderRadius['3xl'],
-    padding: spacing.base,
+    borderRadius: borderRadius.xxxl,
+    padding: spacing.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,

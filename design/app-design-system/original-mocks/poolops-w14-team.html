@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — W14 Technician List</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0F172A; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; display: flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { width: 220px; min-width: 220px; background: #111827; border-right: 1px solid #1F2937; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; bottom: 0; }
+  .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid #1F2937; display: flex; align-items: center; gap: 8px; }
+  .logo-mark { width: 28px; height: 28px; background: #F5F5F3; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-text { font-size: 15px; font-weight: 700; color: #F9FAFB; }
+  .nav { padding: 12px 10px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; margin-bottom: 2px; cursor: pointer; font-size: 13px; font-weight: 500; color: #6B7280; transition: background 0.15s, color 0.15s; }
+  .nav-item:hover { background: #1F2937; color: #D1D5DB; }
+  .nav-item.active { background: #1F2937; color: #F9FAFB; }
+  .nav-badge { margin-left: auto; background: #EF4444; color: #fff; font-size: 10px; font-weight: 600; border-radius: 10px; padding: 1px 6px; }
+  .sidebar-footer { padding: 16px 10px; border-top: 1px solid #1F2937; }
+  .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+  .user-row:hover { background: #1F2937; }
+  .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; flex-shrink: 0; }
+  .user-name { font-size: 12px; font-weight: 600; color: #D1D5DB; }
+  .user-role { font-size: 10px; color: #6B7280; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; margin-left: 220px; display: flex; flex-direction: column; }
+  .topbar { height: 56px; background: #111827; border-bottom: 1px solid #1F2937; display: flex; align-items: center; padding: 0 28px; gap: 16px; position: sticky; top: 0; z-index: 10; }
+  .topbar-title { font-size: 14px; font-weight: 600; color: #F9FAFB; flex: 1; }
+  .topbar-date { font-size: 12px; color: #6B7280; }
+  .topbar-div { width: 1px; height: 20px; background: #374151; }
+  .topbar-bell { position: relative; cursor: pointer; }
+  .topbar-bell-dot { position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; background: #EF4444; border-radius: 50%; border: 1.5px solid #111827; }
+  .topbar-av { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; }
+  .content { padding: 28px; flex: 1; }
+
+  /* ── PAGE HEADER ── */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .page-title { font-size: 20px; font-weight: 700; color: #F9FAFB; letter-spacing: -0.3px; }
+  .page-sub { font-size: 13px; color: #64748B; margin-top: 3px; }
+  .btn-primary { background: #F9FAFB; color: #111827; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; display: flex; align-items: center; gap: 6px; }
+  .btn-secondary { background: #1E293B; color: #94A3B8; border: 1px solid #334155; border-radius: 8px; padding: 9px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; }
+
+  /* ── SUMMARY STRIP ── */
+  .summary-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .summary-card { background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 16px 18px; }
+  .sc-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; margin-bottom: 6px; }
+  .sc-value { font-size: 24px; font-weight: 700; color: #F9FAFB; letter-spacing: -0.4px; }
+  .sc-sub { font-size: 11px; color: #64748B; margin-top: 3px; }
+
+  /* ── TECH CARDS GRID ── */
+  .tech-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  .tech-card { background: #1E293B; border: 1px solid #334155; border-radius: 16px; overflow: hidden; transition: border-color 0.15s; cursor: pointer; }
+  .tech-card:hover { border-color: #4B5563; }
+
+  /* Card header */
+  .tc-header { padding: 20px 20px 16px; display: flex; align-items: flex-start; gap: 14px; border-bottom: 1px solid #1F2937; }
+  .tc-avatar { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
+  .tc-av-blue { background: #1E3A5C; color: #60A5FA; }
+  .tc-av-green { background: rgba(34,197,94,0.1); color: #4ADE80; }
+  .tc-av-purple { background: rgba(167,139,250,0.1); color: #A78BFA; }
+  .tc-info { flex: 1; }
+  .tc-name { font-size: 15px; font-weight: 700; color: #F9FAFB; }
+  .tc-role { font-size: 11px; color: #64748B; margin-top: 2px; }
+  .tc-status { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
+  .tc-status-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .tc-status-text { font-size: 11px; font-weight: 600; }
+  .status-on-route { color: #38BDF8; }
+  .status-done { color: #4ADE80; }
+  .status-off { color: #475569; }
+  .tc-actions { display: flex; gap: 6px; }
+  .tc-action-btn { width: 30px; height: 30px; border-radius: 8px; background: #0F172A; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #64748B; transition: all 0.15s; }
+  .tc-action-btn:hover { background: #334155; color: #94A3B8; }
+
+  /* Progress section */
+  .tc-progress { padding: 14px 20px; border-bottom: 1px solid #1F2937; }
+  .tc-prog-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .tc-prog-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; }
+  .tc-prog-count { font-size: 13px; font-weight: 700; color: #F9FAFB; }
+  .tc-prog-track { height: 6px; background: #334155; border-radius: 99px; overflow: hidden; }
+  .tc-prog-fill { height: 100%; border-radius: 99px; }
+
+  /* Stats grid */
+  .tc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid #1F2937; }
+  .tc-stat { padding: 12px 16px; text-align: center; border-right: 1px solid #1F2937; }
+  .tc-stat:last-child { border-right: none; }
+  .tc-stat-val { font-size: 16px; font-weight: 700; color: #F9FAFB; }
+  .tc-stat-label { font-size: 10px; color: #64748B; margin-top: 2px; }
+
+  /* Current job */
+  .tc-current { padding: 12px 20px; }
+  .tc-current-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; margin-bottom: 6px; }
+  .tc-current-job { display: flex; align-items: center; gap: 10px; }
+  .tc-job-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .tc-job-name { font-size: 13px; font-weight: 600; color: #D1D5DB; flex: 1; }
+  .tc-job-addr { font-size: 11px; color: #64748B; }
+  .tc-job-time { font-size: 11px; color: #64748B; }
+  .tc-no-job { font-size: 12px; color: #475569; font-style: italic; }
+
+  /* Pills */
+  .pill { font-size: 10px; font-weight: 600; border-radius: 20px; padding: 3px 9px; }
+  .pill-blue { background: rgba(56,189,248,0.12); color: #38BDF8; }
+  .pill-green { background: rgba(74,222,128,0.1); color: #4ADE80; }
+  .pill-grey { background: #1F2937; color: #64748B; border: 1px solid #334155; }
+  .pill-amber { background: rgba(245,158,11,0.12); color: #FCD34D; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <svg width="16" height="16" viewBox="0 0 32 32" fill="none">
+        <path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/>
+        <path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/>
+      </svg>
+    </div>
+    <span class="logo-text">PoolOps</span>
+  </div>
+  <div class="nav">
+    <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+    <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+    <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+    <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+    <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+    <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+    <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="user-avatar">SJ</div>
+      <div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">Team</div>
+    <div class="topbar-date">Monday, 31 March</div>
+    <div class="topbar-div"></div>
+    <div class="topbar-bell">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+      <div class="topbar-bell-dot"></div>
+    </div>
+    <div class="topbar-av">SJ</div>
+  </div>
+
+  <div class="content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <div>
+        <div class="page-title">Team</div>
+        <div class="page-sub">3 active technicians · 23 jobs complete today</div>
+      </div>
+      <button class="btn-primary">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add technician
+      </button>
+    </div>
+
+    <!-- Summary strip -->
+    <div class="summary-strip">
+      <div class="summary-card">
+        <div class="sc-label">On route</div>
+        <div class="sc-value">2</div>
+        <div class="sc-sub">James T. · Mike R.</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label">Done for day</div>
+        <div class="sc-value" style="color:#4ADE80;">1</div>
+        <div class="sc-sub">Sarah K. · 10/10 complete</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label">Jobs complete</div>
+        <div class="sc-value">23 <span style="font-size:14px;font-weight:400;color:#64748B;">/ 30</span></div>
+        <div class="sc-sub">77% of today's route done</div>
+      </div>
+      <div class="summary-card">
+        <div class="sc-label">Flagged today</div>
+        <div class="sc-value" style="color:#F87171;">2</div>
+        <div class="sc-sub">Smith · Chen — reviewed</div>
+      </div>
+    </div>
+
+    <!-- Tech cards -->
+    <div class="tech-grid">
+
+      <!-- James T. — on route -->
+      <div class="tech-card">
+        <div class="tc-header">
+          <div class="tc-avatar tc-av-blue">JT</div>
+          <div class="tc-info">
+            <div class="tc-name">James Thompson</div>
+            <div class="tc-role">Technician</div>
+            <div class="tc-status">
+              <div class="tc-status-dot" style="background:#38BDF8;"></div>
+              <span class="tc-status-text status-on-route">On route</span>
+            </div>
+          </div>
+          <div class="tc-actions">
+            <div class="tc-action-btn" title="Edit">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <div class="tc-action-btn" title="Message">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="tc-progress">
+          <div class="tc-prog-header">
+            <span class="tc-prog-label">Today's progress</span>
+            <span class="tc-prog-count">8 / 10</span>
+          </div>
+          <div class="tc-prog-track">
+            <div class="tc-prog-fill" style="width:80%;background:#38BDF8;"></div>
+          </div>
+        </div>
+        <div class="tc-stats">
+          <div class="tc-stat">
+            <div class="tc-stat-val">284</div>
+            <div class="tc-stat-label">Jobs total</div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-val" style="color:#FCD34D;">3</div>
+            <div class="tc-stat-label">Flags this month</div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-val">22m</div>
+            <div class="tc-stat-label">Avg per pool</div>
+          </div>
+        </div>
+        <div class="tc-current">
+          <div class="tc-current-label">Current job</div>
+          <div class="tc-current-job">
+            <div class="tc-job-dot" style="background:#38BDF8;"></div>
+            <div>
+              <div class="tc-job-name">Johnson, Anne</div>
+              <div class="tc-job-addr">47 Epsom Ave · Epsom</div>
+            </div>
+            <div class="tc-job-time">Since 11:14am</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mike R. — on route, has flag -->
+      <div class="tech-card">
+        <div class="tc-header">
+          <div class="tc-avatar tc-av-purple">MR</div>
+          <div class="tc-info">
+            <div class="tc-name">Mike Robertson</div>
+            <div class="tc-role">Technician</div>
+            <div class="tc-status">
+              <div class="tc-status-dot" style="background:#38BDF8;"></div>
+              <span class="tc-status-text status-on-route">On route</span>
+              <span class="pill pill-amber" style="margin-left:4px;">1 flag today</span>
+            </div>
+          </div>
+          <div class="tc-actions">
+            <div class="tc-action-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <div class="tc-action-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="tc-progress">
+          <div class="tc-prog-header">
+            <span class="tc-prog-label">Today's progress</span>
+            <span class="tc-prog-count">5 / 10</span>
+          </div>
+          <div class="tc-prog-track">
+            <div class="tc-prog-fill" style="width:50%;background:#A78BFA;"></div>
+          </div>
+        </div>
+        <div class="tc-stats">
+          <div class="tc-stat">
+            <div class="tc-stat-val">198</div>
+            <div class="tc-stat-label">Jobs total</div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-val" style="color:#FCD34D;">5</div>
+            <div class="tc-stat-label">Flags this month</div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-val">26m</div>
+            <div class="tc-stat-label">Avg per pool</div>
+          </div>
+        </div>
+        <div class="tc-current">
+          <div class="tc-current-label">Current job</div>
+          <div class="tc-current-job">
+            <div class="tc-job-dot" style="background:#A78BFA;"></div>
+            <div>
+              <div class="tc-job-name">Gray, Tom</div>
+              <div class="tc-job-addr">14 Sandringham Rd · Sandringham</div>
+            </div>
+            <div class="tc-job-time">Since 11:32am</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sarah K. — done -->
+      <div class="tech-card" style="opacity:0.85;">
+        <div class="tc-header">
+          <div class="tc-avatar tc-av-green">SK</div>
+          <div class="tc-info">
+            <div class="tc-name">Sarah Kimura</div>
+            <div class="tc-role">Technician</div>
+            <div class="tc-status">
+              <div class="tc-status-dot" style="background:#4ADE80;"></div>
+              <span class="tc-status-text status-done">Done for the day</span>
+            </div>
+          </div>
+          <div class="tc-actions">
+            <div class="tc-action-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </div>
+            <div class="tc-action-btn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="tc-progress">
+          <div class="tc-prog-header">
+            <span class="tc-prog-label">Today's progress</span>
+            <span class="tc-prog-count" style="color:#4ADE80;">10 / 10 ✓</span>
+          </div>
+          <div class="tc-prog-track">
+            <div class="tc-prog-fill" style="width:100%;background:#22C55E;"></div>
+          </div>
+        </div>
+        <div class="tc-stats">
+          <div class="tc-stat">
+            <div class="tc-stat-val">312</div>
+            <div class="tc-stat-label">Jobs total</div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-val" style="color:#4ADE80;">1</div>
+            <div class="tc-stat-label">Flags this month</div>
+          </div>
+          <div class="tc-stat">
+            <div class="tc-stat-val">19m</div>
+            <div class="tc-stat-label">Avg per pool</div>
+          </div>
+        </div>
+        <div class="tc-current">
+          <div class="tc-current-label">Last job</div>
+          <div class="tc-current-job">
+            <div class="tc-job-dot" style="background:#4ADE80;"></div>
+            <div>
+              <div class="tc-job-name">Scott, Brian</div>
+              <div class="tc-job-addr">4 Remuera Rd · Remuera</div>
+            </div>
+            <div class="tc-job-time">Done 10:52am</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

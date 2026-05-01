@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PoolOps · Admin Web UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #F5F5F3; font-family: Inter, system-ui, sans-serif; min-height: 100vh; }
+  #root { display: flex; min-height: 100vh; }
+  .main { flex: 1; min-width: 0; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="Components.jsx"></script>
+<script type="text/babel" src="screens/W3Dashboard.jsx"></script>
+<script type="text/babel" src="screens/W4Schedule.jsx"></script>
+<script type="text/babel" src="screens/W14Team.jsx"></script>
+
+<script type="text/babel">
+function App() {
+  const [nav, setNav] = React.useState('dashboard');
+
+  const screens = {
+    dashboard: { el: <W3Dashboard />, title: 'Dashboard', sub: 'Thursday 14 November · Auckland HQ', screenLabel: 'W3 Dashboard' },
+    schedule:  { el: <W4Schedule />,  title: 'Schedule',  sub: 'Manage weekly routes and assignments', screenLabel: 'W4 Schedule' },
+    team:      { el: <W14Team />,     title: 'Team',      sub: 'Technicians, load, and ratings',        screenLabel: 'W14 Team' },
+    pools: null, customers: null, billing: null, reports: null, settings: null,
+  };
+  const active = screens[nav] || { el: <Placeholder label={nav} />, title: nav[0].toUpperCase() + nav.slice(1), sub: 'Not in kit — stub', screenLabel: nav };
+
+  return (
+    <>
+      <Sidebar active={nav} onNav={setNav} />
+      <div className="main" data-screen-label={active.screenLabel}>
+        <TopBar title={active.title} subtitle={active.sub} right={
+          <div style={{ background: '#111827', color: '#fff', borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 600 }}>+ New visit</div>
+        } />
+        {active.el}
+      </div>
+    </>
+  );
+}
+
+function Placeholder({ label }) {
+  return (
+    <div style={{ padding: 80, textAlign: 'center', color: '#9CA3AF' }}>
+      <div style={{ fontSize: 15, fontWeight: 500, color: '#6B7280' }}>{label} view</div>
+      <div style={{ fontSize: 13, marginTop: 4 }}>Not implemented in this kit — see README.</div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

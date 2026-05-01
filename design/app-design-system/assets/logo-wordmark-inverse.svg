@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 44" width="200" height="44" role="img" aria-label="PoolOps">
+  <rect x="0" y="2" width="40" height="40" rx="12" fill="#F5F5F3"></rect>
+  <g transform="translate(4 6)" fill="#111827">
+    <path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" opacity="0.92"></path>
+    <path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" opacity="0.42"></path>
+  </g>
+  <text x="52" y="30" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="700" fill="#F5F5F3" letter-spacing="-0.5">PoolOps</text>
+</svg>

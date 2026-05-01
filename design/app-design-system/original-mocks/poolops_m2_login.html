@@ -1,0 +1,110 @@
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  .wrap { background: #E2E4E8; padding: 32px 16px 48px; display: flex; justify-content: center; font-family: 'Inter', system-ui, sans-serif; }
+  .phone { width: 375px; background: #F5F5F3; border-radius: 50px; box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10); overflow: hidden; }
+  .status-bar { background: #F5F5F3; padding: 14px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+  .time { font-size: 15px; font-weight: 600; color: #111827; }
+  .di-wrap { background: #F5F5F3; padding: 6px 0; display: flex; justify-content: center; }
+  .di { width: 120px; height: 34px; background: #111827; border-radius: 20px; }
+
+  .body { padding: 24px 28px 48px; display: flex; flex-direction: column; min-height: 680px; }
+
+  /* Logo block */
+  .logo-block { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px 0 40px; }
+  .logo-mark { width: 64px; height: 64px; background: #111827; border-radius: 20px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+  .logo-name { font-size: 26px; font-weight: 700; color: #111827; letter-spacing: -0.5px; }
+  .logo-tag { font-size: 13px; color: #9CA3AF; font-weight: 400; margin-top: 4px; }
+
+  /* Form */
+  .form-block { display: flex; flex-direction: column; gap: 12px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-label { font-size: 12px; font-weight: 600; color: #374151; letter-spacing: 0.2px; }
+  .input-field { background: #fff; border: 1.5px solid #E5E7EB; border-radius: 12px; padding: 14px 16px; font-size: 15px; color: #111827; font-family: 'Inter', system-ui, sans-serif; outline: none; width: 100%; }
+  .input-field::placeholder { color: #9CA3AF; }
+  .input-field.focus { border-color: #111827; }
+  .input-row { position: relative; }
+  .eye-btn { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; color: #9CA3AF; }
+
+  .login-btn { width: 100%; background-color: #111827; color: #ffffff; border: none; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 4px; font-family: 'Inter', system-ui, sans-serif; }
+
+  .forgot { text-align: center; font-size: 13px; color: #6B7280; margin-top: 16px; cursor: pointer; }
+  .forgot span { color: #111827; font-weight: 500; }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 24px 0 0; }
+  .div-line { flex: 1; height: 1px; background: #E5E7EB; }
+  .div-text { font-size: 11px; color: #9CA3AF; white-space: nowrap; }
+
+  .footer-note { text-align: center; font-size: 12px; color: #9CA3AF; margin-top: 20px; line-height: 1.5; }
+
+  .home-pill { width: 120px; height: 4px; background: #111827; border-radius: 99px; margin: 24px auto 16px; }
+</style>
+
+<div class="wrap">
+<div class="phone">
+
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+      <svg width="15" height="11" viewBox="0 0 20 14" fill="#111827"><path d="M10 3C13 3 15.7 4.2 17.6 6.2L19 4.8C16.7 2.4 13.5 1 10 1S3.3 2.4 1 4.8L2.4 6.2C4.3 4.2 7 3 10 3Z" opacity="0.3"/><path d="M10 6C12.2 6 14.2 6.9 15.6 8.4L17 7C15.2 5.1 12.7 4 10 4S4.8 5.1 3 7L4.4 8.4C5.8 6.9 7.8 6 10 6Z" opacity="0.6"/><path d="M10 9C11.4 9 12.7 9.6 13.6 10.5L15 9.1C13.7 7.8 12 7 10 7S6.3 7.8 5 9.1L6.4 10.5C7.3 9.6 8.6 9 10 9Z"/><circle cx="10" cy="13" r="1.5"/></svg>
+      <svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg>
+    </div>
+  </div>
+  <div class="di-wrap"><div class="di"></div></div>
+
+  <div class="body">
+
+    <!-- Logo -->
+    <div class="logo-block">
+      <div class="logo-mark">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="white" opacity="0.9"/>
+          <path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="white" opacity="0.4"/>
+        </svg>
+      </div>
+      <div class="logo-name">PoolOps</div>
+      <div class="logo-tag">Pool smarter. Always.</div>
+    </div>
+
+    <!-- Form -->
+    <div class="form-block">
+      <div class="input-group">
+        <div class="input-label">Email address</div>
+        <div class="input-row">
+          <input class="input-field" type="email" placeholder="james@poolpro.co.nz" />
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Password</div>
+        <div class="input-row">
+          <input class="input-field" type="password" placeholder="••••••••" style="padding-right:44px;" />
+          <button class="eye-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <button class="login-btn">Log in</button>
+
+      <div class="forgot">Forgot password? <span>Reset it</span></div>
+
+      <div class="divider">
+        <div class="div-line"></div>
+        <div class="div-text">New pool owner?</div>
+        <div class="div-line"></div>
+      </div>
+
+      <div class="footer-note">
+        Wait for an invite from your pool company.<br>
+        Your account will be set up automatically.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="home-pill"></div>
+
+</div>
+</div>

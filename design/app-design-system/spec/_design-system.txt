@@ -1,0 +1,514 @@
+PoolOps
+Design System
+
+The visual language for PoolOps. All UI components derive from this. Charlie builds from these specs directly.
+Created 31 Mar 2026 · Updated 15 Apr 2026
+
+
+## [Heading1] 1. Brand Personality
+Professional, trustworthy, outdoors. Not a startup toy — a serious operational tool that pool technicians and business owners rely on daily. Clean and functional. Water and clarity as visual metaphors.
+
+
+## [Heading1] 2. Colour Palette
+
+## [Heading2] Primary
+
+
+#0EA5E9
+Pool Blue
+Primary actions, links, active states
+
+
+#0369A1
+Deep Blue
+Hover states, pressed buttons
+
+
+#E0F2FE
+Light Blue
+Backgrounds, highlights, selected states
+
+
+## [Heading2] Status Colours
+
+
+#22C55E
+Green (Good)
+Readings in range, healthy status, complete
+
+
+#F59E0B
+Amber (Caution)
+Slightly out of range, monitor, warnings
+
+
+#EF4444
+Red (Action)
+Out of range, urgent, flagged
+
+
+#6B7280
+Grey (Neutral)
+Done/inactive, secondary info
+
+
+## [Heading2] Neutral Scale
+
+
+#FFFFFF
+White
+Card backgrounds
+
+
+#F9FAFB
+Off-White
+Page backgrounds
+
+
+#F3F4F6
+Light Grey
+Input backgrounds
+
+
+#E5E7EB
+Border Grey
+Borders, dividers
+
+
+#9CA3AF
+Placeholder
+Placeholder text, disabled
+
+
+#6B7280
+Secondary Text
+Secondary information
+
+
+#374151
+Body Text
+Body copy
+
+
+#111827
+Heading
+Headings, primary text
+
+
+## [Heading2] Dark Mode (Web Dashboard)
+The web dashboard uses dark backgrounds by default for reduced eye strain during long operational use.
+
+
+#0F172A
+Page Background
+#0F172A
+
+
+#1E293B
+Card Background
+#1E293B
+
+
+#334155
+Border
+#334155
+
+
+#F1F5F9
+Primary Text
+#F1F5F9
+
+
+#94A3B8
+Secondary Text
+#94A3B8
+
+
+
+## [Heading1] 3. Typography
+
+## [Heading2] Font
+Inter — clean, readable at small sizes, professional. Available on Google Fonts.
+
+## [Heading2] Scale — Mobile
+
+H1
+24px / 700 weight / #111827
+H2
+20px / 600 weight / #111827
+H3
+16px / 600 weight / #374151
+Body
+14px / 400 weight / #374151
+Small
+12px / 400 weight / #6B7280
+Label
+11px / 500 weight uppercase / #9CA3AF — section headers
+Button
+15px / 600 weight
+
+
+## [Heading2] Scale — Web
+
+H1
+28px / 700
+H2
+22px / 600
+H3
+18px / 600
+Body
+14px / 400
+Small
+12px / 400
+Table
+13px / 400
+
+
+
+## [Heading1] 4. Spacing
+Base unit: 4px
+
+xs
+4px
+sm
+8px
+md
+16px
+lg
+24px
+xl
+32px
+2xl
+48px
+Card padding
+16px (mobile) / 20px (web)
+Screen padding
+16px (mobile) / 24px (web)
+
+
+
+## [Heading1] 5. Components
+
+## [Heading2] Buttons
+
+## [Heading3] Primary
+Background
+#0EA5E9
+Text
+#FFFFFF / 15px / 600
+Border radius
+10px
+Padding
+14px 20px
+Hover
+#0369A1
+Mobile CTAs
+Full-width
+
+
+## [Heading3] Secondary
+Background
+#F3F4F6
+Text
+#374151 / 15px / 500
+Border
+1px #E5E7EB
+Border radius
+10px
+
+
+## [Heading3] Destructive
+Background
+#FEF2F2
+Text
+#EF4444
+Border
+1px #FCA5A5
+
+
+## [Heading3] Disabled
+Opacity
+0.5
+Hover
+None
+
+
+## [Heading2] Inputs
+Background
+#F9FAFB
+Border
+1px #E5E7EB
+Border radius
+8px
+Padding
+12px 14px
+Font
+15px / 400 / #111827
+Placeholder
+#9CA3AF
+Focus border
+#0EA5E9 / 2px
+Error border
+#EF4444
+
+
+## [Heading2] Cards
+Background
+#FFFFFF
+Border
+1px #E5E7EB
+Border radius
+12px
+Shadow
+0 1px 3px rgba(0,0,0,0.08)
+Padding
+16px
+Hover (tappable)
+Border #0EA5E9 at 40% opacity
+
+
+## [Heading2] Status Badges
+Green
+bg #F0FDF4 / text #16A34A / border #BBF7D0
+Amber
+bg #FFFBEB / text #D97706 / border #FDE68A
+Red
+bg #FEF2F2 / text #DC2626 / border #FECACA
+Grey
+bg #F9FAFB / text #6B7280 / border #E5E7EB
+Border radius
+6px
+Padding
+3px 8px
+Font
+12px / 500
+
+
+## [Heading2] Traffic Light Indicators
+Size
+10px diameter circle
+Green
+#22C55E
+Amber
+#F59E0B
+Red
+#EF4444
+Always accompanied by a text label — never colour alone.
+
+
+## [Heading2] Progress Bars
+Track
+#E5E7EB / 6px height / border-radius 99px
+Fill (default)
+#0EA5E9
+Fill (complete)
+#22C55E
+Fill (critical)
+#EF4444
+
+
+## [Heading2] Navigation
+
+## [Heading3] Mobile Tab Bar — Technician (top tabs)
+Background
+#FFFFFF
+Border
+Bottom 1px #E5E7EB
+Active tab
+Text #0EA5E9 / border-bottom 2px #0EA5E9
+Inactive
+Text #9CA3AF
+Font
+13px / 500
+
+
+## [Heading3] Mobile Bottom Nav — Owner app
+Background
+#FFFFFF
+Border
+Top 1px #E5E7EB
+Active
+Icon + label #0EA5E9
+Inactive
+#9CA3AF
+Height
+56px + safe area inset
+
+
+## [Heading3] Web Sidebar
+Background
+#1E293B (dark)
+Active item
+bg #0EA5E9/15 / text #0EA5E9 / left border 3px #0EA5E9
+Inactive
+Text #94A3B8
+Hover
+Background #334155
+Width
+240px
+
+
+
+## [Heading1] 6. Iconography
+Library: Heroicons (open source, MIT license, React-compatible)
+Style
+Outline
+Navigation
+24px
+Inline
+20px
+Stroke width
+1.5px
+Colour
+Inherits from parent text colour
+
+
+
+## [Heading1] 7. LSI Score Display
+Specific component for water balance score — used in M7, M11, M17, W13.
+
+Score range
+Typically -0.5 to +0.5
+Display
+Large number + colour-coded label + plain English
+
+SCALE
++0.3 to +0.5
+#EF4444 — Scaling: may cause calcium deposits
++0.1 to +0.3
+#F59E0B — Slightly scaling
+-0.1 to +0.1
+#22C55E — Well balanced
+-0.3 to -0.1
+#F59E0B — Slightly corrosive
+-0.5 to -0.3
+#EF4444 — Corrosive: may damage surfaces
+
+
+
+## [Heading1] 8. Accessibility
+•  Minimum touch target: 44×44px (iOS HIG)
+•  Colour contrast: minimum 4.5:1 for body text
+•  Never use colour as the only indicator — always pair with icon or text
+•  Error states: icon + colour + text message
+
+
+
+## [Heading1] 9. Platform Notes
+
+## [Heading2] Mobile — React Native
+•  Use platform-native inputs where possible
+•  Safe area insets for notch/home bar
+•  Haptic feedback on Mark Complete action
+•  iOS: SF Pro fallback if Inter unavailable
+
+
+## [Heading2] Web — React / Next.js
+•  Dark mode dashboard by default
+•  Responsive breakpoints: sm 640px / md 768px / lg 1024px / xl 1280px
+•  Sidebar collapses to hamburger below lg
+
+
+
+## [Heading1] 10. Web Dashboard — Visual Direction
+This section defines the visual character of the web dashboard specifically. It is distinct from the mobile app specs above. The reference aesthetic is the Velix AI Agent dashboard — a mobile-first SaaS UI with a refined, near-white neomorphic card language. That aesthetic has been adapted here for the PoolOps desktop dashboard context.
+
+## [Heading2] Aesthetic Direction
+Refined operational minimalism. The dashboard should feel like a precision instrument — calm, uncluttered, and immediate. Every element earns its place. Density is managed through spacing and hierarchy, not visual noise.
+The light mode variant of this dashboard (as opposed to the default dark mode spec in section 2) should feel almost physical — cards that sit softly on the surface, not floating aggressively above it. This is the neomorphic quality observed in the Velix reference: same-family colours between card and background, with only a whisper of shadow to establish depth.
+
+## [Heading2] Core Visual Principles
+
+## [Heading3] 1. Near-white palette
+Page background sits at #F5F7FA — not pure white, not grey. Cards use #FFFFFF with a shadow so soft it reads as material depth rather than elevation. The result is a surface that feels cohesive and physical.
+Page background
+#F5F7FA
+Card background
+#FFFFFF
+Card shadow
+0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)
+Card border
+1px solid rgba(0,0,0,0.06)
+Card border radius
+16px
+
+
+## [Heading3] 2. Soft neomorphic cards
+Cards do not use heavy borders or dramatic shadows. Instead, a very light, diffused shadow (see above) creates the impression of slight elevation from the same background material. This is deliberately subtle — the card and background are nearly the same colour family, differentiated only by surface sheen.
+Active or selected cards add a subtle coloured border (#0EA5E9 at 30% opacity) to indicate state without aggression.
+
+## [Heading3] 3. Muted accent states
+Connected/active states use soft green fills (#F0FDF4 background, #22C55E text). Action/connect states use soft lavender (#EFF6FF background, #0EA5E9 text). These are pill-shaped with gentle border radii (20px+). They should feel like status indicators, not buttons shouting for attention.
+Active/connected pill
+bg #F0FDF4 / text #16A34A / border #BBF7D0
+Connect/action pill
+bg #EFF6FF / text #0EA5E9 / border #BAE6FD
+Pill border radius
+20px
+Pill padding
+5px 14px
+
+
+## [Heading3] 4. Category filter tabs
+Horizontal filter tabs (e.g. All | Active | Inactive | Plan) use an underline-style active indicator rather than filled pills. Active tab: Pool Blue text + 2px bottom border. Inactive: #9CA3AF text. No background fill on tabs.
+
+## [Heading3] 5. Status badge taxonomy
+Status badges follow a consistent pill language across all surfaces. They are small (12px font, 3px 8px padding) and always pair colour with text. They never rely on colour alone.
+•  Popular / Flagged: soft red (#FEF2F2 bg / #DC2626 text / #FECACA border)
+•  New / Active: soft green (#F0FDF4 bg / #16A34A text / #BBF7D0 border)
+•  Premium / Warning: soft amber (#FFFBEB bg / #D97706 text / #FDE68A border)
+•  Neutral / Inactive: soft grey (#F9FAFB bg / #6B7280 text / #E5E7EB border)
+
+
+## [Heading3] 6. Bottom / side navigation
+The active nav item uses a dark pill (near-black #111827 background, white text/icon). Inactive items are icon-only or icon+label in #9CA3AF. The active pill creates a strong but contained focal point — it anchors the user's position without dominating the layout.
+On desktop, this pattern translates to the left sidebar: active item gets a dark pill background rather than the default blue tint, maintaining the same visual language across surfaces.
+
+## [Heading3] 7. Typography hierarchy
+Section titles are large and confident (H1 at 28px/700). Body content is compact (14px/400). The contrast between these two creates clear scanning hierarchy without needing heavy decoration. Inter remains the typeface throughout — its neutrality is a feature, not a limitation, in an operational tool.
+
+## [Heading3] 8. Stat/metric display
+Key metrics (job counts, API connections, instance counts) are displayed as large numerals (32px+/700) beneath small uppercase labels (11px/500). These are grouped in a horizontal strip near the top of the dashboard. Mini bar charts or subtle waveform graphics can accompany each stat to add visual rhythm without conveying precise data.
+Stat numeral
+32px / 700 / #111827
+Stat label
+11px / 500 uppercase / #9CA3AF
+Stat card padding
+20px
+Stat card min-width
+120px
+
+
+## [Heading3] 9. Agent / item cards
+Two-column card grids are the primary layout unit for listing items (agents, integrations, jobs). Each card contains: an icon (40px, rounded square), a category badge (top-right), a title (15px/600), a description (13px/400/#6B7280), and a status/action pill at the bottom. Cards have 16px internal padding and 12px gap between them.
+Card icon
+40px rounded square, #F3F4F6 background
+Card title
+15px / 600 / #111827
+Card description
+13px / 400 / #6B7280
+Card padding
+16px
+Grid gap
+12px
+Grid columns
+2 (mobile) / 3–4 (desktop)
+
+
+## [Heading3] 10. Motion principles
+Interactions should feel responsive but not theatrical. Hover states on cards transition border colour smoothly (150ms ease). Status pills fade between states (200ms ease). Page transitions are instant — no full-page animations. Loading states use a subtle pulse on the card skeleton, not a spinner.
+
+## [Heading2] Light Mode vs Dark Mode
+The mobile app uses the light mode palette throughout (sections 2–9 above). The web dashboard defaults to dark mode (section 2, Dark Mode subsection) for long operational use. However, the visual direction in this section (section 10) describes the light mode character that informs all design decisions — including how dark mode components should feel: the same softness and restraint, applied to dark surfaces.
+If a light mode toggle is added to the web dashboard in a future version, it should implement the Velix-inspired near-white palette described in this section directly.
+
+## [Heading2] What to Avoid
+•  Heavy drop shadows that make cards feel like they're floating 20px above the page
+•  Filled/solid colour tab bars — they compete with content
+•  Gradients on primary buttons or backgrounds — this is not a marketing page
+•  Bright, saturated accent colours used at full opacity for large areas
+•  Dense icon-only navigation without clear active state labelling
+•  Card borders that are the same weight as content dividers — establish hierarchy
+
+
+PoolOps Design System · Created 31 Mar 2026 · Updated 15 Apr 2026

@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — M13 Notifications & M14 Profile</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #E2E4E8;
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 32px;
+    padding: 32px 24px 64px;
+    min-height: 100vh;
+    flex-wrap: wrap;
+  }
+
+  /* ── PHONE SHELL ── */
+  .phone {
+    width: 375px;
+    background: #F5F5F3;
+    border-radius: 50px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen-label {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B7280;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .phone-wrap { display: flex; flex-direction: column; }
+
+  .status-bar {
+    background: #F5F5F3;
+    padding: 14px 28px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .di-wrap { background: #F5F5F3; padding: 6px 0; display: flex; justify-content: center; }
+  .di { width: 120px; height: 34px; background: #111827; border-radius: 20px; }
+
+  /* ── SHARED HEADER ── */
+  .header {
+    padding: 12px 20px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F5F5F3;
+  }
+  .header-title { font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.4px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    border-radius: 10px; background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.07);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+
+  /* ── SCROLL AREA ── */
+  .scroll { padding: 4px 16px 16px; background: #F5F5F3; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .section-label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: #9CA3AF; padding: 8px 2px 2px;
+  }
+
+  /* ── NOTIFICATION CARDS ── */
+  .notif-card {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 14px;
+    padding: 13px 14px;
+    display: flex; align-items: flex-start; gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+  }
+  .notif-card.unread { border-left: 4px solid #111827; }
+  .notif-card.unread-blue { border-left: 4px solid #0EA5E9; }
+  .notif-card.unread-amber { border-left: 4px solid #F59E0B; }
+  .notif-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ni-dark { background: #F3F4F6; }
+  .ni-blue { background: #EFF6FF; }
+  .ni-amber { background: #FFFBEB; }
+  .ni-green { background: #F0FDF4; }
+  .ni-red { background: #FEF2F2; }
+  .notif-body { flex: 1; }
+  .notif-title { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; }
+  .notif-sub { font-size: 12px; color: #6B7280; margin-top: 3px; line-height: 1.4; }
+  .notif-time { font-size: 11px; color: #9CA3AF; white-space: nowrap; margin-top: 2px; }
+  .notif-unread-dot {
+    position: absolute; top: 13px; right: 13px;
+    width: 7px; height: 7px;
+    background: #111827; border-radius: 50%;
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 10px;
+    padding: 48px 20px;
+  }
+  .empty-icon { color: #E5E7EB; }
+  .empty-title { font-size: 14px; font-weight: 600; color: #9CA3AF; }
+  .empty-sub { font-size: 12px; color: #9CA3AF; text-align: center; }
+
+  /* ── BOTTOM NAV ── */
+  .nav {
+    background: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.07);
+    padding: 10px 28px 0;
+    display: flex; align-items: center; justify-content: space-around;
+    flex-shrink: 0;
+  }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .nav-icon-wrap {
+    width: 44px; height: 32px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-icon-wrap.active { background: #111827; }
+  .nav-badge {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-badge-dot {
+    position: absolute; top: -2px; right: -2px;
+    width: 7px; height: 7px;
+    background: #EF4444; border-radius: 50%;
+    border: 1.5px solid #ffffff;
+  }
+  .home-pill-wrap {
+    background: #ffffff;
+    display: flex; justify-content: center;
+    padding: 12px 0 14px; flex-shrink: 0;
+  }
+  .home-pill { width: 120px; height: 4px; background: #111827; border-radius: 99px; }
+
+  /* ── PROFILE SCREEN ── */
+  .profile-header {
+    padding: 16px 20px 20px;
+    background: #F5F5F3;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .avatar-large {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #111827;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: #ffffff;
+  }
+  .profile-name { font-size: 18px; font-weight: 700; color: #111827; }
+  .profile-role {
+    font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    background: #F3F4F6; color: #6B7280;
+    border-radius: 20px; padding: 3px 10px;
+  }
+
+  /* Settings groups */
+  .settings-group {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .settings-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid #F3F4F6;
+    cursor: pointer;
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-icon {
+    width: 32px; height: 32px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .si-dark { background: #F3F4F6; }
+  .si-blue { background: #EFF6FF; }
+  .si-green { background: #F0FDF4; }
+  .si-red { background: #FEF2F2; }
+  .settings-label { font-size: 14px; font-weight: 500; color: #111827; flex: 1; }
+  .settings-value { font-size: 12px; color: #9CA3AF; margin-right: 6px; }
+  .settings-chevron { color: #D1D5DB; }
+
+  /* Toggle */
+  .toggle {
+    width: 42px; height: 24px; border-radius: 12px;
+    position: relative; cursor: pointer; flex-shrink: 0;
+    border: none; padding: 0;
+  }
+  .toggle.on { background: #111827; }
+  .toggle.off { background: #E5E7EB; }
+  .toggle-thumb {
+    position: absolute; top: 3px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #ffffff;
+    transition: left 0.2s;
+  }
+  .toggle.on .toggle-thumb { left: 21px; }
+  .toggle.off .toggle-thumb { left: 3px; }
+
+  /* Logout button */
+  .logout-btn {
+    width: 100%; background: #FEF2F2;
+    border: 1px solid #FECACA; border-radius: 14px;
+    padding: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px; font-weight: 600; color: #DC2626;
+  }
+
+  /* Version */
+  .version-text { font-size: 11px; color: #9CA3AF; text-align: center; padding: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ── M13 NOTIFICATIONS ── -->
+<div class="phone-wrap">
+  <div class="screen-label">M13 · Notifications</div>
+  <div class="phone">
+
+    <div class="status-bar">
+      <span style="font-size:15px;font-weight:600;color:#111827;">9:41</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+        <svg width="15" height="11" viewBox="0 0 20 14" fill="#111827"><path d="M10 3C13 3 15.7 4.2 17.6 6.2L19 4.8C16.7 2.4 13.5 1 10 1S3.3 2.4 1 4.8L2.4 6.2C4.3 4.2 7 3 10 3Z" opacity="0.3"/><path d="M10 6C12.2 6 14.2 6.9 15.6 8.4L17 7C15.2 5.1 12.7 4 10 4S4.8 5.1 3 7L4.4 8.4C5.8 6.9 7.8 6 10 6Z" opacity="0.6"/><path d="M10 9C11.4 9 12.7 9.6 13.6 10.5L15 9.1C13.7 7.8 12 7 10 7S6.3 7.8 5 9.1L6.4 10.5C7.3 9.6 8.6 9 10 9Z"/><circle cx="10" cy="13" r="1.5"/></svg>
+        <svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg>
+      </div>
+    </div>
+    <div class="di-wrap"><div class="di"></div></div>
+
+    <div class="header">
+      <div class="header-title">Notifications</div>
+      <div class="header-right">
+        <div class="icon-btn" title="Mark all read">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll">
+
+      <div class="section-label">New</div>
+
+      <!-- Schedule change — unread -->
+      <div class="notif-card unread-blue">
+        <div class="notif-unread-dot" style="background:#0EA5E9;"></div>
+        <div class="notif-icon ni-blue">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0369A1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        <div class="notif-body">
+          <div class="notif-title">Schedule updated</div>
+          <div class="notif-sub">Peters, Sarah moved to 2:30pm — Wong, Helen added to route</div>
+          <div class="notif-time">8 minutes ago</div>
+        </div>
+      </div>
+
+      <!-- Low stock — unread -->
+      <div class="notif-card unread-amber">
+        <div class="notif-unread-dot" style="background:#F59E0B;"></div>
+        <div class="notif-icon ni-amber">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="notif-body">
+          <div class="notif-title">Low stock — pH Buffer</div>
+          <div class="notif-sub">Less than 1kg remaining. Restock before end of day.</div>
+          <div class="notif-time">42 minutes ago</div>
+        </div>
+      </div>
+
+      <!-- Message from office — unread -->
+      <div class="notif-card unread">
+        <div class="notif-unread-dot"></div>
+        <div class="notif-icon ni-dark">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div class="notif-body">
+          <div class="notif-title">Message from office</div>
+          <div class="notif-sub">Can you call the Chen's after their service today? They have a question about the equipment.</div>
+          <div class="notif-time">1 hour ago</div>
+        </div>
+      </div>
+
+      <div class="section-label">Earlier today</div>
+
+      <!-- Job flagged — read -->
+      <div class="notif-card">
+        <div class="notif-icon ni-red">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="notif-body">
+          <div class="notif-title" style="color:#374151;">Flagged reading noted</div>
+          <div class="notif-sub">Smith, David — Chlorine LOW flagged. Simon reviewed.</div>
+          <div class="notif-time">2 hours ago</div>
+        </div>
+      </div>
+
+      <!-- Job complete confirmation — read -->
+      <div class="notif-card">
+        <div class="notif-icon ni-green">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="notif-body">
+          <div class="notif-title" style="color:#374151;">Report sent</div>
+          <div class="notif-sub">Service report delivered to Williams, James — 22 Ponsonby Rd</div>
+          <div class="notif-time">3 hours ago</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom nav — bell active -->
+    <div class="nav">
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap active">
+          <div class="nav-badge">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="home-pill-wrap"><div class="home-pill"></div></div>
+
+  </div>
+</div>
+
+
+<!-- ── M14 PROFILE / SETTINGS ── -->
+<div class="phone-wrap">
+  <div class="screen-label">M14 · Profile &amp; Settings</div>
+  <div class="phone">
+
+    <div class="status-bar">
+      <span style="font-size:15px;font-weight:600;color:#111827;">9:41</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+        <svg width="15" height="11" viewBox="0 0 20 14" fill="#111827"><path d="M10 3C13 3 15.7 4.2 17.6 6.2L19 4.8C16.7 2.4 13.5 1 10 1S3.3 2.4 1 4.8L2.4 6.2C4.3 4.2 7 3 10 3Z" opacity="0.3"/><path d="M10 6C12.2 6 14.2 6.9 15.6 8.4L17 7C15.2 5.1 12.7 4 10 4S4.8 5.1 3 7L4.4 8.4C5.8 6.9 7.8 6 10 6Z" opacity="0.6"/><path d="M10 9C11.4 9 12.7 9.6 13.6 10.5L15 9.1C13.7 7.8 12 7 10 7S6.3 7.8 5 9.1L6.4 10.5C7.3 9.6 8.6 9 10 9Z"/><circle cx="10" cy="13" r="1.5"/></svg>
+        <svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg>
+      </div>
+    </div>
+    <div class="di-wrap"><div class="di"></div></div>
+
+    <!-- Profile hero -->
+    <div class="profile-header">
+      <div class="avatar-large">JT</div>
+      <div class="profile-name">James Thompson</div>
+      <div class="profile-role">Technician · Pool Pro NZ</div>
+    </div>
+
+    <div class="scroll">
+
+      <!-- Account -->
+      <div class="section-label">Account</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-icon si-dark">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span class="settings-label">Personal details</span>
+          <span class="settings-value">james@poolpro.co.nz</span>
+          <svg class="settings-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="settings-row">
+          <div class="settings-icon si-dark">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <span class="settings-label">Change password</span>
+          <svg class="settings-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="section-label">Notifications</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-icon si-blue">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0369A1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <span class="settings-label">Schedule changes</span>
+          <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');">
+            <div class="toggle-thumb"></div>
+          </button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-icon si-amber" style="background:#FFFBEB;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          </div>
+          <span class="settings-label">Low stock alerts</span>
+          <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');">
+            <div class="toggle-thumb"></div>
+          </button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-icon si-dark">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <span class="settings-label">Office messages</span>
+          <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');">
+            <div class="toggle-thumb"></div>
+          </button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-icon si-green">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.99 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.92 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </div>
+          <span class="settings-label">SMS alerts</span>
+          <button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off');">
+            <div class="toggle-thumb"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- App -->
+      <div class="section-label">App</div>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-icon si-dark">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          </div>
+          <span class="settings-label">App version</span>
+          <span class="settings-value">v1.0.4</span>
+        </div>
+        <div class="settings-row">
+          <div class="settings-icon si-dark">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </div>
+          <span class="settings-label">Check for updates</span>
+          <svg class="settings-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+      <!-- Logout -->
+      <button class="logout-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log out
+      </button>
+
+      <div class="version-text">PoolOps · Pool Pro NZ · v1.0.4</div>
+
+    </div>
+
+    <!-- Bottom nav — profile active -->
+    <div class="nav">
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="home-pill-wrap"><div class="home-pill"></div></div>
+
+  </div>
+</div>
+
+</body>
+</html>

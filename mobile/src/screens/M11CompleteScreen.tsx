@@ -71,11 +71,13 @@ export function M11CompleteScreen() {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      const response = await getApiClient().post(`/technician/jobs/${jobId}/complete`, payload as Record<string, unknown>);
-      const refs = Array.isArray(response) ? response : [];
+      const envelope = await getApiClient().post<{ ok: boolean; data: unknown }>(`/technician/jobs/${jobId}/complete`, payload as Record<string, unknown>);
+      const data = (envelope as any)?.data;
+      const refs: Array<{ serviceRecordId?: string; ref?: string; poolId?: string }> = Array.isArray(data) ? data : [];
       markJobCompleted(jobId, refs);
-      setCompletionRefs(refs);
-    } catch {
+      setCompletionRefs(refs.length > 0 ? refs : [{ ref: 'saved' }]);
+    } catch (err) {
+      console.error('[M11] complete failed:', err);
       await enqueueJobCompletion({
         jobId,
         payload: payload as Record<string, unknown>,
@@ -100,6 +102,8 @@ export function M11CompleteScreen() {
           <Text style={styles.confirmTitle}>Job Complete</Text>
           {completionRefs.length === 0 ? (
             <Text style={styles.cardBody}>Saved offline — will sync when connected.</Text>
+          ) : completionRefs[0]?.ref === 'saved' ? (
+            <Text style={styles.cardBody}>Saved successfully.</Text>
           ) : (
             completionRefs.map((ref, i) => (
               <View key={ref.serviceRecordId ?? String(i)} style={styles.refRow}>
@@ -110,7 +114,7 @@ export function M11CompleteScreen() {
           )}
         </View>
         <TouchableOpacity style={styles.completeBtn} onPress={handleDismissConfirmation}>
-          <Text style={styles.completeBtnText}>Back to Home</Text>
+          <Text style={styles.completeBtnText}>Back to home</Text>
         </TouchableOpacity>
       </View>
     );
@@ -156,7 +160,7 @@ export function M11CompleteScreen() {
       </View>
 
       <TouchableOpacity style={[styles.completeBtn, loading && styles.completeBtnDisabled]} onPress={handleComplete} disabled={loading}>
-        {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.completeBtnText}>Mark Complete</Text>}
+        {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.completeBtnText}>Mark complete</Text>}
       </TouchableOpacity>
     </View>
   );
@@ -164,16 +168,16 @@ export function M11CompleteScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing.base,
+    marginTop: spacing.md,
     gap: spacing.sm,
-    paddingBottom: spacing.base,
+    paddingBottom: spacing.md,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: borderRadius.xl,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.07)',
-    padding: spacing.base,
+    padding: spacing.md,
     gap: spacing.xs,
   },
   cardTitle: {
@@ -200,7 +204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#22C55E',
-    paddingHorizontal: spacing.base,
+    paddingHorizontal: spacing.md,
   },
   completeBtnDisabled: {
     opacity: 0.7,

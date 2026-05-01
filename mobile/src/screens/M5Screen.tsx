@@ -81,12 +81,13 @@ export function M5Screen() {
 
   const pool = job?.pool;
   const specs = pool
-    ? [
-        pool.volumeLitres ? `💧 ${Math.round(pool.volumeLitres / 1000)}k L` : null,
-        pool.surfaceType ? `🏗 ${capitalize(pool.surfaceType)}` : null,
-        pool.poolType ? `⚗ ${capitalize(pool.poolType)}` : null,
-        pool.indoorOutdoor ? (pool.indoorOutdoor === 'outdoor' ? '☀ Outdoor' : '🏠 Indoor') : null,
-      ].filter(Boolean)
+    ? ([
+        pool.volumeLitres ? { icon: 'water-outline', label: `${Math.round(pool.volumeLitres / 1000)}k L` } : null,
+        pool.surfaceType ? { icon: 'layers-outline', label: capitalize(pool.surfaceType) } : null,
+        pool.poolType ? { icon: 'flask-outline', label: capitalize(pool.poolType) } : null,
+        pool.indoorOutdoor === 'outdoor' ? { icon: 'sunny-outline', label: 'Outdoor' } :
+          pool.indoorOutdoor === 'indoor' ? { icon: 'home-outline', label: 'Indoor' } : null,
+      ].filter(Boolean) as { icon: string; label: string }[])
     : [];
 
   const accessItems: { label: string; value: string }[] = [];
@@ -157,7 +158,8 @@ export function M5Screen() {
             <View style={styles.specsRow}>
               {specs.map((spec, idx) => (
                 <View key={idx} style={styles.specPill}>
-                  <Text style={styles.specPillText}>{spec}</Text>
+                  <Ionicons name={spec.icon as React.ComponentProps<typeof Ionicons>['name']} size={13} color="#374151" />
+                  <Text style={styles.specPillText}>{spec.label}</Text>
                 </View>
               ))}
             </View>
@@ -218,9 +220,9 @@ export function M5Screen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F5F5F3' },
   header: {
-    padding: spacing.base * 0.75,
+    padding: 12,
     paddingHorizontal: 20,
-    paddingBottom: spacing.base,
+    paddingBottom: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 16, gap: 10, paddingBottom: 8 },
   accessCard: {
     backgroundColor: '#FFFBEB', borderWidth: 1, borderColor: '#FDE68A',
-    borderLeftWidth: 4, borderLeftColor: '#F59E0B', borderRadius: borderRadius['2xl'],
+    borderLeftWidth: 4, borderLeftColor: '#F59E0B', borderRadius: borderRadius.xxl,
     paddingVertical: 14, paddingHorizontal: 16,
   },
   accessHeader: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 },
@@ -258,11 +260,12 @@ const styles = StyleSheet.create({
   specPill: {
     backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)',
     borderRadius: borderRadius.lg, paddingVertical: 7, paddingHorizontal: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
   },
   specPillText: { fontSize: 12, fontWeight: '500', color: '#374151' },
   equipCard: {
     backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)',
-    borderRadius: borderRadius['2xl'], overflow: 'hidden',
+    borderRadius: borderRadius.xxl, overflow: 'hidden',
   },
   equipRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
@@ -273,7 +276,7 @@ const styles = StyleSheet.create({
   equipVal: { fontSize: 12, fontWeight: '500', color: '#374151', flex: 1 },
   visitsCard: {
     backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)',
-    borderRadius: borderRadius['2xl'], overflow: 'hidden',
+    borderRadius: borderRadius.xxl, overflow: 'hidden',
   },
   visitRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -290,7 +293,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 16,
   },
   startBtn: {
-    width: '100%', backgroundColor: '#111827', borderRadius: borderRadius['2xl'],
+    width: '100%', backgroundColor: '#111827', borderRadius: borderRadius.xxl,
     paddingVertical: 16, alignItems: 'center', justifyContent: 'center',
   },
   startBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },

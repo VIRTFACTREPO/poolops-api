@@ -74,7 +74,7 @@ function TargetsTab() {
 function BrandingTab() {
   return (
     <Section title='Report branding'>
-      <Field label='Primary color' value='#0F172A' />
+      <Field label='Primary colour' value='#0F172A' />
       <Field label='Logo on PDF' value='Enabled' />
       <Field label='Footer note' value='Thanks for trusting PoolOps' />
     </Section>

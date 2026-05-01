@@ -21,10 +21,16 @@ export function PhotoCaptureTab() {
 
   const openImagePicker = async (type: 'before' | 'after') => {
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Camera access needed', 'Please allow camera access in Settings to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 1,
+        quality: 0.85,
       });
 
       if (!result.canceled && result.assets.length > 0) {
@@ -135,6 +141,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F3',
+    paddingHorizontal: spacing.md,
   },
   sectionLabel: {
     fontSize: 10,
@@ -142,7 +149,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     color: colors.textMuted,
-    paddingVertical: 2,
+    paddingVertical: 8,
   },
   gridRow: {
     gap: 10,
@@ -157,7 +164,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: 'dashed',
     borderColor: colors.border,
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
@@ -196,7 +203,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
   },
   addLink: {
     flexDirection: 'row',

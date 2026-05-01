@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 24px 28px; display:grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .tile { display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .shape { background: #fff; border: 1px solid var(--po-border-soft); box-shadow: var(--po-shadow-card); width: 72px; height: 48px; }
+  .name { font-size:10px; font-weight:600; color: var(--po-text-heading); }
+  .val  { font-size:10px; color: var(--po-placeholder); font-family: var(--po-font-mono); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="tile"><div class="shape" style="border-radius:6px"></div><div class="name">sm</div><div class="val">6px · badge</div></div>
+  <div class="tile"><div class="shape" style="border-radius:8px"></div><div class="name">md</div><div class="val">8px · input</div></div>
+  <div class="tile"><div class="shape" style="border-radius:10px"></div><div class="name">lg</div><div class="val">10px · btn 2°</div></div>
+  <div class="tile"><div class="shape" style="border-radius:14px"></div><div class="name">2xl</div><div class="val">14px · card</div></div>
+  <div class="tile"><div class="shape" style="border-radius:18px"></div><div class="name">3xl</div><div class="val">18px · hero</div></div>
+</div>
+</body>
+</html>

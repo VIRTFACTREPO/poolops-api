@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — W10 Add Customer · W16 Add Technician</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0A0F1A;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── SWITCHER ── */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #0A0F1A; border-bottom: 1px solid #1F2937;
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  }
+  .switcher-label { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+  .switch-btn {
+    padding: 6px 14px; border-radius: 8px; border: 1px solid #334155;
+    background: #1E293B; font-size: 12px; font-weight: 600; color: #64748B;
+    cursor: pointer; font-family: 'Inter', system-ui, sans-serif; transition: all 0.15s;
+  }
+  .switch-btn.active { background: #F9FAFB; color: #111827; border-color: #F9FAFB; }
+  .switch-btn:hover:not(.active) { background: #334155; color: #94A3B8; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; padding-top: 48px; min-height: 100vh; }
+  .screen { display: none; width: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: #111827; border-right: 1px solid #1F2937;
+    display: flex; flex-direction: column;
+    position: sticky; top: 48px; height: calc(100vh - 48px);
+  }
+  .sidebar-logo { padding: 18px 20px 14px; border-bottom: 1px solid #1F2937; display: flex; align-items: center; gap: 8px; }
+  .logo-mark { width: 28px; height: 28px; background: #F5F5F3; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-text { font-size: 15px; font-weight: 700; color: #F9FAFB; }
+  .nav { padding: 10px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px; margin-bottom: 2px;
+    cursor: pointer; font-size: 13px; font-weight: 500; color: #6B7280;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item:hover { background: #1F2937; color: #D1D5DB; }
+  .nav-item.active { background: #1F2937; color: #F9FAFB; }
+  .nav-badge { margin-left: auto; background: #EF4444; color: #fff; font-size: 10px; font-weight: 600; border-radius: 10px; padding: 1px 6px; }
+  .sidebar-footer { padding: 14px 10px; border-top: 1px solid #1F2937; }
+  .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+  .user-row:hover { background: #1F2937; }
+  .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; flex-shrink: 0; }
+  .user-name { font-size: 12px; font-weight: 600; color: #D1D5DB; }
+  .user-role { font-size: 10px; color: #6B7280; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; background: #0F172A; }
+  .topbar {
+    height: 56px; background: #111827; border-bottom: 1px solid #1F2937;
+    display: flex; align-items: center; padding: 0 28px; gap: 16px;
+    position: sticky; top: 48px; z-index: 9;
+  }
+  .topbar-title { font-size: 14px; font-weight: 600; color: #F9FAFB; flex: 1; }
+  .topbar-date { font-size: 12px; color: #6B7280; }
+  .topbar-div { width: 1px; height: 20px; background: #374151; }
+  .topbar-bell { position: relative; cursor: pointer; }
+  .topbar-bell-dot { position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; background: #EF4444; border-radius: 50%; border: 1.5px solid #111827; }
+  .topbar-av { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; }
+
+  /* ── CONTENT ── */
+  .content { padding: 28px; flex: 1; display: flex; flex-direction: column; }
+
+  /* ── FORM LAYOUT ── */
+  .form-container { max-width: 720px; display: flex; flex-direction: column; gap: 20px; }
+  .form-container-narrow { max-width: 520px; }
+
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .page-title { font-size: 20px; font-weight: 700; color: #F9FAFB; letter-spacing: -0.3px; }
+  .page-sub { font-size: 13px; color: #64748B; margin-top: 3px; }
+
+  /* Form sections */
+  .form-section { background: #1E293B; border: 1px solid #334155; border-radius: 14px; overflow: hidden; }
+  .form-section-header {
+    padding: 14px 20px; border-bottom: 1px solid #334155;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .fsh-icon { width: 28px; height: 28px; border-radius: 8px; background: #0F172A; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .fsh-title { font-size: 13px; font-weight: 600; color: #F9FAFB; }
+  .fsh-sub { font-size: 11px; color: #64748B; margin-top: 1px; }
+  .form-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* Form rows */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-label { font-size: 12px; font-weight: 600; color: #94A3B8; }
+  .form-label span { color: #EF4444; margin-left: 2px; }
+  .form-input {
+    background: #0F172A; border: 1px solid #334155; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; color: #F9FAFB;
+    font-family: 'Inter', system-ui, sans-serif; outline: none;
+    transition: border-color 0.15s; width: 100%;
+  }
+  .form-input::placeholder { color: #475569; }
+  .form-input:focus { border-color: #64748B; }
+  .form-input.has-value { border-color: #334155; color: #F9FAFB; }
+  .form-select {
+    background: #0F172A; border: 1px solid #334155; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; color: #F9FAFB;
+    font-family: 'Inter', system-ui, sans-serif; outline: none;
+    cursor: pointer; width: 100%; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .form-select:focus { border-color: #64748B; outline: none; }
+  .form-textarea {
+    background: #0F172A; border: 1px solid #334155; border-radius: 8px;
+    padding: 10px 12px; font-size: 13px; color: #F9FAFB;
+    font-family: 'Inter', system-ui, sans-serif; outline: none;
+    resize: vertical; min-height: 72px; width: 100%; line-height: 1.6;
+  }
+  .form-textarea::placeholder { color: #475569; }
+  .form-textarea:focus { border-color: #64748B; }
+  .form-hint { font-size: 11px; color: #475569; margin-top: 2px; }
+
+  /* Warning box */
+  .warning-input-wrap { position: relative; }
+  .warning-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #F59E0B; }
+  .form-input.warning-field { padding-left: 32px; border-color: #854D0E; background: #1C1208; }
+
+  /* Chemicals list */
+  .chem-list { display: flex; flex-direction: column; gap: 8px; }
+  .chem-row-item {
+    display: flex; align-items: center; gap: 10px;
+    background: #0F172A; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px;
+  }
+  .chem-name { font-size: 13px; color: #F9FAFB; flex: 1; }
+  .chem-unit-badge { font-size: 11px; color: #64748B; background: #1E293B; border: 1px solid #334155; border-radius: 6px; padding: 2px 8px; }
+  .chem-remove { color: #475569; cursor: pointer; padding: 2px; }
+  .chem-remove:hover { color: #EF4444; }
+  .add-chem-btn {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #64748B; cursor: pointer; padding: 4px 2px;
+    transition: color 0.15s;
+  }
+  .add-chem-btn:hover { color: #94A3B8; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .toggle-info { }
+  .toggle-label { font-size: 13px; font-weight: 500; color: #D1D5DB; }
+  .toggle-sub { font-size: 11px; color: #64748B; margin-top: 2px; }
+  .toggle {
+    width: 42px; height: 24px; border-radius: 12px;
+    position: relative; cursor: pointer; flex-shrink: 0; border: none; padding: 0;
+    transition: background 0.2s;
+  }
+  .toggle.on { background: #F9FAFB; }
+  .toggle.off { background: #334155; }
+  .toggle-thumb {
+    position: absolute; top: 3px; width: 18px; height: 18px; border-radius: 50%;
+    transition: left 0.2s;
+  }
+  .toggle.on .toggle-thumb { left: 21px; background: #111827; }
+  .toggle.off .toggle-thumb { left: 3px; background: #64748B; }
+
+  /* Sticky footer */
+  .form-footer {
+    position: sticky; bottom: 0;
+    background: #0F172A; border-top: 1px solid #1F2937;
+    padding: 16px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin: 0 -28px -28px;
+  }
+  .footer-hint { font-size: 12px; color: #475569; }
+  .footer-actions { display: flex; gap: 10px; }
+  .btn-cancel {
+    background: #1E293B; color: #94A3B8; border: 1px solid #334155;
+    border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', system-ui, sans-serif;
+  }
+  .btn-save {
+    background: #F9FAFB; color: #111827; border: none;
+    border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', system-ui, sans-serif;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .btn-save-invite {
+    background: #111827; color: #F9FAFB; border: 1px solid #374151;
+    border-radius: 8px; padding: 10px 20px; font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', system-ui, sans-serif;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  /* Technician avatar preview */
+  .tech-preview {
+    display: flex; align-items: center; gap: 16px;
+    background: #0F172A; border: 1px solid #334155; border-radius: 10px; padding: 14px 16px;
+  }
+  .tech-preview-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: #1E293B; border: 2px solid #334155;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #64748B;
+  }
+  .tech-preview-name { font-size: 15px; font-weight: 600; color: #F9FAFB; }
+  .tech-preview-role { font-size: 12px; color: #64748B; margin-top: 3px; }
+  .tech-preview-hint { font-size: 11px; color: #475569; margin-top: 6px; }
+
+  /* Role selector */
+  .role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .role-card {
+    background: #0F172A; border: 1.5px solid #334155; border-radius: 10px;
+    padding: 14px 16px; cursor: pointer; transition: border-color 0.15s;
+  }
+  .role-card.selected { border-color: #F9FAFB; }
+  .role-card:hover:not(.selected) { border-color: #4B5563; }
+  .role-card-title { font-size: 13px; font-weight: 600; color: #D1D5DB; margin-bottom: 4px; }
+  .role-card.selected .role-card-title { color: #F9FAFB; }
+  .role-card-desc { font-size: 11px; color: #475569; line-height: 1.5; }
+  .role-check { float: right; margin-top: -2px; }
+</style>
+</head>
+<body>
+
+<!-- Switcher -->
+<div class="switcher">
+  <span class="switcher-label">Screen</span>
+  <button class="switch-btn active" onclick="show('customer',this)">W10 · Add Customer</button>
+  <button class="switch-btn" onclick="show('technician',this)">W16 · Add Technician</button>
+</div>
+
+<div class="app">
+
+<!-- ══════════════════════════════════
+     W10 — ADD / EDIT CUSTOMER
+══════════════════════════════════ -->
+<div class="screen active" id="screen-customer">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/><path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/></svg></div><span class="logo-text">PoolOps</span></div>
+    <div class="nav">
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+      <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+      <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-footer"><div class="user-row"><div class="user-avatar">SJ</div><div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div></div></div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span style="color:#64748B;cursor:pointer;">Customers</span>
+        <span style="color:#475569;margin:0 6px;">›</span>
+        Add customer
+      </div>
+      <div class="topbar-date">Monday, 31 March</div>
+      <div class="topbar-div"></div>
+      <div class="topbar-bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="topbar-bell-dot"></div></div>
+      <div class="topbar-av">SJ</div>
+    </div>
+    <div class="content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Add customer</div>
+          <div class="page-sub">Fill in the details below. You can invite the pool owner to the app after saving.</div>
+        </div>
+      </div>
+
+      <div class="form-container">
+
+        <!-- Contact -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div>
+              <div class="fsh-title">Contact details</div>
+              <div class="fsh-sub">Owner name, email and phone number</div>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">First name <span>*</span></label>
+                <input class="form-input has-value" type="text" value="David" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Last name <span>*</span></label>
+                <input class="form-input has-value" type="text" value="Smith" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Email address <span>*</span></label>
+                <input class="form-input has-value" type="email" value="david@smithremuera.co.nz" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone number</label>
+                <input class="form-input has-value" type="tel" value="021 456 789" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Address <span>*</span></label>
+              <input class="form-input has-value" type="text" value="12 Remuera Rd, Remuera, Auckland" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Pool -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20M2 12c0 5.523 4.477 10 10 10S22 17.523 22 12M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10"/></svg></div>
+            <div>
+              <div class="fsh-title">Pool details</div>
+              <div class="fsh-sub">Volume, type and equipment — used for chemical calculations</div>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="form-row-3">
+              <div class="form-group">
+                <label class="form-label">Pool volume (L) <span>*</span></label>
+                <input class="form-input has-value" type="number" value="55000" />
+                <span class="form-hint">Used for all dosage calculations</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pool type <span>*</span></label>
+                <select class="form-select">
+                  <option selected>Chlorine</option>
+                  <option>Salt / mineral</option>
+                  <option>Freshwater</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Surface type</label>
+                <select class="form-select">
+                  <option selected>Pebblecrete</option>
+                  <option>Concrete</option>
+                  <option>Fibreglass</option>
+                  <option>Vinyl</option>
+                  <option>Tiles</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Equipment notes</label>
+              <textarea class="form-textarea" placeholder="e.g. Hayward Super Pump, Astral 24&quot; sand filter, Poolrite SQ chlorinator">Hayward Super Pump · Astral 24" sand filter · Poolrite SQ chlorinator</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Access -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+            <div>
+              <div class="fsh-title">Access notes</div>
+              <div class="fsh-sub">Shown prominently to the technician on every visit</div>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Gate / key access</label>
+                <input class="form-input has-value" type="text" value="Gate code: 4521" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Warnings</label>
+                <div class="warning-input-wrap">
+                  <div class="warning-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                  <input class="form-input warning-field" type="text" value="Dog in yard on Tuesdays" />
+                </div>
+                <span class="form-hint">Highlighted amber for the technician</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Service plan -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+            <div>
+              <div class="fsh-title">Service plan</div>
+              <div class="fsh-sub">Schedule and assigned technician</div>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="form-row-3">
+              <div class="form-group">
+                <label class="form-label">Frequency <span>*</span></label>
+                <select class="form-select">
+                  <option selected>Weekly</option>
+                  <option>Fortnightly</option>
+                  <option>Monthly</option>
+                  <option>Custom</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Day of week</label>
+                <select class="form-select">
+                  <option>Monday</option>
+                  <option selected>Tuesday</option>
+                  <option>Wednesday</option>
+                  <option>Thursday</option>
+                  <option>Friday</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Assigned technician <span>*</span></label>
+                <select class="form-select">
+                  <option selected>James T.</option>
+                  <option>Mike R.</option>
+                  <option>Sarah K.</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chemicals -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg></div>
+            <div>
+              <div class="fsh-title">Chemical products</div>
+              <div class="fsh-sub">Products used at this pool — populates treatment entry for the technician</div>
+            </div>
+          </div>
+          <div class="form-body">
+            <div class="chem-list">
+              <div class="chem-row-item">
+                <span class="chem-name">Liquid chlorine</span>
+                <span class="chem-unit-badge">ml</span>
+                <div class="chem-remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+              </div>
+              <div class="chem-row-item">
+                <span class="chem-name">pH Buffer</span>
+                <span class="chem-unit-badge">g</span>
+                <div class="chem-remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+              </div>
+              <div class="chem-row-item">
+                <span class="chem-name">Alkalinity increaser</span>
+                <span class="chem-unit-badge">g</span>
+                <div class="chem-remove"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+              </div>
+            </div>
+            <div class="add-chem-btn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              Add chemical product
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sticky footer -->
+      <div class="form-footer">
+        <div class="footer-hint">* Required fields</div>
+        <div class="footer-actions">
+          <button class="btn-cancel">Cancel</button>
+          <button class="btn-save">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save
+          </button>
+          <button class="btn-save-invite">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F9FAFB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Save &amp; invite owner
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     W16 — ADD / EDIT TECHNICIAN
+══════════════════════════════════ -->
+<div class="screen" id="screen-technician">
+  <div class="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/><path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/></svg></div><span class="logo-text">PoolOps</span></div>
+    <div class="nav">
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+      <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+      <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-footer"><div class="user-row"><div class="user-avatar">SJ</div><div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div></div></div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span style="color:#64748B;cursor:pointer;">Team</span>
+        <span style="color:#475569;margin:0 6px;">›</span>
+        Add technician
+      </div>
+      <div class="topbar-date">Monday, 31 March</div>
+      <div class="topbar-div"></div>
+      <div class="topbar-bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="topbar-bell-dot"></div></div>
+      <div class="topbar-av">SJ</div>
+    </div>
+    <div class="content">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Add technician</div>
+          <div class="page-sub">They'll receive an email invitation to download the PoolOps app.</div>
+        </div>
+      </div>
+
+      <div class="form-container form-container-narrow">
+
+        <!-- Preview -->
+        <div class="tech-preview">
+          <div class="tech-preview-avatar" id="prev-avatar">JT</div>
+          <div>
+            <div class="tech-preview-name" id="prev-name">James Thompson</div>
+            <div class="tech-preview-role">Technician · Pool Pro NZ</div>
+            <div class="tech-preview-hint">Preview of how this technician will appear in the app</div>
+          </div>
+        </div>
+
+        <!-- Personal details -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+            <div><div class="fsh-title">Personal details</div></div>
+          </div>
+          <div class="form-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">First name <span>*</span></label>
+                <input class="form-input has-value" type="text" value="James" oninput="updatePreview()" id="fname" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Last name <span>*</span></label>
+                <input class="form-input has-value" type="text" value="Thompson" oninput="updatePreview()" id="lname" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Email address <span>*</span></label>
+                <input class="form-input has-value" type="email" value="james@poolpro.co.nz" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone number</label>
+                <input class="form-input has-value" type="tel" value="021 111 222" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Role -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+            <div><div class="fsh-title">Role</div><div class="fsh-sub">Determines app access and permissions</div></div>
+          </div>
+          <div class="form-body">
+            <div class="role-grid">
+              <div class="role-card selected" onclick="selectRole(this)">
+                <svg class="role-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F9FAFB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <div class="role-card-title">Technician</div>
+                <div class="role-card-desc">Mobile app access. Run sheet, chemical logging, job completion. No dashboard access.</div>
+              </div>
+              <div class="role-card" onclick="selectRole(this)">
+                <div class="role-card-title">Admin</div>
+                <div class="role-card-desc">Mobile app + web dashboard. Can view and manage all customers, schedules and records.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="form-section">
+          <div class="form-section-header">
+            <div class="fsh-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg></div>
+            <div><div class="fsh-title">Notification preferences</div></div>
+          </div>
+          <div class="form-body">
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Schedule change alerts</div>
+                <div class="toggle-sub">Push notification when run sheet is updated</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"><div class="toggle-thumb"></div></button>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Low stock warnings</div>
+                <div class="toggle-sub">Alert when chemical stock drops below threshold</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"><div class="toggle-thumb"></div></button>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">Office messages</div>
+                <div class="toggle-sub">In-app messages from the business owner</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"><div class="toggle-thumb"></div></button>
+            </div>
+            <div class="toggle-row">
+              <div class="toggle-info">
+                <div class="toggle-label">SMS for schedule changes</div>
+                <div class="toggle-sub">Text message backup for urgent run sheet changes</div>
+              </div>
+              <button class="toggle off" onclick="this.classList.toggle('on');this.classList.toggle('off');"><div class="toggle-thumb"></div></button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Sticky footer -->
+      <div class="form-footer">
+        <div class="footer-hint">An invitation email will be sent on save</div>
+        <div class="footer-actions">
+          <button class="btn-cancel">Cancel</button>
+          <button class="btn-save-invite">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#F9FAFB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Save &amp; send invitation
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  function show(name, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function selectRole(card) {
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+  }
+
+  function updatePreview() {
+    const fn = document.getElementById('fname').value;
+    const ln = document.getElementById('lname').value;
+    const initials = (fn[0] || '') + (ln[0] || '');
+    document.getElementById('prev-avatar').textContent = initials.toUpperCase();
+    document.getElementById('prev-name').textContent = fn + (ln ? ' ' + ln : '');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — M4 Today Run Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #E2E4E8;
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 32px 16px 64px;
+    min-height: 100vh;
+  }
+  .screen-label {
+    text-align: center;
+    font-size: 12px; font-weight: 600;
+    color: #6B7280; margin-bottom: 12px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .phone {
+    width: 375px;
+    background: #F5F5F3;
+    border-radius: 50px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .status-bar {
+    background: #F5F5F3;
+    padding: 14px 28px 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .di-wrap { background: #F5F5F3; padding: 6px 0; display: flex; justify-content: center; }
+  .di { width: 120px; height: 34px; background: #111827; border-radius: 20px; }
+
+  /* Header */
+  .header {
+    padding: 12px 20px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: #F5F5F3;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .menu-icon { display: flex; flex-direction: column; gap: 4px; cursor: pointer; padding: 4px; }
+  .menu-bar { width: 20px; height: 2px; background: #374151; border-radius: 2px; }
+  .header-title { font-size: 16px; font-weight: 600; color: #111827; }
+  .bell-wrap { position: relative; padding: 4px; cursor: pointer; }
+  .bell-dot {
+    position: absolute; top: 2px; right: 2px;
+    width: 7px; height: 7px;
+    background: #EF4444; border-radius: 50%;
+    border: 1.5px solid #F5F5F3;
+  }
+
+  /* Progress strip */
+  .progress-strip {
+    background: #EDEDEB;
+    padding: 10px 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .prog-label { font-size: 12px; font-weight: 500; color: #6B7280; white-space: nowrap; }
+  .prog-track { flex: 1; height: 5px; background: #D1D5DB; border-radius: 99px; overflow: hidden; }
+  .prog-fill { height: 100%; background: #111827; border-radius: 99px; }
+  .prog-pct { font-size: 12px; font-weight: 600; color: #111827; white-space: nowrap; }
+
+  /* Scroll */
+  .scroll {
+    padding: 12px 16px 16px;
+    background: #F5F5F3;
+    display: flex; flex-direction: column;
+    gap: 8px; flex: 1;
+  }
+  .section-sep {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    color: #9CA3AF; padding: 4px 2px 0;
+  }
+
+  /* NEXT UP card */
+  .card-next {
+    background: #ffffff;
+    border: 1.5px solid rgba(0,0,0,0.10);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .next-label { display: flex; align-items: center; gap: 5px; margin-bottom: 8px; }
+  .next-dot { width: 6px; height: 6px; background: #111827; border-radius: 50%; }
+  .next-tag { font-size: 10px; font-weight: 700; color: #111827; letter-spacing: 0.8px; text-transform: uppercase; }
+  .card-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .card-name { font-size: 17px; font-weight: 700; color: #111827; letter-spacing: -0.3px; }
+  .card-addr { font-size: 13px; color: #6B7280; margin-top: 2px; }
+  .card-meta { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .meta-age { font-size: 12px; color: #9CA3AF; }
+
+  /* Start button */
+  .start-btn {
+    background-color: #111827;
+    color: #ffffff;
+    border: none; border-radius: 22px;
+    padding: 10px 18px;
+    font-size: 13px; font-weight: 600;
+    font-family: 'Inter', system-ui, sans-serif;
+    cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* Pending cards */
+  .card-pend {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 16px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    cursor: pointer;
+  }
+  .pend-name { font-size: 15px; font-weight: 600; color: #111827; }
+  .pend-addr { font-size: 13px; color: #6B7280; margin-top: 2px; }
+  .pend-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .pend-age { font-size: 12px; color: #9CA3AF; }
+
+  /* Status pills */
+  .pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+  .pill-amber { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+  .pill-red   { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+  .pill-green { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+  .pill-grey  { background: #F3F4F6; color: #6B7280; border: 1px solid #E5E7EB; }
+
+  /* Done cards */
+  .card-done {
+    background: #EDEDEB;
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .done-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #D1FAE5;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .done-info { flex: 1; }
+  .done-name { font-size: 13px; font-weight: 500; color: #9CA3AF; }
+  .done-addr { font-size: 11px; color: #9CA3AF; margin-top: 1px; }
+  .done-time { font-size: 12px; color: #9CA3AF; }
+
+  /* Bottom nav */
+  .nav {
+    background: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.07);
+    padding: 10px 28px 0;
+    display: flex; align-items: center; justify-content: space-around;
+    flex-shrink: 0;
+  }
+  .nav-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+  .nav-icon-wrap {
+    width: 44px; height: 32px; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .nav-icon-wrap.active { background: #111827; }
+  .home-pill-wrap {
+    background: #ffffff;
+    display: flex; justify-content: center;
+    padding: 12px 0 14px; flex-shrink: 0;
+  }
+  .home-pill { width: 120px; height: 4px; background: #111827; border-radius: 99px; }
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;align-items:center;">
+  <div class="screen-label">M4 · Today Run Sheet</div>
+  <div class="phone">
+
+    <div class="status-bar">
+      <span style="font-size:15px;font-weight:600;color:#111827;">9:41</span>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+        <svg width="15" height="11" viewBox="0 0 20 14" fill="#111827"><path d="M10 3C13 3 15.7 4.2 17.6 6.2L19 4.8C16.7 2.4 13.5 1 10 1S3.3 2.4 1 4.8L2.4 6.2C4.3 4.2 7 3 10 3Z" opacity="0.3"/><path d="M10 6C12.2 6 14.2 6.9 15.6 8.4L17 7C15.2 5.1 12.7 4 10 4S4.8 5.1 3 7L4.4 8.4C5.8 6.9 7.8 6 10 6Z" opacity="0.6"/><path d="M10 9C11.4 9 12.7 9.6 13.6 10.5L15 9.1C13.7 7.8 12 7 10 7S6.3 7.8 5 9.1L6.4 10.5C7.3 9.6 8.6 9 10 9Z"/><circle cx="10" cy="13" r="1.5"/></svg>
+        <svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg>
+      </div>
+    </div>
+    <div class="di-wrap"><div class="di"></div></div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="menu-icon">
+        <div class="menu-bar"></div>
+        <div class="menu-bar"></div>
+        <div class="menu-bar" style="width:14px;"></div>
+      </div>
+      <div class="header-title">Monday 31 March</div>
+      <div class="bell-wrap">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        <div class="bell-dot"></div>
+      </div>
+    </div>
+
+    <!-- Progress strip -->
+    <div class="progress-strip">
+      <span class="prog-label">6 of 14 complete</span>
+      <div class="prog-track"><div class="prog-fill" style="width:43%;"></div></div>
+      <span class="prog-pct">43%</span>
+    </div>
+
+    <!-- Job list -->
+    <div class="scroll">
+
+      <!-- NEXT UP -->
+      <div class="card-next">
+        <div class="next-label">
+          <div class="next-dot"></div>
+          <span class="next-tag">Next up</span>
+        </div>
+        <div class="card-row">
+          <div>
+            <div class="card-name">Smith, David</div>
+            <div class="card-addr">12 Remuera Rd · Remuera</div>
+          </div>
+          <button class="start-btn">
+            Start
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="card-meta">
+          <span class="meta-age">Last: 14 days ago</span>
+          <span class="pill pill-amber">⚠ pH high last visit</span>
+        </div>
+      </div>
+
+      <!-- Pending — overdue -->
+      <div class="card-pend">
+        <div class="pend-name">Johnson, Anne</div>
+        <div class="pend-addr">47 Epsom Ave · Epsom</div>
+        <div class="pend-meta">
+          <span class="pend-age">Last: 21 days ago</span>
+          <span class="pill pill-red">● Overdue</span>
+        </div>
+      </div>
+
+      <!-- Pending — on schedule -->
+      <div class="card-pend">
+        <div class="pend-name">Chen, Michael</div>
+        <div class="pend-addr">8 Mt Eden Rd · Mt Eden</div>
+        <div class="pend-meta">
+          <span class="pend-age">Last: 7 days ago</span>
+          <span class="pill pill-green">✓ On schedule</span>
+        </div>
+      </div>
+
+      <!-- Pending — on schedule -->
+      <div class="card-pend">
+        <div class="pend-name">Peters, Sarah</div>
+        <div class="pend-addr">3 Ponsonby Rd · Ponsonby</div>
+        <div class="pend-meta">
+          <span class="pend-age">Last: 7 days ago</span>
+          <span class="pill pill-green">✓ On schedule</span>
+        </div>
+      </div>
+
+      <!-- Pending — on schedule -->
+      <div class="card-pend">
+        <div class="pend-name">Wong, Helen</div>
+        <div class="pend-addr">14 Herne Bay Rd · Herne Bay</div>
+        <div class="pend-meta">
+          <span class="pend-age">Last: 7 days ago</span>
+          <span class="pill pill-green">✓ On schedule</span>
+        </div>
+      </div>
+
+      <!-- Completed section -->
+      <div class="section-sep">Completed</div>
+
+      <div class="card-done">
+        <div class="done-check">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="done-info">
+          <div class="done-name">Williams, James</div>
+          <div class="done-addr">22 Ponsonby Rd · Ponsonby</div>
+        </div>
+        <div class="done-time">9:14am</div>
+      </div>
+
+      <div class="card-done">
+        <div class="done-check">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="done-info">
+          <div class="done-name">Brown, Lisa</div>
+          <div class="done-addr">5 Newmarket Ave · Newmarket</div>
+        </div>
+        <div class="done-time">8:51am</div>
+      </div>
+
+      <div class="card-done">
+        <div class="done-check">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="done-info">
+          <div class="done-name">Taylor, Mark</div>
+          <div class="done-addr">8 Grafton Rd · Grafton</div>
+        </div>
+        <div class="done-time">8:22am</div>
+      </div>
+
+    </div>
+
+    <!-- Bottom nav — home active -->
+    <div class="nav">
+      <div class="nav-item">
+        <div class="nav-icon-wrap active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        </div>
+      </div>
+      <div class="nav-item">
+        <div class="nav-icon-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+      </div>
+    </div>
+    <div class="home-pill-wrap"><div class="home-pill"></div></div>
+
+  </div>
+</div>
+</body>
+</html>

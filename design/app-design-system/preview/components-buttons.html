@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 24px 28px; display:flex; flex-direction:column; gap:12px; }
+  .row { display:flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .btn { font: var(--po-m-button); border-radius: 12px; padding: 13px 20px; border: none; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+  .btn.primary { background:#111827; color:#fff; }
+  .btn.secondary { background:#F3F4F6; color:#111827; border:1px solid #E5E7EB; border-radius:10px; }
+  .btn.destructive { background:#FEF2F2; color:#EF4444; border:1px solid #FCA5A5; border-radius:10px; }
+  .btn.disabled { background:#111827; color:#fff; opacity:.45; cursor:not-allowed; }
+  .spec { font-size:10px; color: var(--po-placeholder); font-family: var(--po-font-mono); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <button class="btn primary">Mark complete</button>
+    <span class="spec">Primary · #111827 · 12r · 13·20</span>
+  </div>
+  <div class="row">
+    <button class="btn secondary">Request a visit</button>
+    <span class="spec">Secondary · #F3F4F6 · 10r · 1px border</span>
+  </div>
+  <div class="row">
+    <button class="btn destructive">Abandon job</button>
+    <button class="btn disabled">Mark complete</button>
+    <span class="spec">Destructive · Disabled @ .45</span>
+  </div>
+</div>
+</body>
+</html>

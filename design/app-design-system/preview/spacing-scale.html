@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 22px 28px; display:flex; flex-direction:column; gap:14px; }
+  .row { display:flex; align-items:center; gap:10px; }
+  .bar { background: var(--po-ink); height: 24px; border-radius: 4px; display:flex; align-items:center; padding: 0 8px; color:#fff; font-size: 10px; font-family: var(--po-font-mono); }
+  .label { font-family: var(--po-font-mono); font-size: 10px; color: var(--po-text-secondary); min-width: 60px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row"><div class="label">xs · 4</div><div class="bar" style="width:4px;"></div></div>
+  <div class="row"><div class="label">sm · 8</div><div class="bar" style="width:8px;"></div></div>
+  <div class="row"><div class="label">md · 16</div><div class="bar" style="width:16px;"></div></div>
+  <div class="row"><div class="label">lg · 24</div><div class="bar" style="width:24px;"></div></div>
+  <div class="row"><div class="label">xl · 32</div><div class="bar" style="width:32px;"></div></div>
+  <div class="row"><div class="label">2xl · 48</div><div class="bar" style="width:48px;"></div></div>
+  <div class="row"><div class="label">3xl · 64</div><div class="bar" style="width:64px;">64</div></div>
+  <div class="row"><div class="label">4xl · 96</div><div class="bar" style="width:96px;">96 · marketing only</div></div>
+</div>
+</body>
+</html>

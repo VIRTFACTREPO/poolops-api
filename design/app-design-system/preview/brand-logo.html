@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 24px 28px; display:flex; align-items:center; gap: 24px; }
+  .logo { display:inline-flex; align-items:center; gap:10px; }
+  .tile { width:44px; height:44px; border-radius:12px; background:#111827; display:flex; align-items:center; justify-content:center; }
+  .tile.inv { background:#F5F5F3; }
+  .tile.inv svg { color:#111827; }
+  .tile svg { color: #F5F5F3; width:26px; height:26px; }
+  .word { font-size:22px; font-weight:700; color:#111827; letter-spacing:-0.5px; }
+  .tag { font-size:11px; color:#9CA3AF; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="tile">
+      <svg viewBox="0 0 32 32" fill="currentColor">
+        <path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" opacity="0.9"/>
+        <path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" opacity="0.4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="word">PoolOps</div>
+      <div class="tag">Pool smarter. Always.</div>
+    </div>
+  </div>
+  <div style="width:1px;height:44px;background:#E5E7EB;"></div>
+  <div class="logo" style="background:#0F172A; padding:10px 16px; border-radius:14px;">
+    <div class="tile inv">
+      <svg viewBox="0 0 32 32" fill="currentColor">
+        <path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" opacity="0.9"/>
+        <path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" opacity="0.4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="word" style="color:#F9FAFB;">PoolOps</div>
+      <div class="tag" style="color:#94A3B8;">Inverse · dark surface</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

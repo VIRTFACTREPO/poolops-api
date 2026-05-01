@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PoolOps · Technician Mobile UI Kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #E5E7EB; font-family: Inter, system-ui, sans-serif; min-height: 100vh; }
+  .shell { padding: 40px 24px; min-height: 100vh; box-sizing: border-box; }
+  .header { text-align: center; max-width: 600px; margin: 0 auto 36px; }
+  .header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin: 0 0 6px; color: #111827; }
+  .header p { font-size: 13px; color: #6B7280; margin: 0; }
+  .nav { display: flex; gap: 8px; justify-content: center; margin: 18px 0 40px; flex-wrap: wrap; }
+  .nav button { background: #fff; border: 1px solid #E5E7EB; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 500; color: #374151; cursor: pointer; font-family: inherit; }
+  .nav button.active { background: #111827; color: #fff; border-color: #111827; }
+  .stage { display: flex; justify-content: center; }
+</style>
+</head>
+<body>
+<div id="root" class="shell"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="Components.jsx"></script>
+<script type="text/babel" src="screens/M2Login.jsx"></script>
+<script type="text/babel" src="screens/M4RunSheet.jsx"></script>
+<script type="text/babel" src="screens/M5PoolBrief.jsx"></script>
+<script type="text/babel" src="screens/M6ActiveJob.jsx"></script>
+
+<script type="text/babel">
+function App() {
+  const [screen, setScreen] = React.useState('login');
+
+  const screens = {
+    login:  { el: <M2Login onLogin={() => setScreen('run')} />,    label: 'M2 Login' },
+    run:    { el: <M4RunSheet onOpenPool={() => setScreen('brief')} />, label: 'M4 Run sheet' },
+    brief:  { el: <M5PoolBrief onBack={() => setScreen('run')} onStart={() => setScreen('job')} />, label: 'M5 Pool brief' },
+    job:    { el: <M6ActiveJob onExit={() => setScreen('run')} />, label: 'M6 Active job' },
+  };
+
+  return (
+    <>
+      <div className="header">
+        <h1>Technician Mobile UI Kit</h1>
+        <p>Click through: Log in → Run sheet → Pool brief → Active job. Tap cards to navigate.</p>
+        <div className="nav">
+          {Object.entries(screens).map(([k, v]) => (
+            <button key={k} className={screen === k ? 'active' : ''} onClick={() => setScreen(k)}>{v.label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="stage" data-screen-label={screens[screen].label}>{screens[screen].el}</div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

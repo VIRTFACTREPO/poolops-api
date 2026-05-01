@@ -137,7 +137,7 @@ export default function Dashboard() {
                       style={{
                         width: `${pct}%`,
                         height: '100%',
-                        background: pct >= 80 ? '#22C55E' : '#3B82F6',
+                        background: pct >= 80 ? '#22C55E' : '#0EA5E9',
                       }}
                     />
                   </div>

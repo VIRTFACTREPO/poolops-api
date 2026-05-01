@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
     color: colors.text,
-    marginTop: spacing.xxs,
+    marginTop: 2,
   },
   scroll: {
     flex: 1,
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
     borderWidth: 1,
     borderLeftWidth: 4,
     flexDirection: 'row',
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: colors.text,
-    marginTop: spacing.xxs,
+    marginTop: 2,
   },
   readingsSection: {
     marginBottom: spacing.lg,
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
   },
   readingsContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
     padding: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginBottom: spacing.xxs,
+    marginBottom: 2,
   },
   trafficDot: {
     width: 8,
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   ctaButton: {
     backgroundColor: colors.primary,
     paddingVertical: spacing.lg,
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E2E8F0',
     paddingVertical: spacing.lg,
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
     alignItems: 'center',
     marginBottom: spacing.xl,
   },

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — W12 Service Records · W13 Record Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0A0F1A; font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+  /* ── SWITCHER ── */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #0A0F1A; border-bottom: 1px solid #1F2937;
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  }
+  .switcher-label { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+  .switch-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid #334155; background: #1E293B; font-size: 12px; font-weight: 600; color: #64748B; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; transition: all 0.15s; }
+  .switch-btn.active { background: #F9FAFB; color: #111827; border-color: #F9FAFB; }
+  .switch-btn:hover:not(.active) { background: #334155; color: #94A3B8; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; padding-top: 48px; min-height: 100vh; }
+  .screen { display: none; width: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar { width: 220px; min-width: 220px; background: #111827; border-right: 1px solid #1F2937; display: flex; flex-direction: column; position: sticky; top: 48px; height: calc(100vh - 48px); }
+  .sidebar-logo { padding: 18px 20px 14px; border-bottom: 1px solid #1F2937; display: flex; align-items: center; gap: 8px; }
+  .logo-mark { width: 28px; height: 28px; background: #F5F5F3; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-text { font-size: 15px; font-weight: 700; color: #F9FAFB; }
+  .nav { padding: 10px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; margin-bottom: 2px; cursor: pointer; font-size: 13px; font-weight: 500; color: #6B7280; transition: background 0.15s, color 0.15s; }
+  .nav-item:hover { background: #1F2937; color: #D1D5DB; }
+  .nav-item.active { background: #1F2937; color: #F9FAFB; }
+  .nav-badge { margin-left: auto; background: #EF4444; color: #fff; font-size: 10px; font-weight: 600; border-radius: 10px; padding: 1px 6px; }
+  .sidebar-footer { padding: 14px 10px; border-top: 1px solid #1F2937; }
+  .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+  .user-row:hover { background: #1F2937; }
+  .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; flex-shrink: 0; }
+  .user-name { font-size: 12px; font-weight: 600; color: #D1D5DB; }
+  .user-role { font-size: 10px; color: #6B7280; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; background: #0F172A; }
+  .topbar { height: 56px; background: #111827; border-bottom: 1px solid #1F2937; display: flex; align-items: center; padding: 0 28px; gap: 16px; position: sticky; top: 48px; z-index: 9; }
+  .topbar-title { font-size: 14px; font-weight: 600; color: #F9FAFB; flex: 1; }
+  .topbar-date { font-size: 12px; color: #6B7280; }
+  .topbar-div { width: 1px; height: 20px; background: #374151; }
+  .topbar-bell { position: relative; cursor: pointer; }
+  .topbar-bell-dot { position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; background: #EF4444; border-radius: 50%; border: 1.5px solid #111827; }
+  .topbar-av { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; }
+  .content { padding: 28px; flex: 1; }
+
+  /* ── SHARED ── */
+  .page-title { font-size: 20px; font-weight: 700; color: #F9FAFB; letter-spacing: -0.3px; margin-bottom: 20px; }
+  .pill { font-size: 10px; font-weight: 600; border-radius: 20px; padding: 3px 9px; }
+  .pill-green { background: rgba(74,222,128,0.1); color: #4ADE80; }
+  .pill-red { background: rgba(239,68,68,0.12); color: #F87171; }
+  .pill-amber { background: rgba(245,158,11,0.12); color: #FCD34D; }
+  .pill-grey { background: #1F2937; color: #64748B; border: 1px solid #334155; }
+  .pill-blue { background: rgba(56,189,248,0.12); color: #38BDF8; }
+  .btn-primary { background: #F9FAFB; color: #111827; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; display: flex; align-items: center; gap: 6px; }
+  .btn-secondary { background: #1E293B; color: #94A3B8; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; display: flex; align-items: center; gap: 6px; }
+
+  /* ══════════════════════════════════
+     W12 — SERVICE RECORD LIST
+  ══════════════════════════════════ */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-wrap { position: relative; min-width: 220px; max-width: 260px; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #475569; }
+  .search-input { width: 100%; background: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px 8px 34px; font-size: 13px; color: #F9FAFB; font-family: 'Inter', system-ui, sans-serif; outline: none; }
+  .search-input::placeholder { color: #475569; }
+  .search-input:focus { border-color: #64748B; }
+  .filter-select { background: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #94A3B8; font-family: 'Inter', system-ui, sans-serif; outline: none; cursor: pointer; }
+  .toggle-filter { display: flex; align-items: center; gap: 7px; background: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 12px; color: #64748B; transition: all 0.15s; }
+  .toggle-filter.on { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #F87171; }
+  .toggle-filter-dot { width: 7px; height: 7px; border-radius: 50%; background: #64748B; }
+  .toggle-filter.on .toggle-filter-dot { background: #EF4444; }
+  .toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+  .table-wrap { background: #1E293B; border: 1px solid #334155; border-radius: 14px; overflow: hidden; }
+  .table { width: 100%; border-collapse: collapse; }
+  .table th { padding: 11px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; background: #0F172A; border-bottom: 1px solid #334155; white-space: nowrap; }
+  .table th.sortable { cursor: pointer; }
+  .table th.sortable:hover { color: #94A3B8; }
+  .table th.sorted { color: #F9FAFB; }
+  .table td { padding: 12px 16px; font-size: 13px; color: #94A3B8; border-bottom: 1px solid #1F2937; vertical-align: middle; }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: #243447; cursor: pointer; }
+  .table td.primary { color: #F9FAFB; font-weight: 600; }
+  .table td.flagged-row { background: rgba(239,68,68,0.04); }
+  .reading-cell { display: flex; align-items: center; gap: 5px; }
+  .r-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid #334155; }
+  .page-info { font-size: 12px; color: #64748B; }
+  .page-btns { display: flex; gap: 4px; }
+  .page-btn { width: 30px; height: 30px; border-radius: 6px; background: #1E293B; border: 1px solid #334155; color: #64748B; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Inter', system-ui, sans-serif; }
+  .page-btn.active { background: #F9FAFB; color: #111827; border-color: #F9FAFB; }
+
+  /* ══════════════════════════════════
+     W13 — SERVICE RECORD DETAIL
+  ══════════════════════════════════ */
+  .detail-layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+
+  .record-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .rh-left { }
+  .rh-title { font-size: 20px; font-weight: 700; color: #F9FAFB; letter-spacing: -0.3px; }
+  .rh-meta { font-size: 13px; color: #64748B; margin-top: 4px; display: flex; align-items: center; gap: 10px; }
+  .rh-actions { display: flex; gap: 8px; }
+
+  .detail-card { background: #1E293B; border: 1px solid #334155; border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+  .detail-card:last-child { margin-bottom: 0; }
+  .dc-header { padding: 13px 18px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 8px; }
+  .dc-header-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; flex: 1; }
+  .dc-body { padding: 16px 18px; }
+
+  /* Readings table */
+  .readings-table { width: 100%; border-collapse: collapse; }
+  .readings-table th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; padding: 0 0 8px; text-align: left; border-bottom: 1px solid #334155; }
+  .readings-table th:not(:first-child) { text-align: center; }
+  .readings-table td { padding: 10px 0; border-bottom: 1px solid #1F2937; font-size: 13px; color: #94A3B8; }
+  .readings-table td:not(:first-child) { text-align: center; }
+  .readings-table tr:last-child td { border-bottom: none; }
+  .readings-table td.chem-name { color: #D1D5DB; font-weight: 500; }
+  .readings-table td.val-good { color: #4ADE80; font-weight: 600; }
+  .readings-table td.val-low { color: #F87171; font-weight: 600; }
+  .readings-table td.val-high { color: #FCD34D; font-weight: 600; }
+  .readings-table td.val-ok { color: #94A3B8; }
+  .traffic-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+
+  /* LSI card */
+  .lsi-block { display: flex; align-items: center; gap: 16px; padding: 14px 18px; }
+  .lsi-score { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+  .lsi-label { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .lsi-desc { font-size: 12px; color: #64748B; }
+
+  /* Treatment list */
+  .treatment-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #1F2937; }
+  .treatment-row:last-child { border-bottom: none; }
+  .tr-name { font-size: 13px; color: #D1D5DB; flex: 1; }
+  .tr-amount { font-size: 13px; font-weight: 600; color: #F9FAFB; }
+  .tr-check { width: 18px; height: 18px; border-radius: 50%; background: rgba(74,222,128,0.1); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+  /* Photos */
+  .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .photo-cell { border-radius: 10px; overflow: hidden; aspect-ratio: 4/3; background: #0F172A; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 6px; }
+  .photo-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #475569; }
+
+  /* Notes */
+  .note-block { padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+  .note-customer { background: #0F172A; border-left: 3px solid #334155; color: #94A3B8; font-style: italic; border-radius: 0 8px 8px 0; }
+  .note-office { background: #1A0F0F; border-left: 3px solid rgba(239,68,68,0.4); color: #94A3B8; border-radius: 0 8px 8px 0; }
+  .note-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .note-label.customer { color: #475569; }
+  .note-label.office { color: rgba(239,68,68,0.6); }
+
+  /* Right panel */
+  .right-panel { display: flex; flex-direction: column; gap: 16px; }
+  .meta-card { background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 18px; }
+  .meta-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 7px 0; border-bottom: 1px solid #1F2937; }
+  .meta-row:last-child { border-bottom: none; }
+  .meta-key { font-size: 12px; color: #64748B; }
+  .meta-val { font-size: 12px; font-weight: 500; color: #D1D5DB; text-align: right; }
+  .flag-alert { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 12px; padding: 14px 16px; }
+  .flag-alert-title { font-size: 12px; font-weight: 700; color: #F87171; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .flag-alert-body { font-size: 12px; color: #94A3B8; line-height: 1.5; }
+  .edit-note-btn { width: 100%; background: #0F172A; border: 1px solid #334155; border-radius: 8px; padding: 10px; font-size: 12px; color: #64748B; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .edit-note-btn:hover { border-color: #64748B; color: #94A3B8; }
+</style>
+</head>
+<body>
+
+<div class="switcher">
+  <span class="switcher-label">Screen</span>
+  <button class="switch-btn active" onclick="show('list',this)">W12 · Record List</button>
+  <button class="switch-btn" onclick="show('detail',this)">W13 · Record Detail</button>
+</div>
+
+<div class="app">
+
+<!-- ══════════════════════════════════
+     W12 — SERVICE RECORD LIST
+══════════════════════════════════ -->
+<div class="screen active" id="screen-list">
+  <div class="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/><path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/></svg></div><span class="logo-text">PoolOps</span></div>
+    <div class="nav">
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+      <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+      <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-footer"><div class="user-row"><div class="user-avatar">SJ</div><div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div></div></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Service Records</div>
+      <div class="topbar-date">Monday, 31 March</div>
+      <div class="topbar-div"></div>
+      <div class="topbar-bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="topbar-bell-dot"></div></div>
+      <div class="topbar-av">SJ</div>
+    </div>
+    <div class="content">
+      <div class="page-title">Service Records</div>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <div class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+          <input class="search-input" placeholder="Search customer or technician..." />
+        </div>
+        <select class="filter-select">
+          <option>All technicians</option>
+          <option>James T.</option>
+          <option>Mike R.</option>
+          <option>Sarah K.</option>
+        </select>
+        <select class="filter-select">
+          <option>March 2026</option>
+          <option>February 2026</option>
+          <option>January 2026</option>
+        </select>
+        <div class="toggle-filter on" onclick="this.classList.toggle('on');">
+          <div class="toggle-filter-dot"></div>
+          Flagged only
+        </div>
+        <div class="toolbar-right">
+          <button class="btn-secondary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export CSV
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="sortable sorted">Date ↓</th>
+              <th>Customer</th>
+              <th>Technician</th>
+              <th>pH</th>
+              <th>Chlorine</th>
+              <th>LSI</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="primary">31 Mar · 9:42am</td>
+              <td>Smith, David</td>
+              <td>James T.</td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>7.4</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#EF4444;"></div>0.8</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#F59E0B;"></div>−0.4</div></td>
+              <td><span class="pill pill-red">Flagged</span></td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td class="primary">31 Mar · 10:15am</td>
+              <td>Chen, Michael</td>
+              <td>Mike R.</td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>7.3</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>2.1</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#EF4444;"></div>−0.5</div></td>
+              <td><span class="pill pill-amber">LSI flag</span></td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td class="primary">31 Mar · 11:02am</td>
+              <td>Williams, James</td>
+              <td>James T.</td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>7.4</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>1.8</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>+0.1</div></td>
+              <td><span class="pill pill-green">Good</span></td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td class="primary">31 Mar · 10:48am</td>
+              <td>Johnson, Anne</td>
+              <td>Sarah K.</td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>7.5</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>2.0</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>+0.0</div></td>
+              <td><span class="pill pill-green">Good</span></td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td class="primary">31 Mar · 9:20am</td>
+              <td>Brown, Lisa</td>
+              <td>James T.</td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>7.2</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>2.4</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>+0.2</div></td>
+              <td><span class="pill pill-green">Good</span></td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td class="primary">30 Mar · 2:15pm</td>
+              <td>Peters, Sarah</td>
+              <td>Mike R.</td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#F59E0B;"></div>7.8</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>1.6</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>+0.1</div></td>
+              <td><span class="pill pill-amber">pH high</span></td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td class="primary">30 Mar · 11:30am</td>
+              <td>Wong, Helen</td>
+              <td>James T.</td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>7.4</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>2.2</div></td>
+              <td><div class="reading-cell"><div class="r-dot" style="background:#22C55E;"></div>+0.0</div></td>
+              <td><span class="pill pill-green">Good</span></td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span class="page-info">Showing 1–7 of 284 records</span>
+          <div class="page-btns">
+            <button class="page-btn">‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     W13 — SERVICE RECORD DETAIL
+══════════════════════════════════ -->
+<div class="screen" id="screen-detail">
+  <div class="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/><path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/></svg></div><span class="logo-text">PoolOps</span></div>
+    <div class="nav">
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+      <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+      <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-footer"><div class="user-row"><div class="user-avatar">SJ</div><div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div></div></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span style="color:#64748B;cursor:pointer;">Records</span>
+        <span style="color:#475569;margin:0 6px;">›</span>
+        Smith, David · 31 Mar 9:42am
+      </div>
+      <div class="topbar-date">Monday, 31 March</div>
+      <div class="topbar-div"></div>
+      <div class="topbar-bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="topbar-bell-dot"></div></div>
+      <div class="topbar-av">SJ</div>
+    </div>
+    <div class="content">
+
+      <div class="record-header">
+        <div class="rh-left">
+          <div class="rh-title">Smith, David — Service Record</div>
+          <div class="rh-meta">
+            <span>31 March 2026 · 9:42am</span>
+            <span style="color:#334155;">·</span>
+            <span>James T.</span>
+            <span style="color:#334155;">·</span>
+            <span>12 Remuera Rd, Remuera</span>
+            <span class="pill pill-red" style="margin-left:4px;">Flagged</span>
+          </div>
+        </div>
+        <div class="rh-actions">
+          <button class="btn-secondary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PDF
+          </button>
+          <button class="btn-secondary">View customer</button>
+        </div>
+      </div>
+
+      <div class="detail-layout">
+
+        <!-- Left column -->
+        <div>
+          <!-- Readings -->
+          <div class="detail-card">
+            <div class="dc-header">
+              <div class="dc-header-title">Chemical readings</div>
+              <span class="pill pill-red">1 out of range</span>
+            </div>
+            <div class="dc-body">
+              <table class="readings-table">
+                <thead>
+                  <tr>
+                    <th>Chemical</th>
+                    <th>Reading</th>
+                    <th>Target</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="chem-name">pH</td>
+                    <td class="val-good">7.4</td>
+                    <td class="val-ok">7.2 – 7.6</td>
+                    <td><span class="traffic-dot" style="background:#22C55E;"></span></td>
+                  </tr>
+                  <tr>
+                    <td class="chem-name">Free chlorine</td>
+                    <td class="val-low">0.8 ppm</td>
+                    <td class="val-ok">1.0 – 3.0</td>
+                    <td><span class="traffic-dot" style="background:#EF4444;"></span> <span style="font-size:10px;color:#F87171;">LOW</span></td>
+                  </tr>
+                  <tr>
+                    <td class="chem-name">Total alkalinity</td>
+                    <td class="val-good">95 ppm</td>
+                    <td class="val-ok">80 – 120</td>
+                    <td><span class="traffic-dot" style="background:#22C55E;"></span></td>
+                  </tr>
+                  <tr>
+                    <td class="chem-name">Calcium hardness</td>
+                    <td class="val-good">280 ppm</td>
+                    <td class="val-ok">200 – 400</td>
+                    <td><span class="traffic-dot" style="background:#22C55E;"></span></td>
+                  </tr>
+                  <tr>
+                    <td class="chem-name">Stabiliser / CYA</td>
+                    <td class="val-good">42 ppm</td>
+                    <td class="val-ok">30 – 50</td>
+                    <td><span class="traffic-dot" style="background:#22C55E;"></span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- LSI -->
+          <div class="detail-card">
+            <div class="dc-header"><div class="dc-header-title">LSI Water Balance</div></div>
+            <div class="lsi-block">
+              <div>
+                <div class="lsi-score" style="color:#FCD34D;">−0.4</div>
+              </div>
+              <div>
+                <div class="lsi-label" style="color:#FCD34D;">Slightly corrosive</div>
+                <div class="lsi-desc">Water may slowly corrode pool surfaces and equipment. Monitor closely and treat if LSI drops further.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Treatment -->
+          <div class="detail-card">
+            <div class="dc-header"><div class="dc-header-title">Treatment applied</div></div>
+            <div class="dc-body">
+              <div class="treatment-row">
+                <div class="tr-check"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#4ADE80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <span class="tr-name">Liquid chlorine</span>
+                <span class="tr-amount">400 ml added</span>
+              </div>
+              <div class="treatment-row">
+                <div class="tr-check"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#4ADE80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                <span class="tr-name">pH Buffer</span>
+                <span class="tr-amount">150 g added</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Photos -->
+          <div class="detail-card">
+            <div class="dc-header"><div class="dc-header-title">Photos</div><span style="font-size:11px;color:#475569;">1 of 2 taken</span></div>
+            <div class="dc-body">
+              <div class="photo-grid">
+                <div class="photo-cell">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <div class="photo-label">Before</div>
+                </div>
+                <div class="photo-cell" style="background:#1A2A1A;border-color:#2D4A2D;">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D4A2D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  <div class="photo-label" style="color:#2D4A2D;">After — not taken</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="detail-card">
+            <div class="dc-header"><div class="dc-header-title">Notes</div></div>
+            <div class="dc-body" style="display:flex;flex-direction:column;gap:10px;">
+              <div>
+                <div class="note-label customer">Customer note — included in report</div>
+                <div class="note-block note-customer">"Pool looking great. Treated low chlorine — should be back to normal by tomorrow."</div>
+              </div>
+              <div>
+                <div class="note-label office">Office note — internal only</div>
+                <div class="note-block note-office">"Gate latch broken. Owner needs to fix before next visit."</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right panel -->
+        <div class="right-panel">
+          <!-- Flag alert -->
+          <div class="flag-alert">
+            <div class="flag-alert-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Flagged reading
+            </div>
+            <div class="flag-alert-body">Chlorine was recorded at 0.8 ppm — below the target range of 1.0–3.0 ppm. Auto-alert sent to dashboard at 9:43am.</div>
+          </div>
+
+          <!-- Job meta -->
+          <div class="meta-card">
+            <div class="dc-header" style="padding:13px 18px;"><div class="dc-header-title">Job details</div></div>
+            <div style="padding:14px 18px;">
+              <div class="meta-row"><span class="meta-key">Date</span><span class="meta-val">31 March 2026</span></div>
+              <div class="meta-row"><span class="meta-key">Time</span><span class="meta-val">9:42am – 10:04am</span></div>
+              <div class="meta-row"><span class="meta-key">Duration</span><span class="meta-val">22 minutes</span></div>
+              <div class="meta-row"><span class="meta-key">Technician</span><span class="meta-val">James T.</span></div>
+              <div class="meta-row"><span class="meta-key">Pool volume</span><span class="meta-val">55,000 L</span></div>
+              <div class="meta-row"><span class="meta-key">Record ID</span><span class="meta-val" style="font-family:monospace;font-size:11px;color:#475569;">#SR-2026-0847</span></div>
+            </div>
+          </div>
+
+          <!-- Stock used -->
+          <div class="meta-card">
+            <div class="dc-header" style="padding:13px 18px;"><div class="dc-header-title">Stock used</div></div>
+            <div style="padding:14px 18px;">
+              <div class="meta-row"><span class="meta-key">Liquid chlorine</span><span class="meta-val">400 ml</span></div>
+              <div class="meta-row"><span class="meta-key">pH Buffer</span><span class="meta-val">150 g</span></div>
+              <div class="meta-row"><span class="meta-key">Stock after job</span><span class="meta-val" style="color:#FCD34D;">pH Buffer low ⚠</span></div>
+            </div>
+          </div>
+
+          <!-- Edit note -->
+          <button class="edit-note-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit office note
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  function show(name, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>

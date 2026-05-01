@@ -68,11 +68,20 @@ const LAST_READINGS_MOCK: ChemicalReadings = {
 
 const TAB_META: { key: ActiveJobTab; title: string; cta: string; ctaColor: string }[] = [
   { key: 'readings', title: 'Readings', cta: 'Next — Treatment', ctaColor: '#111827' },
-  { key: 'treatment', title: 'Treatment', cta: 'Save Treatment', ctaColor: '#2563EB' },
-  { key: 'photos', title: 'Photos', cta: 'Save Photos', ctaColor: '#6366F1' },
-  { key: 'notes', title: 'Notes', cta: 'Save Notes', ctaColor: '#8B5CF6' },
-  { key: 'complete', title: 'Complete', cta: 'Complete Job', ctaColor: '#22C55E' },
+  { key: 'treatment', title: 'Treatment', cta: 'Save treatment', ctaColor: '#111827' },
+  { key: 'photos', title: 'Photos', cta: 'Save photos', ctaColor: '#111827' },
+  { key: 'notes', title: 'Notes', cta: 'Save notes', ctaColor: '#111827' },
+  { key: 'complete', title: 'Complete', cta: 'Complete job', ctaColor: '#22C55E' },
 ];
+
+function formatVisitDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  return `${diffDays} days ago`;
+}
 
 function formatDuration(ms: number) {
   const totalSec = Math.floor(ms / 1000);
@@ -108,12 +117,14 @@ function parseReading(value: string) {
   return Number.isFinite(num) ? num : null;
 }
 
-function readingState(value: string, min: number, max: number) {
+function readingState(value: string, min: number, max: number, isFocused = false) {
   const num = parseReading(value);
-  if (num === null) return { dot: '#D1D5DB', isValid: false, status: '' as '' | 'LOW' | 'HIGH' };
+  if (num === null || value.trim() === '') return { dot: '#D1D5DB', isValid: false, status: '' as '' | 'LOW' | 'HIGH' };
+  if (num >= min && num <= max) return { dot: '#22C55E', isValid: true, status: '' as const };
+  // Don't show error state while the field is actively being edited
+  if (isFocused) return { dot: '#D1D5DB', isValid: false, status: '' as '' | 'LOW' | 'HIGH' };
   if (num < min) return { dot: '#EF4444', isValid: false, status: 'LOW' as const };
-  if (num > max) return { dot: '#EF4444', isValid: false, status: 'HIGH' as const };
-  return { dot: '#22C55E', isValid: true, status: '' as const };
+  return { dot: '#EF4444', isValid: false, status: 'HIGH' as const };
 }
 
 function buildRecommendedTreatments(readings: ChemicalReadings): TreatmentRecommendation[] {
@@ -121,6 +132,8 @@ function buildRecommendedTreatments(readings: ChemicalReadings): TreatmentRecomm
   const cl = parseReading(readings.freeChlorine);
   const ph = parseReading(readings.ph);
   const alk = parseReading(readings.alkalinity);
+  const calcium = parseReading(readings.calciumHardness);
+  const cya = parseReading(readings.cyanuricAcid);
 
   if (cl !== null && cl < 1) {
     output.push({ id: 'liq-chlorine', name: 'Liquid Chlorine', recommendedAmount: 400, unit: 'ml', reason: 'Raise free chlorine' });
@@ -129,13 +142,23 @@ function buildRecommendedTreatments(readings: ChemicalReadings): TreatmentRecomm
     output.push({ id: 'ph-up', name: 'pH Buffer', recommendedAmount: 150, unit: 'g', reason: 'Raise pH into target range' });
   }
   if (ph !== null && ph > 7.6) {
-    output.push({ id: 'acid', name: 'Muriatic Acid', recommendedAmount: 250, unit: 'ml', reason: 'Lower pH into target range' });
+    output.push({ id: 'ph-down', name: 'Muriatic Acid', recommendedAmount: 250, unit: 'ml', reason: 'Lower pH into target range' });
   }
   if (alk !== null && alk < 80) {
     output.push({ id: 'alk-up', name: 'Alkalinity Up', recommendedAmount: 300, unit: 'g', reason: 'Raise alkalinity' });
   }
+  if (alk !== null && alk > 120) {
+    output.push({ id: 'alk-down', name: 'Muriatic Acid', recommendedAmount: 500, unit: 'ml', reason: 'Lower alkalinity — add acid in small doses with pump running' });
+  }
+  if (calcium !== null && calcium > 400) {
+    output.push({ id: 'calcium-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Calcium hardness too high — no chemical fix, dilution required' });
+  }
+  if (cya !== null && cya > 50) {
+    output.push({ id: 'cya-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Cyanuric acid too high — no chemical fix, dilution required' });
+  }
+
   if (output.length === 0) {
-    output.push({ id: 'maintain', name: 'No correction needed', recommendedAmount: 0, unit: 'g', reason: 'Readings are currently within target range' });
+    output.push({ id: 'maintain', name: 'No correction needed', recommendedAmount: 0, unit: 'g', reason: 'All readings within target range' });
   }
 
   return output;
@@ -143,14 +166,15 @@ function buildRecommendedTreatments(readings: ChemicalReadings): TreatmentRecomm
 
 function ReadingsTab() {
   const { readings, pools, readingsPoolIndex, setReadings, useLastReadings, setTreatmentPrefill, setTabComplete } = useActiveJob();
+  const [focusedField, setFocusedField] = useState<ReadingKey | null>(null);
 
   const derived = useMemo(
     () =>
       READING_RULES.map((rule) => ({
         ...rule,
-        ...readingState(readings[rule.key], rule.min, rule.max),
+        ...readingState(readings[rule.key], rule.min, rule.max, focusedField === rule.key),
       })),
-    [readings],
+    [readings, focusedField],
   );
 
   const hasAllReadings = READING_RULES.every((r) => readings[r.key].trim() !== '');
@@ -176,7 +200,7 @@ function ReadingsTab() {
   }, [allValid, hasAllReadings, setTabComplete]);
 
   useEffect(() => {
-    setTreatmentPrefill(recommendations);
+    setTreatmentPrefill(recommendations.filter((r) => r.recommendedAmount > 0));
   }, [recommendations, setTreatmentPrefill]);
 
   return (
@@ -203,6 +227,8 @@ function ReadingsTab() {
             keyboardType="decimal-pad"
             value={readings[field.key]}
             onChangeText={(text) => setReadings({ [field.key]: text.replace(/[^0-9.]/g, '') })}
+            onFocus={() => setFocusedField(field.key)}
+            onBlur={() => setFocusedField(null)}
             placeholder="0"
             placeholderTextColor="#9CA3AF"
           />
@@ -281,7 +307,8 @@ function ActiveJobContent() {
     if (!jobId) return;
     const loadJob = async () => {
       try {
-        const res = await getApiClient().get(`/technician/jobs/${jobId}`) as Record<string, unknown>;
+        const envelope = await getApiClient().get<{ ok: boolean; data: Record<string, unknown> }>(`/technician/jobs/${jobId}`);
+        const res = (envelope as any)?.data ?? envelope as Record<string, unknown>;
         const rawPools: any[] = Array.isArray(res?.pools)
           ? (res.pools as any[])
           : res?.pool
@@ -370,7 +397,7 @@ function ActiveJobContent() {
               ))}
               {!!pool.lastVisits?.length && <Text style={styles.poolSubhead}>Last visits</Text>}
               {pool.lastVisits?.map((visit, vIdx) => (
-                <Text key={`${pool.poolId}-visit-${vIdx}`} style={styles.poolMeta}>• {visit.date ?? '—'} {visit.summary ? `— ${visit.summary}` : ''}</Text>
+                <Text key={`${pool.poolId}-visit-${vIdx}`} style={styles.poolMeta}>• {visit.date ? formatVisitDate(visit.date) : '—'}{visit.lsiLabel ? ` · ${visit.lsiLabel}` : ''}</Text>
               ))}
             </View>
           ))}
@@ -435,7 +462,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F3',
-    paddingHorizontal: spacing.base,
+    paddingHorizontal: 20,
   },
   header: {
     marginTop: spacing.sm,
@@ -467,10 +494,10 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   timerPill: {
-    marginTop: spacing.base,
+    marginTop: spacing.md,
     backgroundColor: '#DCFCE7',
     borderRadius: borderRadius.full,
-    paddingHorizontal: spacing.base,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
@@ -494,15 +521,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   poolSection: {
-    marginTop: spacing.base,
+    marginTop: spacing.md,
     gap: spacing.sm,
   },
   poolCard: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.lg,
-    padding: spacing.sm,
+    borderRadius: borderRadius.xl,
+    padding: spacing.md,
     gap: 4,
   },
   poolTitle: {
@@ -522,7 +549,7 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   tabBarWrap: {
-    marginTop: spacing.base,
+    marginTop: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: spacing.xs,
@@ -563,7 +590,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#22C55E',
   },
   tabContentWrap: {
-    marginTop: spacing.base,
+    marginTop: spacing.md,
     gap: spacing.sm,
   },
   readingsPoolHeader: {
@@ -640,7 +667,7 @@ const styles = StyleSheet.create({
     borderColor: '#FDE68A',
     borderWidth: 1,
     borderRadius: borderRadius.xl,
-    padding: spacing.base,
+    padding: spacing.md,
     gap: spacing.xs,
   },
   lsiLabel: {
@@ -663,7 +690,7 @@ const styles = StyleSheet.create({
     borderColor: '#BAE6FD',
     borderWidth: 1,
     borderRadius: borderRadius.xl,
-    padding: spacing.base,
+    padding: spacing.md,
     gap: spacing.xs,
   },
   recoLabel: {
@@ -696,7 +723,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
-    padding: spacing.base,
+    padding: spacing.md,
   },
   slotTitle: {
     fontSize: typography.fontSizes.base,
@@ -710,15 +737,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   stickyCtaWrap: {
-    paddingVertical: spacing.base,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
   ctaBtn: {
-    minHeight: 52,
-    borderRadius: borderRadius.lg,
+    minHeight: 56,
+    borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.base,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
   ctaText: {
     color: colors.textInverse,
@@ -732,10 +760,10 @@ const styles = StyleSheet.create({
   },
   sheetCard: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: borderRadius['2xl'],
-    borderTopRightRadius: borderRadius['2xl'],
+    borderTopLeftRadius: borderRadius.xxl,
+    borderTopRightRadius: borderRadius.xxl,
     padding: spacing.lg,
-    gap: spacing.base,
+    gap: spacing.md,
   },
   sheetTitle: {
     fontSize: typography.fontSizes.lg,

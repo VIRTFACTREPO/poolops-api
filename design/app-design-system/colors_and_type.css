@@ -1,0 +1,174 @@
+/* =============================================================
+   PoolOps — Colors & Type
+   Single source of truth for CSS variables. Import in any HTML.
+   Based on PoolOps Master UI Spec v1.0 + Design System v1.0.
+   ============================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  /* -----------------------------------------------------------
+     BRAND — Primary action color is NEAR-BLACK, not Pool Blue.
+     Pool Blue is reserved for links, active tabs, selected states.
+     ----------------------------------------------------------- */
+  --po-ink:          #111827;   /* primary action, CTAs, headings */
+  --po-ink-hover:    #1F2937;   /* hover for dark CTAs */
+  --po-pool-blue:    #0EA5E9;   /* accent: links, active tab underline */
+  --po-pool-blue-deep:#0369A1;  /* pressed link */
+  --po-pool-blue-light:#E0F2FE; /* selected tint */
+
+  /* Status */
+  --po-green:        #22C55E;
+  --po-green-deep:   #15803D;
+  --po-amber:        #F59E0B;
+  --po-amber-deep:   #B45309;
+  --po-red:          #EF4444;
+  --po-red-deep:     #DC2626;
+
+  /* Neutral scale (light mode) */
+  --po-white:        #FFFFFF;
+  --po-app-bg:       #F5F5F3;   /* warm near-white — mobile app surface */
+  --po-page-bg:      #F5F7FA;   /* near-white — light dashboard */
+  --po-surface-2:    #F9FAFB;   /* input bg, secondary surface */
+  --po-surface-3:    #F3F4F6;   /* chips, disabled */
+  --po-surface-4:    #EDEDEB;   /* progress strip on app-bg */
+  --po-border:       #E5E7EB;
+  --po-border-soft:  rgba(0,0,0,0.07);
+  --po-placeholder:  #9CA3AF;
+  --po-text-secondary:#6B7280;
+  --po-text-body:    #374151;
+  --po-text-heading: #111827;
+
+  /* Dark mode (web dashboard default) */
+  --po-dark-page:    #0F172A;
+  --po-dark-chrome:  #111827;   /* sidebar + topbar */
+  --po-dark-card:    #1E293B;
+  --po-dark-hover:   #243447;
+  --po-dark-border:  #334155;
+  --po-dark-divider: #1F2937;
+  --po-dark-text:    #F9FAFB;
+  --po-dark-body:    #D1D5DB;
+  --po-dark-muted:   #94A3B8;
+  --po-dark-label:   #64748B;
+  --po-dark-hint:    #475569;
+
+  /* Soft status tints */
+  --po-tint-green:   #F0FDF4;
+  --po-tint-green-bd:#BBF7D0;
+  --po-tint-amber:   #FFFBEB;
+  --po-tint-amber-bd:#FDE68A;
+  --po-tint-red:     #FEF2F2;
+  --po-tint-red-bd:  #FECACA;
+  --po-tint-blue:    #EFF6FF;
+  --po-tint-blue-bd: #BAE6FD;
+  --po-tint-bluesky: #F0F9FF;
+
+  /* Marketing-only extension (for conversion site) — still derived
+     from brand. Use sparingly; never on product UI. */
+  --po-marketing-mist: #EAF6FB;       /* Pool Blue @ ~6% on white */
+  --po-marketing-deep: #081321;        /* hero/footer dark, deeper than ink */
+  --po-marketing-gradient: linear-gradient(180deg,#F5F7FA 0%,#EAF6FB 100%);
+
+  /* -----------------------------------------------------------
+     TYPOGRAPHY
+     ----------------------------------------------------------- */
+  --po-font:         'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --po-font-mono:    ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Mobile scale */
+  --po-m-h1: 700 24px/1.2 var(--po-font);
+  --po-m-h2: 600 20px/1.25 var(--po-font);
+  --po-m-h3: 600 16px/1.3 var(--po-font);
+  --po-m-body: 400 14px/1.45 var(--po-font);
+  --po-m-small: 400 12px/1.4 var(--po-font);
+  --po-m-label: 500 11px/1.3 var(--po-font);   /* + text-transform:uppercase; letter-spacing:.5px */
+  --po-m-button: 600 15px/1.2 var(--po-font);
+
+  /* Web scale */
+  --po-w-h1: 700 28px/1.2 var(--po-font);
+  --po-w-h2: 600 22px/1.25 var(--po-font);
+  --po-w-h3: 600 18px/1.3 var(--po-font);
+  --po-w-body: 400 14px/1.5 var(--po-font);
+  --po-w-small: 400 12px/1.4 var(--po-font);
+  --po-w-table: 400 13px/1.4 var(--po-font);
+
+  /* Marketing scale (display — for the conversion site / decks) */
+  --po-mk-display: 700 72px/1.02 var(--po-font);
+  --po-mk-h1:      700 56px/1.05 var(--po-font);
+  --po-mk-h2:      700 40px/1.1  var(--po-font);
+  --po-mk-h3:      600 24px/1.3  var(--po-font);
+  --po-mk-lead:    400 20px/1.5  var(--po-font);
+  --po-mk-body:    400 16px/1.6  var(--po-font);
+  --po-mk-eyebrow: 600 12px/1.2  var(--po-font);
+
+  /* -----------------------------------------------------------
+     SPACING (4px base)
+     ----------------------------------------------------------- */
+  --po-xs: 4px;
+  --po-sm: 8px;
+  --po-md: 16px;
+  --po-lg: 24px;
+  --po-xl: 32px;
+  --po-2xl: 48px;
+  --po-3xl: 64px;
+  --po-4xl: 96px;
+
+  /* -----------------------------------------------------------
+     RADII
+     ----------------------------------------------------------- */
+  --po-r-sm: 6px;     /* status badge square */
+  --po-r-md: 8px;     /* input */
+  --po-r-lg: 10px;    /* secondary button */
+  --po-r-xl: 12px;    /* card (standard), primary button mobile */
+  --po-r-2xl: 14px;   /* card prominent */
+  --po-r-3xl: 18px;   /* card hero */
+  --po-r-pill: 999px; /* pill, progress track, avatar */
+  --po-r-phone: 50px; /* device frame */
+
+  /* -----------------------------------------------------------
+     SHADOWS — Velix-inspired neomorphic. Soft, not floating.
+     ----------------------------------------------------------- */
+  --po-shadow-card: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --po-shadow-card-hover: 0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+  --po-shadow-hero: 0 4px 16px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --po-shadow-phone: 0 32px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10);
+  --po-shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --po-shadow-none: 0 0 0 transparent;
+
+  /* -----------------------------------------------------------
+     MOTION — responsive, not theatrical
+     ----------------------------------------------------------- */
+  --po-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --po-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --po-dur-fast: 150ms;
+  --po-dur-mid: 200ms;
+  --po-dur-slow: 300ms;
+}
+
+/* =============================================================
+   Semantic defaults (opt-in). Add class="po" to your <body> or
+   scope root to inherit typography + color defaults.
+   ============================================================= */
+
+.po {
+  font-family: var(--po-font);
+  color: var(--po-text-body);
+  background: var(--po-app-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.po h1 { font: var(--po-w-h1); color: var(--po-text-heading); letter-spacing: -0.4px; }
+.po h2 { font: var(--po-w-h2); color: var(--po-text-heading); letter-spacing: -0.3px; }
+.po h3 { font: var(--po-w-h3); color: var(--po-text-body); }
+.po p  { font: var(--po-w-body); color: var(--po-text-body); }
+.po small { font: var(--po-w-small); color: var(--po-text-secondary); }
+.po .po-label { font: var(--po-m-label); color: var(--po-placeholder); text-transform: uppercase; letter-spacing: .5px; }
+.po .po-eyebrow { font: var(--po-mk-eyebrow); color: var(--po-pool-blue); text-transform: uppercase; letter-spacing: 1px; }
+.po code, .po .po-mono { font-family: var(--po-font-mono); }
+
+/* Semantic text helpers */
+.po .po-ink { color: var(--po-text-heading); }
+.po .po-body { color: var(--po-text-body); }
+.po .po-muted { color: var(--po-text-secondary); }
+.po .po-faint { color: var(--po-placeholder); }

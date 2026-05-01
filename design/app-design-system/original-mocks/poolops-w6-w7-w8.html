@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — W6 Inbox · W7 Customer List · W8 Customer Detail</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0A0F1A;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── SCREEN SWITCHER ── */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #0A0F1A; border-bottom: 1px solid #1F2937;
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+  }
+  .switcher-label { font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+  .switch-btn {
+    padding: 6px 14px; border-radius: 8px; border: 1px solid #334155;
+    background: #1E293B; font-size: 12px; font-weight: 600; color: #64748B;
+    cursor: pointer; font-family: 'Inter', system-ui, sans-serif;
+    transition: all 0.15s;
+  }
+  .switch-btn.active { background: #F9FAFB; color: #111827; border-color: #F9FAFB; }
+  .switch-btn:hover:not(.active) { background: #334155; color: #94A3B8; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; padding-top: 48px; min-height: 100vh; }
+  .screen { display: none; width: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px; min-width: 220px;
+    background: #111827; border-right: 1px solid #1F2937;
+    display: flex; flex-direction: column;
+    position: sticky; top: 48px; height: calc(100vh - 48px);
+  }
+  .sidebar-logo {
+    padding: 18px 20px 14px; border-bottom: 1px solid #1F2937;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo-mark { width: 28px; height: 28px; background: #F5F5F3; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-text { font-size: 15px; font-weight: 700; color: #F9FAFB; }
+  .nav { padding: 10px; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 10px; margin-bottom: 2px;
+    cursor: pointer; font-size: 13px; font-weight: 500; color: #6B7280;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-item:hover { background: #1F2937; color: #D1D5DB; }
+  .nav-item.active { background: #1F2937; color: #F9FAFB; }
+  .nav-badge { margin-left: auto; background: #EF4444; color: #fff; font-size: 10px; font-weight: 600; border-radius: 10px; padding: 1px 6px; }
+  .sidebar-footer { padding: 14px 10px; border-top: 1px solid #1F2937; }
+  .user-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+  .user-row:hover { background: #1F2937; }
+  .user-avatar { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; flex-shrink: 0; }
+  .user-name { font-size: 12px; font-weight: 600; color: #D1D5DB; }
+  .user-role { font-size: 10px; color: #6B7280; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; background: #0F172A; }
+  .topbar {
+    height: 56px; background: #111827; border-bottom: 1px solid #1F2937;
+    display: flex; align-items: center; padding: 0 28px; gap: 16px;
+    position: sticky; top: 48px; z-index: 9;
+  }
+  .topbar-title { font-size: 14px; font-weight: 600; color: #F9FAFB; flex: 1; }
+  .topbar-date { font-size: 12px; color: #6B7280; }
+  .topbar-div { width: 1px; height: 20px; background: #374151; }
+  .topbar-bell { position: relative; cursor: pointer; }
+  .topbar-bell-dot { position: absolute; top: -2px; right: -2px; width: 7px; height: 7px; background: #EF4444; border-radius: 50%; border: 1.5px solid #111827; }
+  .topbar-av { width: 30px; height: 30px; border-radius: 50%; background: #374151; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #9CA3AF; }
+  .content { padding: 28px; flex: 1; }
+
+  /* ── SHARED ── */
+  .page-title { font-size: 20px; font-weight: 700; color: #F9FAFB; letter-spacing: -0.3px; margin-bottom: 20px; }
+  .section-card { background: #1E293B; border: 1px solid #334155; border-radius: 14px; overflow: hidden; }
+  .sl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #64748B; }
+  .pill { font-size: 10px; font-weight: 600; border-radius: 20px; padding: 3px 9px; }
+  .pill-blue { background: rgba(56,189,248,0.12); color: #38BDF8; }
+  .pill-green { background: rgba(74,222,128,0.1); color: #4ADE80; }
+  .pill-red { background: rgba(239,68,68,0.12); color: #F87171; }
+  .pill-amber { background: rgba(245,158,11,0.12); color: #FCD34D; }
+  .pill-grey { background: #1F2937; color: #64748B; border: 1px solid #334155; }
+  .btn-primary { background: #F9FAFB; color: #111827; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; display: flex; align-items: center; gap: 6px; }
+  .btn-secondary { background: #1E293B; color: #94A3B8; border: 1px solid #334155; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; }
+  .input-dark { background: #0F172A; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #F9FAFB; font-family: 'Inter', system-ui, sans-serif; outline: none; }
+  .input-dark::placeholder { color: #475569; }
+  .input-dark:focus { border-color: #64748B; }
+
+  /* ══════════════════════════════════
+     W6 — INBOX
+  ══════════════════════════════════ */
+  .inbox-layout { display: grid; grid-template-columns: 340px 1fr; gap: 16px; height: calc(100vh - 180px); }
+
+  /* Filter tabs */
+  .filter-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .ftab { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #334155; background: #1E293B; color: #64748B; transition: all 0.15s; }
+  .ftab.active { background: #F9FAFB; color: #111827; border-color: #F9FAFB; }
+  .ftab:hover:not(.active) { background: #334155; color: #94A3B8; }
+
+  /* Inbox list */
+  .inbox-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+  .inbox-card { background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px; cursor: pointer; transition: border-color 0.15s; }
+  .inbox-card:hover { border-color: #4B5563; }
+  .inbox-card.selected { border-color: #64748B; background: #243447; }
+  .inbox-card.unread { border-left: 3px solid #38BDF8; }
+  .inbox-card.unread-amber { border-left: 3px solid #F59E0B; }
+  .ic-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .ic-name { font-size: 13px; font-weight: 600; color: #F9FAFB; flex: 1; }
+  .ic-time { font-size: 11px; color: #64748B; }
+  .ic-body { font-size: 12px; color: #94A3B8; line-height: 1.5; margin-bottom: 8px; }
+  .ic-meta { font-size: 11px; color: #64748B; }
+
+  /* Inbox detail */
+  .inbox-detail { background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .id-header { display: flex; align-items: flex-start; justify-content: space-between; }
+  .id-title { font-size: 17px; font-weight: 700; color: #F9FAFB; }
+  .id-sub { font-size: 13px; color: #64748B; margin-top: 4px; }
+  .id-actions { display: flex; gap: 8px; }
+  .id-section { }
+  .id-section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #64748B; margin-bottom: 8px; }
+  .id-quote { background: #0F172A; border-left: 3px solid #38BDF8; border-radius: 0 8px 8px 0; padding: 10px 14px; font-size: 13px; color: #94A3B8; line-height: 1.5; font-style: italic; }
+  .id-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #1F2937; }
+  .id-row:last-child { border-bottom: none; }
+  .id-key { font-size: 12px; color: #64748B; }
+  .id-val { font-size: 12px; font-weight: 500; color: #D1D5DB; }
+  .confirm-btn { width: 100%; background: #F9FAFB; color: #111827; border: none; border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+  /* ══════════════════════════════════
+     W7 — CUSTOMER LIST
+  ══════════════════════════════════ */
+  .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-wrap { position: relative; flex: 1; min-width: 220px; max-width: 320px; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #475569; }
+  .search-input { width: 100%; background: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px 8px 34px; font-size: 13px; color: #F9FAFB; font-family: 'Inter', system-ui, sans-serif; outline: none; }
+  .search-input::placeholder { color: #475569; }
+  .search-input:focus { border-color: #64748B; }
+  .filter-select { background: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #94A3B8; font-family: 'Inter', system-ui, sans-serif; outline: none; cursor: pointer; }
+  .toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+  /* Table */
+  .table-wrap { background: #1E293B; border: 1px solid #334155; border-radius: 14px; overflow: hidden; }
+  .table { width: 100%; border-collapse: collapse; }
+  .table th { padding: 11px 16px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; background: #0F172A; border-bottom: 1px solid #334155; white-space: nowrap; }
+  .table td { padding: 13px 16px; font-size: 13px; color: #94A3B8; border-bottom: 1px solid #1F2937; vertical-align: middle; }
+  .table tr:last-child td { border-bottom: none; }
+  .table tr:hover td { background: #243447; cursor: pointer; }
+  .table td.name { color: #F9FAFB; font-weight: 600; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-top: 1px solid #334155; }
+  .page-info { font-size: 12px; color: #64748B; }
+  .page-btns { display: flex; gap: 4px; }
+  .page-btn { width: 30px; height: 30px; border-radius: 6px; background: #1E293B; border: 1px solid #334155; color: #64748B; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: 'Inter', system-ui, sans-serif; }
+  .page-btn.active { background: #F9FAFB; color: #111827; border-color: #F9FAFB; }
+
+  /* ══════════════════════════════════
+     W8 — CUSTOMER DETAIL
+  ══════════════════════════════════ */
+  .detail-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+  .dh-left { display: flex; align-items: center; gap: 14px; }
+  .dh-avatar { width: 48px; height: 48px; border-radius: 14px; background: #1E293B; border: 1px solid #334155; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #94A3B8; }
+  .dh-name { font-size: 20px; font-weight: 700; color: #F9FAFB; letter-spacing: -0.3px; }
+  .dh-sub { font-size: 13px; color: #64748B; margin-top: 3px; }
+  .dh-actions { display: flex; gap: 8px; }
+
+  /* Tabs */
+  .detail-tabs { display: flex; border-bottom: 1px solid #334155; margin-bottom: 20px; }
+  .dtab { padding: 10px 16px; font-size: 13px; font-weight: 500; color: #64748B; cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.15s, border-color 0.15s; }
+  .dtab.active { color: #F9FAFB; border-bottom-color: #F9FAFB; }
+  .dtab:hover:not(.active) { color: #94A3B8; }
+
+  /* Detail grid */
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .detail-card { background: #1E293B; border: 1px solid #334155; border-radius: 14px; padding: 18px; }
+  .dc-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #64748B; margin-bottom: 12px; }
+  .dc-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 6px 0; border-bottom: 1px solid #1F2937; }
+  .dc-row:last-child { border-bottom: none; }
+  .dc-key { font-size: 12px; color: #64748B; }
+  .dc-val { font-size: 12px; font-weight: 500; color: #D1D5DB; text-align: right; max-width: 60%; }
+
+  /* Service history mini list */
+  .history-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1F2937; cursor: pointer; }
+  .history-row:last-child { border-bottom: none; }
+  .history-row:hover .hr-date { color: #F9FAFB; }
+  .hr-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .hr-date { font-size: 13px; font-weight: 600; color: #D1D5DB; min-width: 60px; transition: color 0.15s; }
+  .hr-tech { font-size: 12px; color: #64748B; flex: 1; }
+  .hr-chev { color: #475569; }
+</style>
+</head>
+<body>
+
+<!-- Screen switcher -->
+<div class="switcher">
+  <span class="switcher-label">Screen</span>
+  <button class="switch-btn active" onclick="show('inbox',this)">W6 · Inbox</button>
+  <button class="switch-btn" onclick="show('customers',this)">W7 · Customer List</button>
+  <button class="switch-btn" onclick="show('detail',this)">W8 · Customer Detail</button>
+</div>
+
+<div class="app">
+
+<!-- ══════════════════════════════════
+     W6 — INBOX
+══════════════════════════════════ -->
+<div class="screen active" id="screen-inbox">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/><path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/></svg></div>
+      <span class="logo-text">PoolOps</span>
+    </div>
+    <div class="nav">
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+      <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+      <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-footer"><div class="user-row"><div class="user-avatar">SJ</div><div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div></div></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Inbox</div>
+      <div class="topbar-date">Monday, 31 March</div>
+      <div class="topbar-div"></div>
+      <div class="topbar-bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="topbar-bell-dot"></div></div>
+      <div class="topbar-av">SJ</div>
+    </div>
+    <div class="content">
+      <div class="page-title">Inbox <span style="font-size:13px;font-weight:500;color:#64748B;margin-left:6px;">2 items need action</span></div>
+      <div class="filter-tabs">
+        <div class="ftab active">All</div>
+        <div class="ftab">Booking requests</div>
+        <div class="ftab">Flagged readings</div>
+      </div>
+      <div class="inbox-layout">
+        <!-- List -->
+        <div class="inbox-list">
+          <div class="inbox-card unread selected">
+            <div class="ic-top">
+              <span class="pill pill-blue">Booking request</span>
+              <span class="ic-time">32 min ago</span>
+            </div>
+            <div class="ic-name">Williams, Sarah</div>
+            <div class="ic-body">"Pool looks cloudy after the storm last night. Can someone come out today?"</div>
+            <div class="ic-meta">Last service: 5 days ago · pH 7.4 · Cl 1.8</div>
+          </div>
+          <div class="inbox-card unread-amber">
+            <div class="ic-top">
+              <span class="pill pill-amber">Flagged reading</span>
+              <span class="ic-time">1 hr ago</span>
+            </div>
+            <div class="ic-name">Smith, David</div>
+            <div class="ic-body">Chlorine LOW — 0.8ppm recorded by James T. at 9:42am</div>
+            <div class="ic-meta">12 Remuera Rd · Remuera</div>
+          </div>
+          <div class="inbox-card" style="opacity:0.6;">
+            <div class="ic-top">
+              <span class="pill pill-grey">Resolved</span>
+              <span class="ic-time">Yesterday</span>
+            </div>
+            <div class="ic-name">Chen, Michael</div>
+            <div class="ic-body">LSI water balance flagged — corrosive. Reviewed and marked OK.</div>
+            <div class="ic-meta">8 Mt Eden Rd · Mt Eden</div>
+          </div>
+        </div>
+
+        <!-- Detail panel -->
+        <div class="inbox-detail">
+          <div class="id-header">
+            <div>
+              <div class="id-title">Williams, Sarah — Booking Request</div>
+              <div class="id-sub">42 Ponsonby Rd, Ponsonby · Submitted 11:12am</div>
+            </div>
+            <div class="id-actions">
+              <button class="btn-secondary">View history</button>
+            </div>
+          </div>
+
+          <div class="id-section">
+            <div class="id-section-label">Customer message</div>
+            <div class="id-quote">"Pool looks cloudy after the storm last night. Can someone come out today or tomorrow? We have guests on the weekend."</div>
+          </div>
+
+          <div class="id-section">
+            <div class="id-section-label">Pool context</div>
+            <div class="section-card">
+              <div style="padding:14px 16px;">
+                <div class="id-row"><span class="id-key">Last service</span><span class="id-val">5 days ago · James T.</span></div>
+                <div class="id-row"><span class="id-key">pH</span><span class="id-val" style="color:#4ADE80;">7.4 — Good</span></div>
+                <div class="id-row"><span class="id-key">Chlorine</span><span class="id-val" style="color:#4ADE80;">1.8 — Good</span></div>
+                <div class="id-row"><span class="id-key">LSI</span><span class="id-val" style="color:#4ADE80;">+0.1 — Balanced</span></div>
+                <div class="id-row"><span class="id-key">Service plan</span><span class="id-val">Weekly · Fortnightly</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="id-section">
+            <div class="id-section-label">Confirm a visit</div>
+            <div style="display:flex;gap:10px;margin-bottom:12px;">
+              <input class="input-dark" type="date" value="2026-04-01" style="flex:1;" />
+              <input class="input-dark" type="time" value="10:00" style="width:120px;" />
+              <select class="input-dark" style="flex:1;">
+                <option>James T.</option>
+                <option>Mike R.</option>
+                <option>Sarah K.</option>
+              </select>
+            </div>
+            <button class="confirm-btn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Confirm visit — customer will be notified
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     W7 — CUSTOMER LIST
+══════════════════════════════════ -->
+<div class="screen" id="screen-customers">
+  <div class="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/><path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/></svg></div><span class="logo-text">PoolOps</span></div>
+    <div class="nav">
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+      <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+      <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-footer"><div class="user-row"><div class="user-avatar">SJ</div><div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div></div></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">Customers</div>
+      <div class="topbar-date">Monday, 31 March</div>
+      <div class="topbar-div"></div>
+      <div class="topbar-bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="topbar-bell-dot"></div></div>
+      <div class="topbar-av">SJ</div>
+    </div>
+    <div class="content">
+      <div class="page-title">Customers</div>
+      <div class="toolbar">
+        <div class="search-wrap">
+          <div class="search-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></div>
+          <input class="search-input" type="text" placeholder="Search customers..." />
+        </div>
+        <select class="filter-select">
+          <option>All plans</option>
+          <option>Weekly</option>
+          <option>Fortnightly</option>
+          <option>Monthly</option>
+        </select>
+        <select class="filter-select">
+          <option>All technicians</option>
+          <option>James T.</option>
+          <option>Mike R.</option>
+          <option>Sarah K.</option>
+        </select>
+        <div class="toolbar-right">
+          <button class="btn-secondary">Export</button>
+          <button class="btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add customer
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Name</th>
+              <th>Location</th>
+              <th>Plan</th>
+              <th>Last service</th>
+              <th>Technician</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="status-dot" style="background:#22C55E;"></span></td>
+              <td class="name">Smith, David</td>
+              <td>Remuera</td>
+              <td><span class="pill pill-blue">Weekly</span></td>
+              <td>Today · James T.</td>
+              <td>James T.</td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td><span class="status-dot" style="background:#22C55E;"></span></td>
+              <td class="name">Williams, Sarah</td>
+              <td>Ponsonby</td>
+              <td><span class="pill pill-blue">Fortnightly</span></td>
+              <td>5 days ago · James T.</td>
+              <td>James T.</td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td><span class="status-dot" style="background:#F59E0B;"></span></td>
+              <td class="name">Chen, Michael</td>
+              <td>Mt Eden</td>
+              <td><span class="pill pill-blue">Weekly</span></td>
+              <td>Today · Mike R. <span class="pill pill-amber" style="margin-left:4px;">LSI flag</span></td>
+              <td>Mike R.</td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td><span class="status-dot" style="background:#22C55E;"></span></td>
+              <td class="name">Johnson, Anne</td>
+              <td>Epsom</td>
+              <td><span class="pill pill-grey">Monthly</span></td>
+              <td>24 Mar · Sarah K.</td>
+              <td>Sarah K.</td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td><span class="status-dot" style="background:#22C55E;"></span></td>
+              <td class="name">Peters, Sarah</td>
+              <td>Ponsonby</td>
+              <td><span class="pill pill-blue">Weekly</span></td>
+              <td>7 days ago · James T.</td>
+              <td>James T.</td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td><span class="status-dot" style="background:#22C55E;"></span></td>
+              <td class="name">Wong, Helen</td>
+              <td>Herne Bay</td>
+              <td><span class="pill pill-blue">Weekly</span></td>
+              <td>7 days ago · James T.</td>
+              <td>James T.</td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+            <tr>
+              <td><span class="status-dot" style="background:#EF4444;"></span></td>
+              <td class="name">Taylor, Mark</td>
+              <td>Grafton</td>
+              <td><span class="pill pill-grey">Inactive</span></td>
+              <td>42 days ago</td>
+              <td>—</td>
+              <td><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination">
+          <span class="page-info">Showing 1–7 of 47 customers</span>
+          <div class="page-btns">
+            <button class="page-btn">‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     W8 — CUSTOMER DETAIL
+══════════════════════════════════ -->
+<div class="screen" id="screen-detail">
+  <div class="sidebar">
+    <div class="sidebar-logo"><div class="logo-mark"><svg width="16" height="16" viewBox="0 0 32 32" fill="none"><path d="M16 6C16 6 8 12 8 19C8 23.4 11.6 27 16 27C20.4 27 24 23.4 24 19C24 12 16 6 16 6Z" fill="#111827" opacity="0.9"/><path d="M16 13C16 13 12 16.5 12 19.5C12 21.7 13.8 23.5 16 23.5C18.2 23.5 20 21.7 20 19.5C20 16.5 16 13 16 13Z" fill="#111827" opacity="0.4"/></svg></div><span class="logo-text">PoolOps</span></div>
+    <div class="nav">
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg>Dashboard</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Schedule</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/><path d="m19 8.839-7.77 3.885a2.75 2.75 0 0 1-2.46 0L1 8.839V14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.839Z"/></svg>Inbox<span class="nav-badge">2</span></div>
+      <div class="nav-item active"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Customers</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Records</div>
+      <div class="nav-item"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Team</div>
+      <div class="nav-item" style="margin-top:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>Settings</div>
+    </div>
+    <div class="sidebar-footer"><div class="user-row"><div class="user-avatar">SJ</div><div><div class="user-name">Simon J.</div><div class="user-role">Pool Pro NZ</div></div></div></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title">
+        <span style="color:#64748B;cursor:pointer;">Customers</span>
+        <span style="color:#475569;margin:0 6px;">›</span>
+        Smith, David
+      </div>
+      <div class="topbar-date">Monday, 31 March</div>
+      <div class="topbar-div"></div>
+      <div class="topbar-bell"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="topbar-bell-dot"></div></div>
+      <div class="topbar-av">SJ</div>
+    </div>
+    <div class="content">
+      <!-- Header -->
+      <div class="detail-header">
+        <div class="dh-left">
+          <div class="dh-avatar">SD</div>
+          <div>
+            <div class="dh-name">Smith, David</div>
+            <div class="dh-sub">12 Remuera Rd, Remuera · Active · Weekly · James T.</div>
+          </div>
+          <span class="pill pill-green" style="margin-left:4px;">Active</span>
+        </div>
+        <div class="dh-actions">
+          <button class="btn-secondary">Compliance PDF</button>
+          <button class="btn-secondary">Add note</button>
+          <button class="btn-primary">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="detail-tabs">
+        <div class="dtab active">Overview</div>
+        <div class="dtab">Pool</div>
+        <div class="dtab">Service history</div>
+        <div class="dtab" style="color:#475569;">Billing (v2)</div>
+      </div>
+
+      <!-- Overview grid -->
+      <div class="detail-grid">
+        <div class="detail-card">
+          <div class="dc-title">Contact</div>
+          <div class="dc-row"><span class="dc-key">Email</span><span class="dc-val">david@smithremuera.co.nz</span></div>
+          <div class="dc-row"><span class="dc-key">Phone</span><span class="dc-val">021 456 789</span></div>
+          <div class="dc-row"><span class="dc-key">Address</span><span class="dc-val">12 Remuera Rd, Remuera, Auckland</span></div>
+          <div class="dc-row"><span class="dc-key">Service plan</span><span class="dc-val">Weekly — Mondays</span></div>
+          <div class="dc-row"><span class="dc-key">Assigned tech</span><span class="dc-val">James T.</span></div>
+          <div class="dc-row"><span class="dc-key">Customer since</span><span class="dc-val">March 2024</span></div>
+        </div>
+        <div class="detail-card">
+          <div class="dc-title">Pool summary</div>
+          <div class="dc-row"><span class="dc-key">Volume</span><span class="dc-val">55,000 L</span></div>
+          <div class="dc-row"><span class="dc-key">Type</span><span class="dc-val">Concrete · Chlorine</span></div>
+          <div class="dc-row"><span class="dc-key">Surface</span><span class="dc-val">Pebblecrete</span></div>
+          <div class="dc-row"><span class="dc-key">Equipment</span><span class="dc-val">Hayward pump · Astral filter</span></div>
+          <div class="dc-row"><span class="dc-key">Access</span><span class="dc-val">Gate code 4521 · Dog Tuesdays</span></div>
+          <div class="dc-row"><span class="dc-key">Last LSI</span><span class="dc-val" style="color:#FCD34D;">−0.4 Slightly corrosive</span></div>
+        </div>
+      </div>
+
+      <!-- Recent services -->
+      <div class="detail-card" style="margin-bottom:0;">
+        <div class="dc-title" style="margin-bottom:0;">Recent services</div>
+        <div class="history-row">
+          <div class="hr-dot" style="background:#EF4444;"></div>
+          <div class="hr-date">Today · 31 Mar</div>
+          <div class="hr-tech">James T. · 9:42am · Chlorine LOW flagged</div>
+          <span class="pill pill-red">Flagged</span>
+          <svg class="hr-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="history-row">
+          <div class="hr-dot" style="background:#F59E0B;"></div>
+          <div class="hr-date">24 Mar</div>
+          <div class="hr-tech">James T. · 10:15am · pH slightly high</div>
+          <span class="pill pill-amber">Warning</span>
+          <svg class="hr-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="history-row">
+          <div class="hr-dot" style="background:#22C55E;"></div>
+          <div class="hr-date">17 Mar</div>
+          <div class="hr-tech">James T. · 9:55am · All readings good</div>
+          <span class="pill pill-green">Good</span>
+          <svg class="hr-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="history-row">
+          <div class="hr-dot" style="background:#22C55E;"></div>
+          <div class="hr-date">10 Mar</div>
+          <div class="hr-tech">James T. · 9:30am · All readings good</div>
+          <span class="pill pill-green">Good</span>
+          <svg class="hr-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  function show(name, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>

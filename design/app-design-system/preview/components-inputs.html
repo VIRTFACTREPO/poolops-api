@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 24px 28px; display:flex; flex-direction:column; gap:10px; max-width: 400px; }
+  .label { font-size:12px; font-weight:600; color:#374151; }
+  .input { background:#F9FAFB; border:1px solid #E5E7EB; border-radius:8px; padding:12px 14px; font:400 15px/1.2 Inter; color:#111827; outline:none; }
+  .input.focus { border-color: #111827; border-width:2px; padding:11px 13px; }
+  .input.err { border-color:#EF4444; }
+  .err-text { font-size: 11px; color: #EF4444; }
+  .spec { font-size:10px; color: var(--po-placeholder); font-family: var(--po-font-mono); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="label">Email address</div>
+  <input class="input" value="james@poolpro.co.nz" />
+  <div class="label">Password</div>
+  <input class="input focus" type="password" value="••••••••" />
+  <div class="input err">0.8 pH</div>
+  <div class="err-text">Reading out of range · target 7.2–7.6</div>
+  <div class="spec">#F9FAFB bg · 1px #E5E7EB · 8r · focus 2px #111827</div>
+</div>
+</body>
+</html>

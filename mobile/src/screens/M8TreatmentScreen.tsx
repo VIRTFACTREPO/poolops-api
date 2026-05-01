@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TreatmentEntry, useActiveJob } from '../context/ActiveJobContext';
 import { borderRadius, colors, spacing, typography } from '../theme/tokens';
 
@@ -85,7 +85,12 @@ export function M8TreatmentScreen() {
   }, [treatmentEntries]);
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={{ flex: 1 }}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={styles.container}
+    >
       <Text style={styles.sectionLabel}>Chemicals added</Text>
 
       <View style={styles.card}>
@@ -143,14 +148,15 @@ export function M8TreatmentScreen() {
           ))
         )}
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing.base,
+    marginTop: spacing.md,
     gap: spacing.sm,
+    paddingBottom: 8,
   },
   sectionLabel: {
     fontSize: 10,
@@ -170,7 +176,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.base,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
@@ -237,7 +243,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.06)',
-    padding: spacing.base,
+    padding: spacing.md,
     gap: spacing.xs,
   },
   stockLabel: {
@@ -267,7 +273,7 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
   },
   emptyText: {
-    padding: spacing.base,
+    padding: spacing.md,
     color: '#9CA3AF',
     fontSize: typography.fontSizes.sm,
   },

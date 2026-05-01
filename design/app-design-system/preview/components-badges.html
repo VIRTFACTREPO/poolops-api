@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 22px 28px; display:flex; flex-direction:column; gap:12px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .pill { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:500; border-radius:20px; padding:4px 10px; border:1px solid; }
+  .dot { width:7px; height:7px; border-radius:50%; }
+  .spec { font-size:10px; color: var(--po-placeholder); font-family: var(--po-font-mono); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <span class="pill" style="background:#F0FDF4; color:#16A34A; border-color:#BBF7D0;"><span class="dot" style="background:#22C55E"></span>On schedule</span>
+    <span class="pill" style="background:#FFFBEB; color:#D97706; border-color:#FDE68A;"><span class="dot" style="background:#F59E0B"></span>pH slightly high</span>
+    <span class="pill" style="background:#FEF2F2; color:#DC2626; border-color:#FECACA;"><span class="dot" style="background:#EF4444"></span>Flagged</span>
+    <span class="pill" style="background:#F9FAFB; color:#6B7280; border-color:#E5E7EB;">Done</span>
+  </div>
+  <div class="row">
+    <span class="pill" style="background:#EFF6FF; color:#0369A1; border-color:#BAE6FD;">Connect</span>
+    <span class="pill" style="background:#F0FDF4; color:#15803D; border-color:#BBF7D0;">Connected</span>
+    <span class="pill" style="background:#111827; color:#fff; border-color:#111827;">Active</span>
+  </div>
+  <div class="spec">Pill · 20r · 4·10 · 11/500 · colour + text always</div>
+</div>
+</body>
+</html>

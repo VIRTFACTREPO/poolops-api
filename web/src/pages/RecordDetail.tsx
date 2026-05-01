@@ -50,7 +50,7 @@ export default function RecordDetail() {
     if (!id) return
     supabase
       .from('service_records')
-      .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, customers(first_name, last_name, address), profiles(full_name), pools(pool_type, volume_litres)')
+      .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, customers(first_name, last_name, address), profiles!technician_id(full_name), pools(pool_type, volume_litres)')
       .eq('id', id)
       .single()
       .then(({ data, error: err }) => {

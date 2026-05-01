@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, ActivityIndicator, Text, Platform } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import { AuthProvider, AuthLoadingScreen } from './src/context/AuthContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { colors, typography } from './src/theme/tokens';
+import { hydrateCompletedJobs } from './src/state/completedJobsStore';
 
 export default function App() {
+  const [storeReady, setStoreReady] = useState(false);
+
+  useEffect(() => {
+    hydrateCompletedJobs().finally(() => setStoreReady(true));
+  }, []);
+
   const [fontsLoaded, fontError] = useFonts({
     'Inter-Regular': Inter_400Regular,
     'Inter-Medium': Inter_500Medium,
@@ -23,7 +30,7 @@ export default function App() {
     );
   }
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !storeReady) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary} />

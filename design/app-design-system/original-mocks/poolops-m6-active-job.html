@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — M6 Active Job</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #E2E4E8;
+    font-family: 'Inter', system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 32px 16px 64px;
+    min-height: 100vh;
+  }
+  .phone {
+    width: 375px;
+    background: #F5F5F3;
+    border-radius: 50px;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .status-bar {
+    background: #F5F5F3;
+    padding: 14px 28px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .di-wrap { background: #F5F5F3; padding: 6px 0; display: flex; justify-content: center; }
+  .di { width: 120px; height: 34px; background: #111827; border-radius: 20px; }
+
+  /* Header */
+  .header {
+    padding: 10px 16px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    flex-shrink: 0;
+  }
+  .back-btn {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: #F3F4F6;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
+  }
+  .header-info { flex: 1; }
+  .header-name { font-size: 15px; font-weight: 700; color: #111827; }
+  .header-addr { font-size: 11px; color: #9CA3AF; margin-top: 1px; }
+  .timer-pill {
+    display: flex; align-items: center; gap: 5px;
+    background: #F0FDF4; border: 1px solid #BBF7D0;
+    border-radius: 8px; padding: 5px 10px;
+  }
+  .timer-dot { width: 6px; height: 6px; background: #22C55E; border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .timer-val { font-size: 12px; font-weight: 700; color: #15803D; font-variant-numeric: tabular-nums; }
+
+  /* Tab bar */
+  .tab-bar {
+    background: #ffffff;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex;
+    flex-shrink: 0;
+  }
+  .tab {
+    flex: 1; padding: 10px 2px 9px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    color: #9CA3AF;
+    transition: color 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .tab.active { border-bottom-color: #111827; color: #111827; }
+  .tab-label { font-size: 9px; font-weight: 500; }
+  .tab.active .tab-label { font-weight: 700; }
+  .tab-complete-dot {
+    position: absolute; top: 7px; right: 8px;
+    width: 6px; height: 6px;
+    background: #22C55E; border-radius: 50%;
+    display: none;
+  }
+  .tab-complete-dot.show { display: block; }
+
+  /* Scroll area */
+  .scroll {
+    padding: 14px 16px 16px;
+    background: #F5F5F3;
+    flex: 1;
+    overflow-y: auto;
+    min-height: 400px;
+  }
+  .tab-content { display: none; flex-direction: column; gap: 10px; }
+  .tab-content.active { display: flex; }
+
+  /* Shared */
+  .section-label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: #9CA3AF;
+  }
+  .white-card {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  /* ── TAB 1: READINGS ── */
+  .reading-field {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    padding: 11px 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .tl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .reading-label { font-size: 13px; font-weight: 500; color: #374151; flex: 1; }
+  .reading-input {
+    width: 64px;
+    background: #F9FAFB;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 7px 8px;
+    font-size: 15px; font-weight: 700; color: #111827;
+    text-align: center;
+    font-family: 'Inter', system-ui, sans-serif;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .reading-input:focus { border-color: #111827; }
+  .reading-input.error { border-color: #EF4444; background: #FEF2F2; }
+  .reading-target { font-size: 10px; color: #9CA3AF; text-align: right; min-width: 70px; line-height: 1.5; }
+  .reading-target.bad { color: #EF4444; font-weight: 600; }
+
+  .add-link {
+    display: flex; align-items: center; gap: 6px;
+    padding: 2px; cursor: pointer;
+    font-size: 13px; color: #9CA3AF;
+  }
+
+  .lsi-card {
+    background: #FFFBEB;
+    border: 1px solid #FDE68A;
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .lsi-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #B45309; margin-bottom: 6px; }
+  .lsi-main { display: flex; align-items: center; justify-content: space-between; }
+  .lsi-score { font-size: 32px; font-weight: 700; color: #B45309; letter-spacing: -0.5px; }
+  .lsi-desc { font-size: 13px; color: #92400E; margin-top: 4px; }
+
+  .reco-card {
+    background: #F0F9FF;
+    border: 1px solid #BAE6FD;
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .reco-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #0369A1; margin-bottom: 8px; }
+  .reco-item { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+  .reco-dot { width: 5px; height: 5px; background: #0369A1; border-radius: 50%; flex-shrink: 0; }
+  .reco-text { font-size: 13px; color: #0C4A6E; }
+
+  .use-last {
+    display: flex; align-items: center; justify-content: flex-end; gap: 5px;
+    font-size: 12px; color: #9CA3AF; cursor: pointer; padding: 2px;
+  }
+
+  /* ── TAB 2: TREATMENT ── */
+  .chem-row {
+    padding: 11px 14px;
+    border-bottom: 1px solid #F3F4F6;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chem-row:last-child { border-bottom: none; }
+  .chem-info { flex: 1; }
+  .chem-name { font-size: 13px; font-weight: 600; color: #111827; }
+  .chem-rec { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+  .chem-input {
+    width: 58px;
+    background: #F9FAFB;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 7px 6px;
+    font-size: 14px; font-weight: 700; color: #111827;
+    text-align: center;
+    font-family: 'Inter', system-ui, sans-serif;
+    outline: none;
+  }
+  .chem-input:focus { border-color: #111827; }
+  .chem-unit { font-size: 12px; color: #6B7280; min-width: 20px; }
+
+  .stock-card {
+    background: #F9FAFB;
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .stock-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #9CA3AF; margin-bottom: 8px; }
+  .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+  .stock-name { font-size: 12px; color: #374151; }
+  .stock-val { font-size: 12px; font-weight: 600; color: #374151; }
+  .stock-val.low { color: #F59E0B; }
+
+  /* ── TAB 3: PHOTOS ── */
+  .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .photo-cell {
+    background: #ffffff;
+    border: 2px dashed #E5E7EB;
+    border-radius: 14px;
+    aspect-ratio: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 8px; cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .photo-cell:hover { border-color: #9CA3AF; }
+  .photo-cell.taken { background: #F0FDF4; border: 2px solid #BBF7D0; }
+  .photo-check {
+    width: 28px; height: 28px;
+    background: #22C55E; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-cell-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .photo-cell-sub { font-size: 11px; color: #D1D5DB; }
+  .photo-hint { font-size: 11px; color: #9CA3AF; text-align: center; padding: 4px; }
+
+  /* ── TAB 4: NOTES ── */
+  .notes-block {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.07);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .notes-header {
+    padding: 10px 14px;
+    background: #F9FAFB;
+    border-bottom: 1px solid #F3F4F6;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .notes-header-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #374151; flex: 1; }
+  .notes-tag { font-size: 10px; font-weight: 500; border-radius: 6px; padding: 2px 7px; }
+  .notes-tag-green { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+  .notes-tag-red { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+  .notes-textarea {
+    width: 100%; min-height: 90px;
+    background: #ffffff; border: none;
+    padding: 12px 14px;
+    font-size: 14px; color: #374151;
+    font-family: 'Inter', system-ui, sans-serif;
+    resize: none; outline: none; display: block;
+    line-height: 1.6;
+  }
+  .notes-textarea::placeholder { color: #D1D5DB; }
+
+  /* ── TAB 5: COMPLETE ── */
+  .summary-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid #F3F4F6;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { font-size: 12px; color: #9CA3AF; }
+  .summary-val { font-size: 12px; font-weight: 600; color: #374151; display: flex; align-items: center; gap: 5px; }
+  .s-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .edit-link { font-size: 12px; color: #9CA3AF; text-align: center; padding: 8px; cursor: pointer; }
+  .edit-link:hover { color: #374151; }
+
+  /* Sticky footer */
+  .sticky-footer {
+    background: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.07);
+    padding: 14px 16px 0;
+    flex-shrink: 0;
+  }
+  .cta-btn {
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    cursor: pointer;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15px; font-weight: 700;
+    transition: opacity 0.15s;
+  }
+  .cta-btn:hover { opacity: 0.9; }
+  .home-pill-wrap {
+    background: #ffffff;
+    display: flex; justify-content: center;
+    padding: 12px 0 14px;
+    flex-shrink: 0;
+  }
+  .home-pill { width: 120px; height: 4px; background: #111827; border-radius: 99px; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <span style="font-size:15px;font-weight:600;color:#111827;">9:41</span>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg>
+      <svg width="15" height="11" viewBox="0 0 20 14" fill="#111827"><path d="M10 3C13 3 15.7 4.2 17.6 6.2L19 4.8C16.7 2.4 13.5 1 10 1S3.3 2.4 1 4.8L2.4 6.2C4.3 4.2 7 3 10 3Z" opacity="0.3"/><path d="M10 6C12.2 6 14.2 6.9 15.6 8.4L17 7C15.2 5.1 12.7 4 10 4S4.8 5.1 3 7L4.4 8.4C5.8 6.9 7.8 6 10 6Z" opacity="0.6"/><path d="M10 9C11.4 9 12.7 9.6 13.6 10.5L15 9.1C13.7 7.8 12 7 10 7S6.3 7.8 5 9.1L6.4 10.5C7.3 9.6 8.6 9 10 9Z"/><circle cx="10" cy="13" r="1.5"/></svg>
+      <svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg>
+    </div>
+  </div>
+  <div class="di-wrap"><div class="di"></div></div>
+
+  <!-- Header -->
+  <div class="header">
+    <button class="back-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="header-info">
+      <div class="header-name">Smith, David</div>
+      <div class="header-addr">12 Remuera Rd · Remuera</div>
+    </div>
+    <div class="timer-pill">
+      <div class="timer-dot"></div>
+      <span class="timer-val" id="timer">00:08:32</span>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <div class="tab active" data-tab="readings" onclick="switchTab('readings', this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+      <span class="tab-label">Readings</span>
+      <div class="tab-complete-dot show" id="dot-readings"></div>
+    </div>
+    <div class="tab" data-tab="treatment" onclick="switchTab('treatment', this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg>
+      <span class="tab-label">Treatment</span>
+      <div class="tab-complete-dot show" id="dot-treatment"></div>
+    </div>
+    <div class="tab" data-tab="photos" onclick="switchTab('photos', this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span class="tab-label">Photos</span>
+      <div class="tab-complete-dot" id="dot-photos"></div>
+    </div>
+    <div class="tab" data-tab="notes" onclick="switchTab('notes', this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <span class="tab-label">Notes</span>
+      <div class="tab-complete-dot show" id="dot-notes"></div>
+    </div>
+    <div class="tab" data-tab="complete" onclick="switchTab('complete', this)">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <span class="tab-label">Complete</span>
+      <div class="tab-complete-dot" id="dot-complete"></div>
+    </div>
+  </div>
+
+  <!-- Tab content -->
+  <div class="scroll">
+
+    <!-- READINGS -->
+    <div class="tab-content active" id="tab-readings">
+      <div class="reading-field">
+        <div class="tl-dot" style="background:#22C55E;"></div>
+        <span class="reading-label">pH</span>
+        <input class="reading-input" type="number" value="7.4" step="0.1" />
+        <span class="reading-target">7.2 – 7.6</span>
+      </div>
+      <div class="reading-field">
+        <div class="tl-dot" style="background:#EF4444;"></div>
+        <span class="reading-label">Free chlorine</span>
+        <input class="reading-input error" type="number" value="0.8" step="0.1" />
+        <span class="reading-target bad">LOW · 1.0–3.0</span>
+      </div>
+      <div class="reading-field">
+        <div class="tl-dot" style="background:#22C55E;"></div>
+        <span class="reading-label">Total alkalinity</span>
+        <input class="reading-input" type="number" value="95" />
+        <span class="reading-target">80 – 120</span>
+      </div>
+      <div class="reading-field">
+        <div class="tl-dot" style="background:#22C55E;"></div>
+        <span class="reading-label">Calcium hardness</span>
+        <input class="reading-input" type="number" value="280" />
+        <span class="reading-target">200 – 400</span>
+      </div>
+      <div class="reading-field">
+        <div class="tl-dot" style="background:#22C55E;"></div>
+        <span class="reading-label">Stabiliser / CYA</span>
+        <input class="reading-input" type="number" value="42" />
+        <span class="reading-target">30 – 50</span>
+      </div>
+      <div class="add-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Add custom reading
+      </div>
+      <div class="lsi-card">
+        <div class="lsi-label">LSI Water Balance</div>
+        <div class="lsi-main">
+          <div>
+            <div class="lsi-score">−0.4</div>
+            <div class="lsi-desc">Slightly corrosive</div>
+          </div>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+      </div>
+      <div class="reco-card">
+        <div class="reco-label">Recommended treatment</div>
+        <div class="reco-item"><div class="reco-dot"></div><span class="reco-text">Add 400ml liquid chlorine</span></div>
+        <div class="reco-item"><div class="reco-dot"></div><span class="reco-text">Add 150g pH buffer</span></div>
+      </div>
+      <div class="use-last">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        Use last readings
+      </div>
+    </div>
+
+    <!-- TREATMENT -->
+    <div class="tab-content" id="tab-treatment">
+      <div class="section-label">Chemicals added</div>
+      <div class="white-card">
+        <div class="chem-row">
+          <div class="chem-info">
+            <div class="chem-name">Liquid chlorine</div>
+            <div class="chem-rec">Recommended: 400ml</div>
+          </div>
+          <input class="chem-input" type="number" value="400" />
+          <span class="chem-unit">ml</span>
+        </div>
+        <div class="chem-row">
+          <div class="chem-info">
+            <div class="chem-name">pH Buffer</div>
+            <div class="chem-rec">Recommended: 150g</div>
+          </div>
+          <input class="chem-input" type="number" value="150" />
+          <span class="chem-unit">g</span>
+        </div>
+      </div>
+      <div class="add-link" style="padding: 4px 2px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Add another chemical
+      </div>
+      <div class="stock-card">
+        <div class="stock-label">Stock after this job</div>
+        <div class="stock-row">
+          <span class="stock-name">Liquid chlorine</span>
+          <span class="stock-val">4.2 L remaining</span>
+        </div>
+        <div class="stock-row">
+          <span class="stock-name">pH Buffer</span>
+          <span class="stock-val low">800g remaining ⚠</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PHOTOS -->
+    <div class="tab-content" id="tab-photos">
+      <div class="section-label">Before &amp; after</div>
+      <div class="photo-grid">
+        <div class="photo-cell taken">
+          <div class="photo-check">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <span class="photo-cell-label" style="color:#15803D;">Before ✓</span>
+        </div>
+        <div class="photo-cell">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span class="photo-cell-label" style="color:#9CA3AF;">After</span>
+          <span class="photo-cell-sub">Tap to add</span>
+        </div>
+      </div>
+      <div class="add-link" style="padding: 4px 2px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Add additional photo
+      </div>
+      <p class="photo-hint">All photos optional but recommended</p>
+    </div>
+
+    <!-- NOTES -->
+    <div class="tab-content" id="tab-notes">
+      <div class="notes-block">
+        <div class="notes-header">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span class="notes-header-label">Customer note</span>
+          <span class="notes-tag notes-tag-green">In report</span>
+        </div>
+        <textarea class="notes-textarea" placeholder="e.g. Pool looking great. Treated low chlorine.">Pool looking great. Treated low chlorine — should be back to normal by tomorrow.</textarea>
+      </div>
+      <div class="notes-block">
+        <div class="notes-header">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#B91C1C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span class="notes-header-label">Office note</span>
+          <span class="notes-tag notes-tag-red">Internal only</span>
+        </div>
+        <textarea class="notes-textarea" placeholder="e.g. Gate latch broken, owner to fix.">Gate latch broken. Owner needs to fix before next visit.</textarea>
+      </div>
+    </div>
+
+    <!-- COMPLETE -->
+    <div class="tab-content" id="tab-complete">
+      <div class="section-label">Summary</div>
+      <div class="white-card">
+        <div class="summary-row"><span class="summary-key">pH</span><span class="summary-val"><div class="s-dot" style="background:#22C55E;"></div>7.4 — Good</span></div>
+        <div class="summary-row"><span class="summary-key">Chlorine</span><span class="summary-val"><div class="s-dot" style="background:#EF4444;"></div>0.8 — Low</span></div>
+        <div class="summary-row"><span class="summary-key">Alkalinity</span><span class="summary-val"><div class="s-dot" style="background:#22C55E;"></div>95 — Good</span></div>
+        <div class="summary-row"><span class="summary-key">LSI</span><span class="summary-val"><div class="s-dot" style="background:#F59E0B;"></div>−0.4 Slightly corrosive</span></div>
+      </div>
+      <div class="white-card" style="margin-top:2px;">
+        <div class="summary-row"><span class="summary-key">Liquid chlorine</span><span class="summary-val">400ml added ✓</span></div>
+        <div class="summary-row"><span class="summary-key">pH Buffer</span><span class="summary-val">150g added ✓</span></div>
+      </div>
+      <div class="white-card" style="margin-top:2px;">
+        <div class="summary-row"><span class="summary-key">Photos</span><span class="summary-val">1 of 2 added</span></div>
+        <div class="summary-row"><span class="summary-key">Customer note</span><span class="summary-val">Added ✓</span></div>
+        <div class="summary-row"><span class="summary-key">Office note</span><span class="summary-val">Added ✓</span></div>
+      </div>
+      <div class="edit-link">← go back and edit</div>
+    </div>
+
+  </div>
+
+  <!-- Sticky CTA -->
+  <div class="sticky-footer">
+    <button class="cta-btn" id="cta-btn" style="background-color:#111827;color:#ffffff;">
+      <svg id="cta-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      <span id="cta-label" style="color:#ffffff;font-size:15px;font-weight:700;">Next — Treatment</span>
+    </button>
+  </div>
+  <div class="home-pill-wrap">
+    <div class="home-pill"></div>
+  </div>
+
+</div>
+
+<script>
+  const tabOrder = ['readings', 'treatment', 'photos', 'notes', 'complete'];
+  const ctaConfig = {
+    readings:  { label: 'Next — Treatment', bg: '#111827', icon: '<polyline points="9 18 15 12 9 6"/>' },
+    treatment: { label: 'Next — Photos',    bg: '#111827', icon: '<polyline points="9 18 15 12 9 6"/>' },
+    photos:    { label: 'Next — Notes',     bg: '#111827', icon: '<polyline points="9 18 15 12 9 6"/>' },
+    notes:     { label: 'Next — Review',    bg: '#111827', icon: '<polyline points="9 18 15 12 9 6"/>' },
+    complete:  { label: 'Mark complete',    bg: '#22C55E', icon: '<polyline points="20 6 9 17 4 12"/>' }
+  };
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    el.classList.add('active');
+    const cfg = ctaConfig[name];
+    const btn = document.getElementById('cta-btn');
+    btn.style.backgroundColor = cfg.bg;
+    document.getElementById('cta-label').textContent = cfg.label;
+    document.getElementById('cta-icon').innerHTML = cfg.icon;
+  }
+
+  // Live timer
+  let secs = 512;
+  setInterval(() => {
+    secs++;
+    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
+    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
+    const s = String(secs % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = `${h}:${m}:${s}`;
+  }, 1000);
+</script>
+</body>
+</html>

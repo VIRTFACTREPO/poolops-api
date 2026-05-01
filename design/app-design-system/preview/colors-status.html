@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .swatch { width: 110px; border-radius: 10px; overflow: hidden; border: 1px solid var(--po-border-soft); background: #fff; }
+  .swatch .tile { height: 54px; display:flex; align-items:center; justify-content:center; }
+  .swatch .dot { width:12px; height:12px; border-radius:50%; }
+  .swatch .meta { padding: 6px 8px 8px; font-size: 10px; color: var(--po-text-secondary); line-height: 1.3; }
+  .swatch .name { font-weight: 600; color: var(--po-text-heading); font-size: 11px; }
+  .swatch .hex { font-family: var(--po-font-mono); font-size: 10px; color: var(--po-placeholder); margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <div class="swatch"><div class="tile" style="background:#F0FDF4"><div class="dot" style="background:#22C55E"></div></div><div class="meta"><div class="name" style="color:#15803D">Good</div><div class="hex">#22C55E</div><div>In range · healthy</div></div></div>
+    <div class="swatch"><div class="tile" style="background:#FFFBEB"><div class="dot" style="background:#F59E0B"></div></div><div class="meta"><div class="name" style="color:#B45309">Caution</div><div class="hex">#F59E0B</div><div>Monitor · slightly out</div></div></div>
+    <div class="swatch"><div class="tile" style="background:#FEF2F2"><div class="dot" style="background:#EF4444"></div></div><div class="meta"><div class="name" style="color:#DC2626">Action</div><div class="hex">#EF4444</div><div>Out of range · flagged</div></div></div>
+    <div class="swatch"><div class="tile" style="background:#F9FAFB"><div class="dot" style="background:#6B7280"></div></div><div class="meta"><div class="name" style="color:#6B7280">Neutral</div><div class="hex">#6B7280</div><div>Done · secondary</div></div></div>
+  </div>
+</div>
+</body>
+</html>

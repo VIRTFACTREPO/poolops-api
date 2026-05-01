@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PoolOps — Pool Owner Screens M15–M21</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #E2E4E8;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── SWITCHER ── */
+  .switcher {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: #1E1E1E; border-bottom: 1px solid #333;
+    display: flex; align-items: center; gap: 8px; padding: 10px 16px;
+    flex-wrap: wrap;
+  }
+  .switcher-label { font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
+  .switch-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid #444; background: #2A2A2A; font-size: 12px; font-weight: 600; color: #888; cursor: pointer; font-family: 'Inter', system-ui, sans-serif; transition: all 0.15s; white-space: nowrap; }
+  .switch-btn.active { background: #F9FAFB; color: #111827; border-color: #F9FAFB; }
+  .switch-btn:hover:not(.active) { background: #333; color: #aaa; }
+
+  /* ── SCREEN WRAPPER ── */
+  .screens { padding-top: 56px; display: flex; justify-content: center; padding-bottom: 48px; }
+  .screen { display: none; padding: 32px 16px; justify-content: center; width: 100%; }
+  .screen.active { display: flex; }
+
+  /* ── PHONE SHELL ── */
+  .phone { width: 375px; background: #F5F5F3; border-radius: 50px; box-shadow: 0 32px 80px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10); overflow: hidden; display: flex; flex-direction: column; }
+  .status-bar { background: #F5F5F3; padding: 14px 28px 0; display: flex; justify-content: space-between; align-items: center; }
+  .di-wrap { background: #F5F5F3; padding: 6px 0; display: flex; justify-content: center; }
+  .di { width: 120px; height: 34px; background: #111827; border-radius: 20px; }
+
+  /* ── SHARED COMPONENTS ── */
+  .header { padding: 12px 20px 14px; display: flex; align-items: center; justify-content: space-between; background: #F5F5F3; }
+  .logo { font-size: 15px; font-weight: 700; color: #111827; display: flex; align-items: center; gap: 6px; }
+  .logo-dot { width: 7px; height: 7px; background: #111827; border-radius: 50%; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .bell-wrap { position: relative; }
+  .bell-dot { position: absolute; top: -1px; right: -1px; width: 7px; height: 7px; background: #EF4444; border-radius: 50%; border: 1.5px solid #F5F5F3; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: #E5E7EB; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #374151; }
+  .back-btn { width: 32px; height: 32px; border-radius: 10px; background: #fff; border: 1px solid rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+  .back-header { padding: 10px 20px 12px; display: flex; align-items: center; gap: 12px; background: #F5F5F3; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .back-title { font-size: 16px; font-weight: 700; color: #111827; flex: 1; text-align: center; }
+  .back-right { width: 32px; }
+
+  .scroll { padding: 4px 16px 16px; background: #F5F5F3; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .scroll-pad { padding: 14px 16px 16px; background: #F5F5F3; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+
+  .greeting { font-size: 13px; color: #9CA3AF; }
+  .owner-name { font-size: 22px; font-weight: 700; color: #111827; letter-spacing: -0.4px; margin-top: 2px; }
+  .section-hdr { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+  .section-title { font-size: 14px; font-weight: 600; color: #111827; }
+  .section-link { font-size: 12px; color: #6B7280; cursor: pointer; }
+  .section-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #9CA3AF; padding: 4px 2px 0; }
+
+  /* Pill badges */
+  .pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 20px; padding: 4px 10px; font-size: 11px; font-weight: 500; }
+  .pill-green { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+  .pill-amber { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+  .pill-red { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+  .mini-pill { font-size: 10px; font-weight: 500; border-radius: 6px; padding: 2px 7px; }
+  .mp-green { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
+  .mp-amber { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
+  .mp-red { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+
+  /* Bottom nav */
+  .nav { background: #fff; border-top: 1px solid rgba(0,0,0,0.07); padding: 10px 28px 0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+  .nav-icon-wrap { width: 44px; height: 32px; border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+  .nav-icon-wrap.active { background: #111827; }
+  .home-pill-wrap { background: #fff; display: flex; justify-content: center; padding: 12px 0 14px; flex-shrink: 0; }
+  .home-pill { width: 120px; height: 4px; background: #111827; border-radius: 99px; }
+
+  /* ── STATUS BAR ICONS (reusable SVG snippets inline) ── */
+
+  /* ══════════════
+     M15 — OWNER HOME
+  ══════════════ */
+  .status-card { border-radius: 20px; padding: 20px; background: #fff; border: 1.5px solid rgba(0,0,0,0.08); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+  .status-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+  .status-indicator-row { display: flex; align-items: center; gap: 8px; }
+  .s-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .s-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+  .s-address { font-size: 12px; color: #9CA3AF; text-align: right; line-height: 1.4; max-width: 130px; }
+  .status-title { font-size: 20px; font-weight: 700; color: #111827; letter-spacing: -0.3px; margin-bottom: 16px; }
+  .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .status-item { background: #F9FAFB; border-radius: 12px; padding: 12px 14px; }
+  .si-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #9CA3AF; margin-bottom: 4px; }
+  .si-value { font-size: 14px; font-weight: 600; color: #111827; }
+  .si-sub { font-size: 11px; color: #6B7280; margin-top: 1px; }
+  .cta-dark { width: 100%; background-color: #111827; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Inter', system-ui, sans-serif; }
+  .cta-light { width: 100%; background-color: #F3F4F6; border: 1.5px solid #E5E7EB; border-radius: 16px; padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Inter', system-ui, sans-serif; }
+  .readings-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  .readings-row::-webkit-scrollbar { display: none; }
+  .reading-pill { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid rgba(0,0,0,0.07); border-radius: 12px; padding: 10px 14px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.04); flex-shrink: 0; }
+  .r-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .r-label { font-size: 11px; color: #9CA3AF; font-weight: 500; }
+  .r-value { font-size: 14px; font-weight: 700; color: #111827; }
+
+  /* ══════════════
+     M16 — SERVICE HISTORY
+  ══════════════ */
+  .filter-tabs { display: flex; gap: 6px; padding: 0 2px; }
+  .ftab { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #E5E7EB; background: #fff; color: #6B7280; transition: all 0.15s; }
+  .ftab.active { background: #111827; color: #fff; border-color: #111827; }
+  .history-card { background: #fff; border: 1px solid rgba(0,0,0,0.07); border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 14px; cursor: pointer; }
+  .hist-icon { width: 36px; height: 36px; border-radius: 10px; background: #F3F4F6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .hist-info { flex: 1; }
+  .hist-date { font-size: 13px; font-weight: 600; color: #111827; }
+  .hist-tech { font-size: 12px; color: #9CA3AF; margin-top: 1px; }
+  .hist-pills { display: flex; gap: 5px; margin-top: 6px; }
+  .hist-card-flagged { border-left: 3px solid #F59E0B; }
+  .hist-chev { color: #D1D5DB; flex-shrink: 0; }
+
+  /* ══════════════
+     M17 — SERVICE REPORT
+  ══════════════ */
+  .report-scroll { padding: 14px 16px 24px; background: #F5F5F3; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+  .report-meta { font-size: 13px; color: #6B7280; }
+  .report-card { background: #fff; border: 1px solid rgba(0,0,0,0.07); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .rc-header { padding: 11px 16px; background: #F9FAFB; border-bottom: 1px solid #F3F4F6; display: flex; align-items: center; gap: 7px; }
+  .rc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9CA3AF; }
+  .reading-row { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #F3F4F6; }
+  .reading-row:last-child { border-bottom: none; }
+  .rr-name { font-size: 13px; font-weight: 500; color: #374151; flex: 1; }
+  .rr-value { font-size: 13px; font-weight: 700; color: #111827; margin-right: 12px; }
+  .rr-status { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 5px; min-width: 56px; justify-content: flex-end; }
+  .lsi-report { padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+  .lsi-big { font-size: 30px; font-weight: 700; }
+  .lsi-info-label { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .lsi-info-sub { font-size: 12px; color: #6B7280; }
+  .treatment-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-bottom: 1px solid #F3F4F6; }
+  .treatment-item:last-child { border-bottom: none; }
+  .t-check { width: 18px; height: 18px; border-radius: 50%; background: #F0FDF4; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .t-name { font-size: 13px; color: #374151; flex: 1; }
+  .t-amount { font-size: 12px; font-weight: 600; color: #111827; }
+  .photos-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px; }
+  .photo-thumb { aspect-ratio: 4/3; border-radius: 10px; background: #F3F4F6; display: flex; align-items: center; justify-content: center; border: 1px solid #E5E7EB; flex-direction: column; gap: 4px; }
+  .photo-thumb-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #9CA3AF; }
+  .tech-note { padding: 14px 16px; background: #F9FAFB; font-size: 13px; color: #374151; font-style: italic; line-height: 1.6; }
+  .pdf-btn { display: flex; align-items: center; gap: 6px; padding: 4px 0; cursor: pointer; }
+  .pdf-btn-text { font-size: 13px; color: #6B7280; }
+
+  /* ══════════════
+     M18 — REQUEST A VISIT
+  ══════════════ */
+  .reason-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .reason-card { background: #fff; border: 1.5px solid #E5E7EB; border-radius: 14px; padding: 16px 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: border-color 0.15s; }
+  .reason-card.selected { border-color: #111827; background: #F9FAFB; }
+  .reason-card:hover:not(.selected) { border-color: #9CA3AF; }
+  .reason-emoji { font-size: 26px; }
+  .reason-label { font-size: 12px; font-weight: 600; color: #374151; text-align: center; }
+  .reason-card.selected .reason-label { color: #111827; }
+  .notes-area { width: 100%; min-height: 80px; background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; padding: 12px 14px; font-size: 14px; color: #374151; font-family: 'Inter', system-ui, sans-serif; resize: none; outline: none; }
+  .notes-area::placeholder { color: #D1D5DB; }
+  .notes-area:focus { border-color: #9CA3AF; }
+  .photo-attach { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: #fff; border: 1px solid #E5E7EB; border-radius: 12px; cursor: pointer; }
+  .photo-attach-text { font-size: 13px; color: #6B7280; flex: 1; }
+  .photo-attach-sub { font-size: 11px; color: #D1D5DB; }
+
+  /* ══════════════
+     M21 — NOTIFICATIONS
+  ══════════════ */
+  .notif-card { background: #fff; border: 1px solid rgba(0,0,0,0.07); border-radius: 14px; padding: 13px 14px; display: flex; align-items: flex-start; gap: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .notif-card.unread-green { border-left: 3px solid #22C55E; }
+  .notif-card.unread-blue { border-left: 3px solid #111827; }
+  .notif-card.unread-amber { border-left: 3px solid #F59E0B; }
+  .notif-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ni-green { background: #F0FDF4; }
+  .ni-dark { background: #F3F4F6; }
+  .ni-amber { background: #FFFBEB; }
+  .notif-body { flex: 1; }
+  .notif-title { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; }
+  .notif-sub { font-size: 12px; color: #6B7280; margin-top: 3px; line-height: 1.4; }
+  .notif-time { font-size: 11px; color: #9CA3AF; white-space: nowrap; margin-top: 2px; }
+  .read-card { opacity: 0.65; }
+</style>
+</head>
+<body>
+
+<!-- Switcher -->
+<div class="switcher">
+  <span class="switcher-label">Screen</span>
+  <button class="switch-btn active" onclick="show('home',this)">M15 · Home</button>
+  <button class="switch-btn" onclick="show('history',this)">M16 · Service History</button>
+  <button class="switch-btn" onclick="show('report',this)">M17 · Report Detail</button>
+  <button class="switch-btn" onclick="show('request',this)">M18 · Request Visit</button>
+  <button class="switch-btn" onclick="show('notifs',this)">M21 · Notifications</button>
+</div>
+
+<div class="screens">
+
+<!-- ══════════════════════════════════
+     M15 — OWNER HOME
+══════════════════════════════════ -->
+<div class="screen active" id="screen-home">
+<div class="phone">
+  <div class="status-bar"><span style="font-size:15px;font-weight:600;color:#111827;">9:41</span><div style="display:flex;align-items:center;gap:6px;"><svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg><svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg></div></div>
+  <div class="di-wrap"><div class="di"></div></div>
+  <div class="header">
+    <div class="logo"><div class="logo-dot"></div>PoolOps</div>
+    <div class="header-right">
+      <div class="bell-wrap"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg><div class="bell-dot"></div></div>
+      <div class="avatar">SW</div>
+    </div>
+  </div>
+  <div class="scroll" style="padding-top:8px;">
+    <div><div class="greeting">Good morning</div><div class="owner-name">Sarah Williams</div></div>
+    <div class="status-card">
+      <div class="status-top">
+        <div class="status-indicator-row"><div class="s-dot" style="background:#22C55E;"></div><span class="s-label" style="color:#15803D;">Pool is healthy</span></div>
+        <div class="s-address">42 Ponsonby Rd<br>Ponsonby</div>
+      </div>
+      <div class="status-title">Your pool looks great</div>
+      <div class="status-grid">
+        <div class="status-item"><div class="si-label">Last service</div><div class="si-value">Today</div><div class="si-sub">9:42am · James T.</div></div>
+        <div class="status-item"><div class="si-label">Next visit</div><div class="si-value">Thursday</div><div class="si-sub">3 April</div></div>
+      </div>
+      <div class="cta-dark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span style="color:#ffffff;font-size:14px;font-weight:600;">View service report</span>
+      </div>
+    </div>
+    <div class="section-hdr"><span class="section-title">Latest readings</span></div>
+    <div class="readings-row">
+      <div class="reading-pill"><div class="r-dot" style="background:#22C55E;"></div><span class="r-label">pH</span><span class="r-value">7.4</span></div>
+      <div class="reading-pill"><div class="r-dot" style="background:#22C55E;"></div><span class="r-label">Chlorine</span><span class="r-value">1.8</span></div>
+      <div class="reading-pill"><div class="r-dot" style="background:#22C55E;"></div><span class="r-label">Alkalinity</span><span class="r-value">95</span></div>
+      <div class="reading-pill"><div class="r-dot" style="background:#22C55E;"></div><span class="r-label">LSI</span><span class="r-value">+0.1</span></div>
+    </div>
+    <div class="cta-light">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <span style="color:#111827;">Request a visit</span>
+    </div>
+    <div class="section-hdr"><span class="section-title">Service history</span><span class="section-link">View all</span></div>
+    <div class="history-card"><div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="hist-info"><div class="hist-date">Today · 31 Mar</div><div class="hist-tech">James T. · 9:42am</div><div class="hist-pills"><span class="mini-pill mp-green">All good</span></div></div><svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    <div class="history-card"><div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div class="hist-info"><div class="hist-date">24 Mar</div><div class="hist-tech">James T. · 10:15am</div><div class="hist-pills"><span class="mini-pill mp-amber">pH slightly high</span></div></div><svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+  </div>
+  <div class="nav">
+    <div class="nav-item"><div class="nav-icon-wrap active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div></div>
+  </div>
+  <div class="home-pill-wrap"><div class="home-pill"></div></div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     M16 — SERVICE HISTORY
+══════════════════════════════════ -->
+<div class="screen" id="screen-history">
+<div class="phone">
+  <div class="status-bar"><span style="font-size:15px;font-weight:600;color:#111827;">9:41</span><div style="display:flex;align-items:center;gap:6px;"><svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg><svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg></div></div>
+  <div class="di-wrap"><div class="di"></div></div>
+  <div class="back-header">
+    <div class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="back-title">Service History</div>
+    <div class="back-right"></div>
+  </div>
+  <div class="scroll-pad">
+    <div class="filter-tabs">
+      <div class="ftab active">All</div>
+      <div class="ftab">This year</div>
+      <div class="ftab">Last 3 months</div>
+    </div>
+    <div class="section-label">March 2026</div>
+    <div class="history-card">
+      <div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="hist-info"><div class="hist-date">Today · 31 Mar</div><div class="hist-tech">James T. · 9:42am</div><div class="hist-pills"><span class="mini-pill mp-green">All readings good</span></div></div>
+      <svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="history-card hist-card-flagged">
+      <div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="hist-info"><div class="hist-date">24 Mar</div><div class="hist-tech">James T. · 10:15am</div><div class="hist-pills"><span class="mini-pill mp-amber">pH slightly high</span></div></div>
+      <svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="history-card">
+      <div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="hist-info"><div class="hist-date">17 Mar</div><div class="hist-tech">James T. · 9:55am</div><div class="hist-pills"><span class="mini-pill mp-green">All readings good</span></div></div>
+      <svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="history-card">
+      <div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="hist-info"><div class="hist-date">10 Mar</div><div class="hist-tech">James T. · 9:30am</div><div class="hist-pills"><span class="mini-pill mp-green">All readings good</span></div></div>
+      <svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="history-card">
+      <div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="hist-info"><div class="hist-date">3 Mar</div><div class="hist-tech">James T. · 10:05am</div><div class="hist-pills"><span class="mini-pill mp-green">All readings good</span></div></div>
+      <svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="section-label">February 2026</div>
+    <div class="history-card">
+      <div class="hist-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <div class="hist-info"><div class="hist-date">24 Feb</div><div class="hist-tech">James T. · 9:48am</div><div class="hist-pills"><span class="mini-pill mp-green">All readings good</span></div></div>
+      <svg class="hist-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div></div>
+  </div>
+  <div class="home-pill-wrap"><div class="home-pill"></div></div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     M17 — SERVICE REPORT DETAIL
+══════════════════════════════════ -->
+<div class="screen" id="screen-report">
+<div class="phone">
+  <div class="status-bar"><span style="font-size:15px;font-weight:600;color:#111827;">9:41</span><div style="display:flex;align-items:center;gap:6px;"><svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg><svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg></div></div>
+  <div class="di-wrap"><div class="di"></div></div>
+  <div class="back-header">
+    <div class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="back-title">Service Report</div>
+    <div style="width:32px;display:flex;justify-content:flex-end;cursor:pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </div>
+  </div>
+  <div class="report-scroll">
+    <div>
+      <div style="font-size:15px;font-weight:600;color:#111827;">Today · 31 March 2026</div>
+      <div class="report-meta">James T. · 9:42am · 42 Ponsonby Rd</div>
+    </div>
+    <!-- Readings -->
+    <div class="report-card">
+      <div class="rc-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg><span class="rc-title">Water readings</span></div>
+      <div class="reading-row"><span class="rr-name">pH</span><span class="rr-value">7.4</span><span class="rr-status" style="color:#15803D;"><div style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></div>Good</span></div>
+      <div class="reading-row"><span class="rr-name">Free chlorine</span><span class="rr-value">1.8 ppm</span><span class="rr-status" style="color:#15803D;"><div style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></div>Good</span></div>
+      <div class="reading-row"><span class="rr-name">Alkalinity</span><span class="rr-value">95 ppm</span><span class="rr-status" style="color:#15803D;"><div style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></div>Good</span></div>
+      <div class="reading-row"><span class="rr-name">Calcium</span><span class="rr-value">280 ppm</span><span class="rr-status" style="color:#15803D;"><div style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></div>Good</span></div>
+      <div class="reading-row"><span class="rr-name">Stabiliser</span><span class="rr-value">42 ppm</span><span class="rr-status" style="color:#15803D;"><div style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></div>Good</span></div>
+    </div>
+    <!-- LSI -->
+    <div class="report-card">
+      <div class="rc-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="rc-title">Water balance</span></div>
+      <div class="lsi-report">
+        <div class="lsi-big" style="color:#15803D;">+0.1</div>
+        <div><div class="lsi-info-label" style="color:#15803D;">Well balanced</div><div class="lsi-info-sub">Your pool water is in excellent balance — no corrosion or scaling risk.</div></div>
+      </div>
+    </div>
+    <!-- Treatment -->
+    <div class="report-card">
+      <div class="rc-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v7.31"/><path d="M14 9.3V1.99"/><path d="M8.5 2h7"/><path d="M14 9.3a6.5 6.5 0 1 1-4 0"/></svg><span class="rc-title">Treatment</span></div>
+      <div class="treatment-item"><div class="t-check"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><span class="t-name">No chemicals needed this visit</span></div>
+    </div>
+    <!-- Photos -->
+    <div class="report-card">
+      <div class="rc-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span class="rc-title">Photos</span></div>
+      <div class="photos-row">
+        <div class="photo-thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><div class="photo-thumb-label">Before</div></div>
+        <div class="photo-thumb"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><div class="photo-thumb-label">After</div></div>
+      </div>
+    </div>
+    <!-- Note -->
+    <div class="report-card">
+      <div class="rc-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="rc-title">Note from your technician</span></div>
+      <div class="tech-note">"Pool looking great. Everything is in perfect balance this week — see you next Thursday!"</div>
+    </div>
+    <!-- PDF -->
+    <div class="pdf-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <span class="pdf-btn-text">Download as PDF</span>
+    </div>
+  </div>
+  <div class="home-pill-wrap" style="background:#F5F5F3;"><div class="home-pill"></div></div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     M18 — REQUEST A VISIT
+══════════════════════════════════ -->
+<div class="screen" id="screen-request">
+<div class="phone">
+  <div class="status-bar"><span style="font-size:15px;font-weight:600;color:#111827;">9:41</span><div style="display:flex;align-items:center;gap:6px;"><svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg><svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg></div></div>
+  <div class="di-wrap"><div class="di"></div></div>
+  <div class="back-header">
+    <div class="back-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></div>
+    <div class="back-title">Request a Visit</div>
+    <div class="back-right"></div>
+  </div>
+  <div class="scroll-pad">
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px;">What's the reason?</div>
+      <div class="reason-grid">
+        <div class="reason-card selected" onclick="selectReason(this)">
+          <div class="reason-emoji">🌊</div>
+          <div class="reason-label">Water issue</div>
+        </div>
+        <div class="reason-card" onclick="selectReason(this)">
+          <div class="reason-emoji">🗓</div>
+          <div class="reason-label">Extra routine visit</div>
+        </div>
+        <div class="reason-card" onclick="selectReason(this)">
+          <div class="reason-emoji">🎉</div>
+          <div class="reason-label">Event prep</div>
+        </div>
+        <div class="reason-card" onclick="selectReason(this)">
+          <div class="reason-emoji">🔧</div>
+          <div class="reason-label">Equipment problem</div>
+        </div>
+        <div class="reason-card" onclick="selectReason(this)">
+          <div class="reason-emoji">💬</div>
+          <div class="reason-label">Other</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Tell us more <span style="font-size:11px;font-weight:400;color:#9CA3AF;">(optional)</span></div>
+      <textarea class="notes-area" placeholder="e.g. Pool looks cloudy after the storm last night...">Pool looks cloudy after the storm last night. Can someone come out today if possible?</textarea>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">Add a photo <span style="font-size:11px;font-weight:400;color:#9CA3AF;">(optional)</span></div>
+      <div class="photo-attach">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <div><div class="photo-attach-text">Tap to add a photo</div><div class="photo-attach-sub">Helps the team come prepared</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Sticky CTA -->
+  <div style="background-color:#ffffff;border-top:1px solid rgba(0,0,0,0.07);padding:14px 16px 0;flex-shrink:0;">
+    <div style="width:100%;background-color:#111827;border-radius:14px;padding:16px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      <span style="color:#ffffff;font-size:15px;font-weight:700;font-family:'Inter',system-ui,sans-serif;">Send request</span>
+    </div>
+  </div>
+  <div style="background-color:#ffffff;display:flex;justify-content:center;padding:12px 0 14px;flex-shrink:0;"><div style="width:120px;height:4px;background-color:#111827;border-radius:99px;"></div></div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     M21 — NOTIFICATIONS
+══════════════════════════════════ -->
+<div class="screen" id="screen-notifs">
+<div class="phone">
+  <div class="status-bar"><span style="font-size:15px;font-weight:600;color:#111827;">9:41</span><div style="display:flex;align-items:center;gap:6px;"><svg width="16" height="11" viewBox="0 0 16 11" fill="#111827"><rect x="0" y="4" width="2.5" height="7" rx="1" opacity="0.3"/><rect x="4" y="2.5" width="2.5" height="8.5" rx="1" opacity="0.5"/><rect x="8" y="1" width="2.5" height="10" rx="1" opacity="0.7"/><rect x="12" y="0" width="2.5" height="11" rx="1"/></svg><svg width="25" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="#111827" stroke-opacity="0.35"/><rect x="1.5" y="1.5" width="16" height="9" rx="2.5" fill="#111827"/><path d="M23 4v4a2 2 0 0 0 0-4Z" fill="#111827" fill-opacity="0.4"/></svg></div></div>
+  <div class="di-wrap"><div class="di"></div></div>
+  <div class="header" style="border-bottom:1px solid rgba(0,0,0,0.06);">
+    <div style="font-size:20px;font-weight:700;color:#111827;letter-spacing:-0.3px;">Notifications</div>
+    <div style="font-size:12px;color:#9CA3AF;cursor:pointer;">Mark all read</div>
+  </div>
+  <div class="scroll-pad">
+    <div class="section-label">New</div>
+    <!-- Unread: service complete -->
+    <div class="notif-card unread-green">
+      <div class="notif-icon ni-green">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="notif-body">
+        <div class="notif-title">Your pool was serviced</div>
+        <div class="notif-sub">James T. completed your service today. All readings are in the healthy range.</div>
+        <div class="notif-time">9 minutes ago</div>
+      </div>
+    </div>
+    <!-- Unread: visit confirmed -->
+    <div class="notif-card unread-blue">
+      <div class="notif-icon ni-dark">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <div class="notif-body">
+        <div class="notif-title">Visit confirmed — Thursday 3 April</div>
+        <div class="notif-sub">Your extra visit has been scheduled for 10:00am. James T. will attend.</div>
+        <div class="notif-time">Yesterday · 3:22pm</div>
+      </div>
+    </div>
+    <div class="section-label">Earlier</div>
+    <!-- Read: request received -->
+    <div class="notif-card read-card">
+      <div class="notif-icon ni-dark">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </div>
+      <div class="notif-body">
+        <div class="notif-title" style="color:#374151;">Request received</div>
+        <div class="notif-sub">Your visit request has been received. We'll confirm a time shortly.</div>
+        <div class="notif-time">Yesterday · 11:48am</div>
+      </div>
+    </div>
+    <!-- Read: service complete previous -->
+    <div class="notif-card read-card">
+      <div class="notif-icon ni-green" style="opacity:0.5;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="notif-body">
+        <div class="notif-title" style="color:#374151;">Your pool was serviced</div>
+        <div class="notif-sub">24 March — James T. pH slightly elevated, treated.</div>
+        <div class="notif-time">24 Mar · 10:22am</div>
+      </div>
+    </div>
+    <!-- Read: flagged reading -->
+    <div class="notif-card read-card">
+      <div class="notif-icon ni-amber" style="opacity:0.5;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <div class="notif-body">
+        <div class="notif-title" style="color:#374151;">pH slightly elevated on 24 Mar</div>
+        <div class="notif-sub">Your technician noted pH was slightly high and treated it. No action needed from you.</div>
+        <div class="notif-time">24 Mar · 10:18am</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 0 0-5-5.917V4a1 1 0 1 0-2 0v1.083A6 6 0 0 0 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg></div></div>
+    <div class="nav-item"><div class="nav-icon-wrap"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div></div>
+  </div>
+  <div class="home-pill-wrap"><div class="home-pill"></div></div>
+</div>
+</div>
+
+</div>
+
+<script>
+  function show(name, btn) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+  function selectReason(card) {
+    document.querySelectorAll('.reason-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+  }
+</script>
+</body>
+</html>

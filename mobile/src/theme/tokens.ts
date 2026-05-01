@@ -2,89 +2,88 @@
 // Light mode palette only
 
 export const colors = {
-  // Primary colors
-  primary: '#0EA5E9',
+  // Primary / ink — near-black. Pool Blue is accent only, see poolBlue.
+  primary: '#111827',
+  ink: '#111827',
   primaryLight: '#38BDF8',
   primaryDark: '#0284C7',
-  
-  // Secondary colors
-  secondary: '#8B5CF6',
-  secondaryLight: '#A78BFA',
-  secondaryDark: '#7C3AED',
-  
+
+  // Pool Blue — accent colour for icons, progress, sparklines
+  poolBlue: '#0EA5E9',
+
   // Background colors
-  background: '#F8FAFC',
+  background: '#F5F5F3',
   backgroundLight: '#FFFFFF',
-  backgroundDark: '#E2E8F0',
-  
+  backgroundDark: '#E5E7EB',
+
   // Surface colors
   surface: '#FFFFFF',
   surfaceLight: '#F1F5F9',
   surfaceDark: '#CBD5E1',
-  
+
   // Text colors
-  text: '#1E293B',
+  text: '#111827',
   textLight: '#475569',
-  textMuted: '#64748B',
+  textMuted: '#6B7280',
   textInverse: '#FFFFFF',
-  
+
   // Border colors
-  border: '#E2E8F0',
+  border: '#E5E7EB',
   borderLight: '#F1F5F9',
   borderDark: '#CBD5E1',
-  
-  // Status colors
-  success: '#10B981',
-  successLight: '#34D399',
-  successDark: '#059669',
-  
+
+  // Status — success
+  success: '#22C55E',
+  successLight: '#F0FDF4',
+  successDark: '#15803D',
+  successBorder: '#BBF7D0',
+
+  // Status — warning
   warning: '#F59E0B',
-  warningLight: '#FBBF24',
+  warningLight: '#FFFBEB',
   warningDark: '#D97706',
-  
+  warningBorder: '#FDE68A',
+
+  // Status — error
   error: '#EF4444',
-  errorLight: '#F87171',
+  errorLight: '#FEF2F2',
   errorDark: '#DC2626',
-  
-  info: '#3B82F6',
-  infoLight: '#60A5FA',
-  infoDark: '#2563EB',
-  
-  // Placeholder colors
-  placeholder: '#94A3B8',
-  
+  errorBorder: '#FECACA',
+
+  // Blue tints — progress bars, info contexts
+  blueTint: '#EFF6FF',
+  blueText: '#0369A1',
+  blueBorder: '#BAE6FD',
+
+  // Placeholder
+  placeholder: '#9CA3AF',
+
   // Role-specific colors
   technician: '#0EA5E9',
-  poolOwner: '#8B5CF6',
+  poolOwner: '#8B5CF6', // avatar background only — not for UI components
 };
 
 export const spacing = {
-  none: 0,
-  xxs: 2,
   xs: 4,
   sm: 8,
-  md: 12,
-  base: 16,
-  lg: 20,
-  xl: 24,
-  '2xl': 32,
-  '3xl': 40,
-  '4xl': 48,
-  '5xl': 64,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  xxxl: 64,
+  screen: 16,
 };
 
 export const borderRadius = {
-  none: 0,
-  sm: 4,
+  sm: 6,
   md: 8,
-  lg: 12,
-  xl: 16,
-  '2xl': 20,
-  '3xl': 24,
-  '4xl': 32,
-  '5xl': 40,
+  lg: 10,
+  xl: 12,
+  xxl: 16,
+  standard: 14,
+  hero: 18,
+  xxxl: 20,
   full: 9999,
-  poolFrame: 50, // Mobile phone frame
 };
 
 export const typography = {
@@ -109,6 +108,14 @@ export const typography = {
     tight: 1.25,
     normal: 1.5,
     relaxed: 1.75,
+  },
+  letterSpacing: {
+    h1: -0.3,
+    h2: -0.2,
+    h3: -0.1,
+    body: 0,
+    small: 0,
+    label: 0.5,
   },
 };
 

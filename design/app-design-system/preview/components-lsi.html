@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 20px 24px; display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .lsi { padding:14px 16px; border-radius:14px; border:1px solid; }
+  .lsi.good { background:#F0FDF4; border-color:#BBF7D0; color:#15803D; }
+  .lsi.warn { background:#FFFBEB; border-color:#FDE68A; color:#B45309; }
+  .lsi.bad  { background:#FEF2F2; border-color:#FECACA; color:#DC2626; }
+  .label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; opacity:.85; }
+  .score { font-size:32px; font-weight:700; letter-spacing:-0.8px; margin-top:4px; }
+  .desc { font-size:11px; line-height:1.4; margin-top:2px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="lsi good">
+    <div class="label">LSI Balanced</div>
+    <div class="score">+0.1</div>
+    <div class="desc">Well balanced — no corrosion or scaling risk</div>
+  </div>
+  <div class="lsi warn">
+    <div class="label">LSI Caution</div>
+    <div class="score">+0.2</div>
+    <div class="desc">Slightly scaling — monitor next visit</div>
+  </div>
+  <div class="lsi bad">
+    <div class="label">LSI Corrosive</div>
+    <div class="score">−0.4</div>
+    <div class="desc">May damage surfaces — treat immediately</div>
+  </div>
+  <div class="lsi bad">
+    <div class="label">LSI Scaling</div>
+    <div class="score">+0.4</div>
+    <div class="desc">May cause calcium deposits</div>
+  </div>
+</div>
+</body>
+</html>

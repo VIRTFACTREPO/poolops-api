@@ -22,31 +22,44 @@ export default function Records() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    supabase
-      .from('service_records')
-      .select('id, ref, completed_at, lsi_score, is_flagged, readings, customers(first_name, last_name), profiles(full_name)')
-      .order('completed_at', { ascending: false })
-      .limit(100)
-      .then(({ data, error: err }) => {
-        if (err) { setError(err.message); return }
-        setRows((data || []).map((r) => {
-          const readings = r.readings as Record<string, { value: number } | undefined> | null
-          const c = r.customers as { first_name: string; last_name: string } | null
-          const p = r.profiles as { full_name: string } | null
-          return {
-            id: r.id,
-            ref: r.ref,
-            customer: c ? `${c.last_name}, ${c.first_name}` : '—',
-            date: r.completed_at ? new Date(r.completed_at).toLocaleDateString('en-NZ') : '—',
-            technician: p?.full_name ?? '—',
-            ph: readings?.ph?.value ?? null,
-            chlorine: readings?.chlorine?.value ?? null,
-            lsi: r.lsi_score,
-            is_flagged: r.is_flagged,
-          }
-        }))
-      })
-      .finally(() => setLoading(false))
+    async function load() {
+      const { data: records, error: recErr } = await supabase
+        .from('service_records')
+        .select('id, ref, completed_at, lsi_score, is_flagged, readings, technician_id, customers(first_name, last_name)')
+        .order('completed_at', { ascending: false })
+        .limit(100)
+
+      if (recErr) { setError(recErr.message); return }
+
+      const techIds = [...new Set((records || []).map((r) => r.technician_id).filter(Boolean))]
+      const profileMap = new Map<string, string>()
+
+      if (techIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', techIds)
+        for (const p of profiles || []) profileMap.set(p.id, p.full_name)
+      }
+
+      setRows((records || []).map((r) => {
+        const readings = r.readings as Record<string, { value: number } | undefined> | null
+        const c = r.customers as { first_name: string; last_name: string } | null
+        return {
+          id: r.id,
+          ref: r.ref,
+          customer: c ? `${c.last_name}, ${c.first_name}` : '—',
+          date: r.completed_at ? new Date(r.completed_at).toLocaleDateString('en-NZ') : '—',
+          technician: profileMap.get(r.technician_id) ?? '—',
+          ph: readings?.ph?.value ?? null,
+          chlorine: readings?.chlorine?.value ?? null,
+          lsi: r.lsi_score,
+          is_flagged: r.is_flagged,
+        }
+      }))
+    }
+
+    load().finally(() => setLoading(false))
   }, [])
 
   const filtered = useMemo(() => flaggedOnly ? rows.filter((r) => r.is_flagged) : rows, [flaggedOnly, rows])

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../colors_and_type.css">
+<style>
+  html, body { margin: 0; padding: 0; background: var(--po-app-bg); font-family: var(--po-font); }
+  .card { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; min-height: 110px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .swatch { width: 110px; border-radius: 10px; overflow: hidden; border: 1px solid var(--po-border-soft); background: #fff; }
+  .swatch .tile { height: 54px; }
+  .swatch .meta { padding: 6px 8px 8px; font-size: 10px; color: var(--po-text-secondary); line-height: 1.3; }
+  .swatch .name { font-weight: 600; color: var(--po-text-heading); font-size: 11px; letter-spacing: -0.1px; }
+  .swatch .hex { font-family: var(--po-font-mono); font-size: 10px; color: var(--po-placeholder); margin-top: 1px; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <div class="swatch"><div class="tile" style="background:#111827"></div><div class="meta"><div class="name" style="color:#111827">Ink</div><div class="hex">#111827</div><div>Primary action · CTA</div></div></div>
+    <div class="swatch"><div class="tile" style="background:#0EA5E9"></div><div class="meta"><div class="name">Pool Blue</div><div class="hex">#0EA5E9</div><div>Links · active tab</div></div></div>
+    <div class="swatch"><div class="tile" style="background:#0369A1"></div><div class="meta"><div class="name">Deep Blue</div><div class="hex">#0369A1</div><div>Pressed link</div></div></div>
+    <div class="swatch"><div class="tile" style="background:#E0F2FE"></div><div class="meta"><div class="name">Light Blue</div><div class="hex">#E0F2FE</div><div>Selected tint</div></div></div>
+  </div>
+</div>
+</body>
+</html>

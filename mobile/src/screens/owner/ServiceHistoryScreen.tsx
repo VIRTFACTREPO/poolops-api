@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   // Filter styles
   filterWrapper: {
-    padding: spacing.base,
+    padding: spacing.md,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
   // Card styles
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius['2xl'],
+    borderRadius: borderRadius.xxl,
     padding: spacing.lg,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: spacing.xxs,
+    marginBottom: 2,
   },
   technicianText: {
     fontSize: 13,
