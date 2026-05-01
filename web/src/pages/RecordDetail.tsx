@@ -48,33 +48,34 @@ export default function RecordDetail() {
 
   useEffect(() => {
     if (!id) return
-    supabase
-      .from('service_records')
-      .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, customers(first_name, last_name, address), profiles!technician_id(full_name), pools(pool_type, volume_litres)')
-      .eq('id', id)
-      .single()
-      .then(({ data, error: err }) => {
-        if (err) { setError(err.message); return }
-        const r = data as any
-        const rec: Record = {
-          id: r.id,
-          ref: r.ref,
-          completed_at: r.completed_at,
-          lsi_score: r.lsi_score,
-          lsi_label: r.lsi_label,
-          is_flagged: r.is_flagged,
-          readings: r.readings as Readings,
-          treatments: (r.treatments || []) as Treatment[],
-          customer_note: r.customer_note,
-          office_note: r.office_note,
-          customers: r.customers as Record['customers'],
-          profiles: r.profiles as Record['profiles'],
-          pools: r.pools as Record['pools'],
-        }
-        setRecord(rec)
-        setOfficeNote(r.office_note ?? '')
-      })
-      .finally(() => setLoading(false))
+    async function load() {
+      const { data, error: err } = await supabase
+        .from('service_records')
+        .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, customers(first_name, last_name, address), profiles!technician_id(full_name), pools(pool_type, volume_litres)')
+        .eq('id', id)
+        .single()
+      if (err) { setError(err.message); setLoading(false); return }
+      const r = data as any
+      const rec: Record = {
+        id: r.id,
+        ref: r.ref,
+        completed_at: r.completed_at,
+        lsi_score: r.lsi_score,
+        lsi_label: r.lsi_label,
+        is_flagged: r.is_flagged,
+        readings: r.readings as Readings,
+        treatments: (r.treatments || []) as Treatment[],
+        customer_note: r.customer_note,
+        office_note: r.office_note,
+        customers: r.customers as Record['customers'],
+        profiles: r.profiles as Record['profiles'],
+        pools: r.pools as Record['pools'],
+      }
+      setRecord(rec)
+      setOfficeNote(r.office_note ?? '')
+      setLoading(false)
+    }
+    load().catch((e: Error) => { setError(e.message); setLoading(false) })
   }, [id])
 
   const saveOfficeNote = async () => {

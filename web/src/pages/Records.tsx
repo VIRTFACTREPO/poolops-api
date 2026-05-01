@@ -44,7 +44,7 @@ export default function Records() {
 
       setRows((records || []).map((r) => {
         const readings = r.readings as Record<string, { value: number } | undefined> | null
-        const c = r.customers as { first_name: string; last_name: string } | null
+        const c = r.customers as unknown as { first_name: string; last_name: string } | null
         return {
           id: r.id,
           ref: r.ref,
