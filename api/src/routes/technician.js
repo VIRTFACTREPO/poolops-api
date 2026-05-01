@@ -14,7 +14,10 @@ router.use(requireAuth, authedRateLimit, requireRole('technician'));
 
 router.get('/jobs', async (req, res) => {
   try {
-    const jobs = await getTodaysJobs(req.user.id);
+    const date = typeof req.query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(req.query.date)
+      ? req.query.date
+      : new Date().toISOString().split('T')[0];
+    const jobs = await getTodaysJobs(req.user.id, date);
     return ok(res, jobs);
   } catch (err) {
     console.error('GET /technician/jobs', err);

@@ -96,7 +96,9 @@ export function RunSheetScreen({ onPullRefresh }: RunSheetScreenProps) {
 
   const fetchJobs = useCallback(async () => {
     try {
-      const response = await getApiClient().get<{ ok: boolean; data: ApiJob[] }>('/technician/jobs');
+      const today = new Date();
+      const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const response = await getApiClient().get<{ ok: boolean; data: ApiJob[] }>('/technician/jobs', { date: localDate });
       const mapped = (response.data ?? []).map((j, i) => mapApiJob(j, i));
       let seenNextUp = false;
       const deduped = mapped.map((job) => {

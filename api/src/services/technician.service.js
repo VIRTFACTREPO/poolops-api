@@ -5,8 +5,8 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-export async function getTodaysJobs(technicianId) {
-  const today = new Date().toISOString().split('T')[0];
+export async function getTodaysJobs(technicianId, today) {
+  if (!today) today = new Date().toISOString().split('T')[0];
 
   const jobSelect = `id, route_order, status, job_type, scheduled_date, started_at, completed_at,
     job_pools ( pools ( id, customers ( id, first_name, last_name, address ) ) )`;
