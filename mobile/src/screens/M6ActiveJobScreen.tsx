@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F3',
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.screen,
   },
   header: {
     marginTop: spacing.sm,
@@ -739,10 +739,11 @@ const styles = StyleSheet.create({
   stickyCtaWrap: {
     paddingTop: spacing.sm,
     paddingBottom: spacing.md,
+    marginHorizontal: spacing.md,
   },
   ctaBtn: {
     minHeight: 56,
-    borderRadius: borderRadius.xl,
+    borderRadius: borderRadius.xxxl,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
