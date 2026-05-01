@@ -132,10 +132,13 @@ export function RunSheetScreen({ onPullRefresh }: RunSheetScreenProps) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    if (onPullRefresh) await onPullRefresh();
-    await queue.triggerSync();
-    await fetchJobs();
-    setRefreshing(false);
+    try {
+      if (onPullRefresh) await onPullRefresh();
+      await Promise.race([queue.triggerSync(), new Promise((r) => setTimeout(r, 5000))]);
+      await fetchJobs();
+    } finally {
+      setRefreshing(false);
+    }
   }, [onPullRefresh, queue, fetchJobs]);
 
   const handleJobPress = (jobId: string) => {
