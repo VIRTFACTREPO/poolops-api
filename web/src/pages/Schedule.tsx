@@ -147,7 +147,7 @@ export default function Schedule() {
       const isToday = date === today
 
       const jobSelect = `id, status, completed_at, route_order, technician_id,
-        pools ( id, pool_type, customers ( first_name, last_name, address ) )`
+        job_pools ( pools ( id, pool_type, customers ( first_name, last_name, address ) ) )`
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type RawJob = Record<string, any>
@@ -193,7 +193,7 @@ export default function Schedule() {
       for (const j of jobs || []) {
         const techName = profileMap.get(j.technician_id) || 'Unknown'
         type RawPool = { id: string; pool_type: string; customers: { first_name: string; last_name: string; address: string } }
-        const jPools = j.pools as unknown as RawPool[]
+        const jPools = ((j.job_pools as unknown as { pools: RawPool }[]) || []).map((jp) => jp.pools).filter(Boolean)
         const firstPool = jPools?.[0]
         const customer = firstPool?.customers
 
