@@ -76,13 +76,15 @@ export function M11CompleteScreen() {
       const refs: Array<{ serviceRecordId?: string; ref?: string; poolId?: string }> = Array.isArray(data) ? data : [];
       markJobCompleted(jobId, refs);
       setCompletionRefs(refs.length > 0 ? refs : [{ ref: 'saved' }]);
-    } catch (err) {
-      console.error('[M11] complete failed:', err);
-      await enqueueJobCompletion({
-        jobId,
-        payload: payload as Record<string, unknown>,
-        createdAt: new Date().toISOString(),
-      });
+    } catch (err: any) {
+      const is409 = err?.message?.includes('409') || err?.status === 409;
+      if (!is409) {
+        await enqueueJobCompletion({
+          jobId,
+          payload: payload as Record<string, unknown>,
+          createdAt: new Date().toISOString(),
+        });
+      }
       markJobCompleted(jobId, []);
       setCompletionRefs([]);
     } finally {
