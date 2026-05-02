@@ -48,7 +48,7 @@ export function PhotoCaptureTab() {
         try {
           const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3003';
           const token = await SecureStore.getItemAsync('auth_token');
-          const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+          const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' as any });
 
           const response = await fetch(`${baseUrl}/technician/jobs/${jobId}/photos`, {
             method: 'POST',

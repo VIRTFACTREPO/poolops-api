@@ -274,7 +274,7 @@ export async function drainPhotoQueue(): Promise<number> {
 
       // Read file as base64 and POST to API which uploads to storage server-side.
       const base64 = await FileSystem.readAsStringAsync(payload.uri, {
-        encoding: FileSystem.EncodingType.Base64,
+        encoding: 'base64' as any,
       });
 
       const uploadResponse = await fetch(
