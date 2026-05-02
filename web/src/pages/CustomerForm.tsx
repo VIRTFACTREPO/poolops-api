@@ -52,60 +52,63 @@ export default function CustomerForm() {
   }
 
   return (
-    <div style={{ display: 'grid', gap: spacing.md }}>
-      <h1 style={{ fontSize: typography.sizes.h2, fontWeight: typography.weights.bold, color: colors.textHeading, letterSpacing: -0.3, margin: 0 }}>
+    <div style={{ display: 'grid', gap: 0, maxWidth: 560 }}>
+      <h1 style={{ fontSize: typography.sizes.h2, fontWeight: typography.weights.bold, color: colors.textHeading, letterSpacing: -0.3, margin: 0, marginBottom: spacing.lg }}>
         New Customer
       </h1>
 
-      <Section title='1) Contact'>
-        <Fields>
-          <Row>
-            <input style={field} placeholder='First name' value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            <input style={field} placeholder='Last name' value={lastName} onChange={(e) => setLastName(e.target.value)} />
-          </Row>
-          <input style={field} placeholder='Email' type='email' value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input style={field} placeholder='Phone (optional)' value={phone} onChange={(e) => setPhone(e.target.value)} />
-        </Fields>
-      </Section>
+      <div style={{ background: colors.white, border: `1px solid ${colors.border}`, borderRadius: radii.standard, overflow: 'hidden' }}>
+        <Section title='Contact' first>
+          <Fields>
+            <Row>
+              <input style={field} placeholder='First name' value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <input style={field} placeholder='Last name' value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </Row>
+            <input style={field} placeholder='Email' type='email' value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input style={field} placeholder='Phone (optional)' value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </Fields>
+        </Section>
 
-      <Section title='2) Pool'>
-        <Fields>
-          <input style={field} placeholder='Address' value={address} onChange={(e) => setAddress(e.target.value)} />
-          <Row>
-            <input style={field} placeholder='Volume (litres)' value={volumeLitres} onChange={(e) => setVolumeLitres(e.target.value)} type='number' min='1' />
-            <select style={field as React.CSSProperties} value={poolType} onChange={(e) => setPoolType(e.target.value as PoolType)}>
-              <option value='salt'>Salt</option>
-              <option value='chlorine'>Chlorine</option>
-              <option value='mineral'>Mineral</option>
-              <option value='freshwater'>Freshwater</option>
-            </select>
-          </Row>
-        </Fields>
-      </Section>
+        <Section title='Pool'>
+          <Fields>
+            <input style={field} placeholder='Address' value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Row>
+              <input style={field} placeholder='Volume (litres)' value={volumeLitres} onChange={(e) => setVolumeLitres(e.target.value)} type='number' min='1' />
+              <select style={field as React.CSSProperties} value={poolType} onChange={(e) => setPoolType(e.target.value as PoolType)}>
+                <option value='salt'>Salt</option>
+                <option value='chlorine'>Chlorine</option>
+                <option value='mineral'>Mineral</option>
+                <option value='freshwater'>Freshwater</option>
+              </select>
+            </Row>
+          </Fields>
+        </Section>
 
-      <Section title='3) Access'>
-        <Fields>
-          <input style={field} placeholder='Gate code / lockbox' value={gateAccess} onChange={(e) => setGateAccess(e.target.value)} />
-          <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={siteNotes} onChange={(e) => setSiteNotes(e.target.value)} />
-        </Fields>
-      </Section>
+        <Section title='Access'>
+          <Fields>
+            <input style={field} placeholder='Gate code / lockbox' value={gateAccess} onChange={(e) => setGateAccess(e.target.value)} />
+            <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={siteNotes} onChange={(e) => setSiteNotes(e.target.value)} />
+          </Fields>
+        </Section>
 
-      <Section title='4) Service plan'>
-        <Fields>
-          <Row>
-            <select style={field as React.CSSProperties} defaultValue='fortnightly'>
-              <option value='weekly'>Weekly</option>
-              <option value='fortnightly'>Fortnightly</option>
-              <option value='monthly'>Monthly</option>
-            </select>
-            <select style={field as React.CSSProperties} defaultValue='Monday'>
-              <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option>
-            </select>
-          </Row>
-        </Fields>
-      </Section>
+        <Section title='Service plan'>
+          <Fields>
+            <Row>
+              <select style={field as React.CSSProperties} defaultValue='fortnightly'>
+                <option value='weekly'>Weekly</option>
+                <option value='fortnightly'>Fortnightly</option>
+                <option value='monthly'>Monthly</option>
+              </select>
+              <select style={field as React.CSSProperties} defaultValue='Monday'>
+                <option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option>
+              </select>
+            </Row>
+          </Fields>
+        </Section>
+      </div>
 
       <div style={{
+        marginTop: spacing.md,
         background: colors.amberBg,
         border: `1px solid ${colors.amberBorder}`,
         borderLeft: `3px solid ${colors.amber}`,
@@ -119,7 +122,7 @@ export default function CustomerForm() {
       </div>
 
       {error && (
-        <div style={{ fontSize: typography.sizes.small, color: colors.red, background: colors.redBg, border: `1px solid ${colors.redBorder}`, borderRadius: radii.md, padding: `${spacing.sm}px ${spacing.md}px` }}>
+        <div style={{ marginTop: spacing.sm, fontSize: typography.sizes.small, color: colors.red, background: colors.redBg, border: `1px solid ${colors.redBorder}`, borderRadius: radii.md, padding: `${spacing.sm}px ${spacing.md}px` }}>
           {error}
         </div>
       )}
@@ -128,6 +131,7 @@ export default function CustomerForm() {
         onClick={handleSubmit}
         disabled={loading}
         style={{
+          marginTop: spacing.md,
           background: loading ? colors.textMuted : colors.ink,
           color: colors.white,
           border: 'none',
@@ -146,18 +150,16 @@ export default function CustomerForm() {
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, first = false }: { title: string; children: React.ReactNode; first?: boolean }) {
   return (
     <div style={{
-      background: colors.darkCard,
-      border: `1px solid ${colors.darkBorder}`,
-      borderRadius: radii.standard,
       padding: spacing.md,
+      borderTop: first ? 'none' : `1px solid ${colors.border}`,
     }}>
       <div style={{
         fontSize: typography.sizes.label,
         fontWeight: typography.weights.bold,
-        color: colors.textSecondary,
+        color: colors.textMuted,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         marginBottom: spacing.sm,
@@ -179,7 +181,7 @@ function Row({ children }: { children: React.ReactNode }) {
 
 const field: React.CSSProperties = {
   background: colors.surface,
-  border: `1px solid ${colors.darkBorder}`,
+  border: `1px solid ${colors.border}`,
   borderRadius: radii.md,
   padding: `10px ${spacing.md}px`,
   color: colors.ink,
