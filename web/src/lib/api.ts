@@ -1,4 +1,4 @@
-import { getToken } from './auth'
+import { getToken, clearAuth } from './auth'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://poolops-api-production.up.railway.app'
 
@@ -14,6 +14,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   })
   const data = await res.json()
   if (!res.ok) {
+    if (res.status === 401) {
+      clearAuth()
+      window.location.href = '/login'
+    }
     const err = new Error(data.error?.message || 'Request failed') as Error & { code?: string; status?: number }
     err.code = data.error?.code
     err.status = res.status

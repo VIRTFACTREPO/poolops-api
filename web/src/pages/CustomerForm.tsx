@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { colors, radii, spacing, typography } from '../theme/tokens'
 
-type PoolEntry = { pool_type: string; volume_litres: string; gate_access: string; warnings: string }
+type PoolCategory = 'pool' | 'spa'
+type PoolEntry = { category: PoolCategory; pool_type: string; volume_litres: string; gate_access: string; warnings: string }
 
 export default function CustomerForm() {
   const navigate = useNavigate()
@@ -13,12 +14,18 @@ export default function CustomerForm() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [pools, setPools] = useState<PoolEntry[]>([{ pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])
+  const [pools, setPools] = useState<PoolEntry[]>([{ category: 'pool', pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const updatePool = (i: number, field: keyof PoolEntry, value: string) =>
-    setPools(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: value } : p))
+    setPools(prev => prev.map((p, idx) => {
+      if (idx !== i) return p
+      if (field === 'category') {
+        return { ...p, category: value as PoolCategory, pool_type: value === 'spa' ? 'spa' : 'salt' }
+      }
+      return { ...p, [field]: value }
+    }))
 
   const handleSubmit = async () => {
     if (!firstName.trim() || !lastName.trim() || !email.trim() || !address.trim() || pools.some(p => !p.volume_litres)) {
@@ -101,15 +108,43 @@ export default function CustomerForm() {
                   </button>
                 )}
                 <div style={{ display: 'grid', gap: spacing.sm }}>
+                  {/* Pool / Spa toggle */}
+                  <div style={{ display: 'flex', gap: 4, background: colors.surface2 || colors.surface, border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: 3 }}>
+                    {(['pool', 'spa'] as PoolCategory[]).map((cat) => (
+                      <button
+                        key={cat}
+                        type='button'
+                        onClick={() => updatePool(i, 'category', cat)}
+                        style={{
+                          flex: 1,
+                          padding: '6px 0',
+                          borderRadius: radii.md,
+                          border: 'none',
+                          fontSize: typography.sizes.small,
+                          fontWeight: typography.weights.semibold,
+                          cursor: 'pointer',
+                          background: pool.category === cat ? colors.white : 'transparent',
+                          color: pool.category === cat ? colors.ink : colors.textMuted,
+                          boxShadow: pool.category === cat ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {cat === 'pool' ? 'Pool' : 'Spa Pool'}
+                      </button>
+                    ))}
+                  </div>
                   <Row>
                     <input style={field} placeholder='Volume (litres)' value={pool.volume_litres} onChange={(e) => updatePool(i, 'volume_litres', e.target.value)} type='number' min='1' />
-                    <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
-                      <option value='salt'>Salt</option>
-                      <option value='chlorine'>Chlorine</option>
-                      <option value='mineral'>Mineral</option>
-                      <option value='freshwater'>Freshwater</option>
-                      <option value='spa'>Spa Pool</option>
-                    </select>
+                    {pool.category === 'pool' ? (
+                      <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
+                        <option value='salt'>Salt</option>
+                        <option value='chlorine'>Chlorine</option>
+                        <option value='mineral'>Mineral</option>
+                        <option value='freshwater'>Freshwater</option>
+                      </select>
+                    ) : (
+                      <div style={{ ...field, color: colors.textMuted, display: 'flex', alignItems: 'center' }}>Spa Pool</div>
+                    )}
                   </Row>
                   <input style={field} placeholder='Gate code / lockbox' value={pool.gate_access} onChange={(e) => updatePool(i, 'gate_access', e.target.value)} />
                   <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={pool.warnings} onChange={(e) => updatePool(i, 'warnings', e.target.value)} />
@@ -117,7 +152,7 @@ export default function CustomerForm() {
               </div>
             ))}
             <button
-              onClick={() => setPools(prev => [...prev, { pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])}
+              onClick={() => setPools(prev => [...prev, { category: 'pool', pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])}
               style={{
                 background: 'transparent',
                 border: `1px dashed ${colors.border}`,
