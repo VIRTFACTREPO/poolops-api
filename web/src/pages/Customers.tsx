@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
-type Frequency = 'weekly' | 'fortnightly' | 'monthly' | 'custom'
 
 type Row = {
   id: string
