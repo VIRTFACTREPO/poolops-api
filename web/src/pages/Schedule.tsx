@@ -515,22 +515,34 @@ export default function Schedule() {
                 </select>
               </label>
 
-              {selectedCustomer && selectedCustomer.pools.length > 1 && (
+              {selectedCustomer && selectedCustomer.pools.length > 0 && (
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>Pools to service</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 8 }}>
+                    {selectedCustomer.pools.length === 1 ? 'Service' : 'Select to service'}
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {selectedCustomer.pools.map((p) => (
-                      <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13, color: '#374151' }}>
-                        <input
-                          type='checkbox'
-                          checked={addForm.poolIds.includes(p.id)}
-                          onChange={(e) => togglePool(p.id, e.target.checked)}
-                          style={{ width: 16, height: 16, cursor: 'pointer' }}
-                        />
-                        <span>{poolTypeLabel(p.poolType)}</span>
-                        <span style={{ color: '#9CA3AF', fontSize: 12 }}>{p.volumeLitres.toLocaleString()}L</span>
-                      </label>
-                    ))}
+                    {selectedCustomer.pools.map((p) => {
+                      const isSpa = p.poolType === 'spa'
+                      const checked = addForm.poolIds.includes(p.id)
+                      const pillBg = isSpa ? '#F5F3FF' : '#EFF6FF'
+                      const pillBorder = isSpa ? '#DDD6FE' : '#BFDBFE'
+                      const pillColor = isSpa ? '#6D28D9' : '#1D4ED8'
+                      return (
+                        <label key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 12px', borderRadius: 8, border: `1px solid ${checked ? (isSpa ? '#DDD6FE' : '#BFDBFE') : '#E5E7EB'}`, background: checked ? (isSpa ? '#F5F3FF' : '#EFF6FF') : '#F9FAFB', transition: 'all 0.15s' }}>
+                          <input
+                            type='checkbox'
+                            checked={checked}
+                            onChange={(e) => togglePool(p.id, e.target.checked)}
+                            style={{ width: 15, height: 15, cursor: 'pointer', accentColor: isSpa ? '#7C3AED' : '#2563EB' }}
+                          />
+                          <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 99, padding: '2px 8px', background: pillBg, border: `1px solid ${pillBorder}`, color: pillColor }}>
+                            {isSpa ? 'Spa Pool' : 'Pool'}
+                          </span>
+                          <span style={{ fontSize: 12, color: '#374151', flex: 1 }}>{isSpa ? 'Spa Pool' : poolTypeLabel(p.poolType)}</span>
+                          <span style={{ color: '#9CA3AF', fontSize: 11 }}>{p.volumeLitres.toLocaleString()}L</span>
+                        </label>
+                      )
+                    })}
                   </div>
                 </div>
               )}
