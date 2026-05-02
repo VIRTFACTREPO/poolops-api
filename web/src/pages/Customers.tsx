@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
 type Frequency = 'weekly' | 'fortnightly' | 'monthly' | 'custom'
@@ -32,6 +32,7 @@ function daysAgo(dateStr: string) {
 
 export default function Customers() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [q, setQ] = useState('')
@@ -121,7 +122,7 @@ export default function Customers() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [location.key])
 
   const filtered = useMemo(() => {
     return rows.filter((r) => {
