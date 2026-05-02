@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { httpLogger } from './config/logger.js';
 import { ok, fail } from './utils/response.js';
 
@@ -13,6 +14,14 @@ import webhookRoutes from './routes/webhooks.js';
 const app = express();
 
 app.set('trust proxy', 1);
+app.use(cors({
+  origin: [
+    'https://web-chi-five-48.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:4321',
+  ],
+  credentials: true,
+}));
 app.use(httpLogger);
 app.use('/webhooks', webhookRoutes);
 app.use(express.json({ limit: '15mb' }));
