@@ -69,10 +69,11 @@ class ApiClient {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        const json = await response.json();
+        const newToken = json.data?.token ?? json.token;
         // Store new token
-        await SecureStore.setItemAsync('auth_token', data.token);
-        this.token = data.token;
+        await SecureStore.setItemAsync('auth_token', newToken);
+        this.token = newToken;
       } else {
         // Refresh failed, clear auth
         await SecureStore.deleteItemAsync('auth_token');
