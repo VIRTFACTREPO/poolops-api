@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { colors, radii, spacing, typography } from '../theme/tokens'
 
-type PoolType = 'salt' | 'chlorine' | 'mineral' | 'freshwater'
+type PoolEntry = { pool_type: string; volume_litres: string; gate_access: string; warnings: string }
 
 export default function CustomerForm() {
   const navigate = useNavigate()
@@ -13,15 +13,15 @@ export default function CustomerForm() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [volumeLitres, setVolumeLitres] = useState('')
-  const [poolType, setPoolType] = useState<PoolType>('salt')
-  const [gateAccess, setGateAccess] = useState('')
-  const [siteNotes, setSiteNotes] = useState('')
+  const [pools, setPools] = useState<PoolEntry[]>([{ pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const updatePool = (i: number, field: keyof PoolEntry, value: string) =>
+    setPools(prev => prev.map((p, idx) => idx === i ? { ...p, [field]: value } : p))
+
   const handleSubmit = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !address.trim() || !volumeLitres) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !address.trim() || pools.some(p => !p.volume_litres)) {
       setError('Please fill in all required fields')
       return
     }
@@ -38,10 +38,17 @@ export default function CustomerForm() {
         .single()
       if (custErr) throw custErr
 
-      const { error: poolErr } = await supabase
-        .from('pools')
-        .insert({ customer_id: customer.id, company_id: company.id, volume_litres: Number(volumeLitres), pool_type: poolType, gate_access: gateAccess || null, warnings: siteNotes || null })
-      if (poolErr) throw poolErr
+      for (const pool of pools) {
+        const { error: poolErr } = await supabase.from('pools').insert({
+          customer_id: customer.id,
+          company_id: company.id,
+          volume_litres: Number(pool.volume_litres),
+          pool_type: pool.pool_type,
+          gate_access: pool.gate_access || null,
+          warnings: pool.warnings || null,
+        })
+        if (poolErr) throw poolErr
+      }
 
       navigate('/customers')
     } catch (err: any) {
@@ -66,28 +73,64 @@ export default function CustomerForm() {
             </Row>
             <input style={field} placeholder='Email' type='email' value={email} onChange={(e) => setEmail(e.target.value)} />
             <input style={field} placeholder='Phone (optional)' value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <input style={field} placeholder='Address' value={address} onChange={(e) => setAddress(e.target.value)} />
           </Fields>
         </Section>
 
         <Section title='Pool'>
           <Fields>
-            <input style={field} placeholder='Address' value={address} onChange={(e) => setAddress(e.target.value)} />
-            <Row>
-              <input style={field} placeholder='Volume (litres)' value={volumeLitres} onChange={(e) => setVolumeLitres(e.target.value)} type='number' min='1' />
-              <select style={field as React.CSSProperties} value={poolType} onChange={(e) => setPoolType(e.target.value as PoolType)}>
-                <option value='salt'>Salt</option>
-                <option value='chlorine'>Chlorine</option>
-                <option value='mineral'>Mineral</option>
-                <option value='freshwater'>Freshwater</option>
-              </select>
-            </Row>
-          </Fields>
-        </Section>
-
-        <Section title='Access'>
-          <Fields>
-            <input style={field} placeholder='Gate code / lockbox' value={gateAccess} onChange={(e) => setGateAccess(e.target.value)} />
-            <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={siteNotes} onChange={(e) => setSiteNotes(e.target.value)} />
+            {pools.map((pool, i) => (
+              <div key={i} style={{ position: 'relative', background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: spacing.md }}>
+                {pools.length > 1 && (
+                  <button
+                    onClick={() => setPools(prev => prev.filter((_, idx) => idx !== i))}
+                    style={{
+                      position: 'absolute',
+                      top: spacing.sm,
+                      right: spacing.sm,
+                      background: 'transparent',
+                      border: 'none',
+                      color: colors.textMuted,
+                      cursor: 'pointer',
+                      fontSize: 16,
+                      lineHeight: 1,
+                      padding: '0 4px',
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+                <div style={{ display: 'grid', gap: spacing.sm }}>
+                  <Row>
+                    <input style={field} placeholder='Volume (litres)' value={pool.volume_litres} onChange={(e) => updatePool(i, 'volume_litres', e.target.value)} type='number' min='1' />
+                    <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
+                      <option value='salt'>Salt</option>
+                      <option value='chlorine'>Chlorine</option>
+                      <option value='mineral'>Mineral</option>
+                      <option value='freshwater'>Freshwater</option>
+                      <option value='spa'>Spa Pool</option>
+                    </select>
+                  </Row>
+                  <input style={field} placeholder='Gate code / lockbox' value={pool.gate_access} onChange={(e) => updatePool(i, 'gate_access', e.target.value)} />
+                  <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={pool.warnings} onChange={(e) => updatePool(i, 'warnings', e.target.value)} />
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={() => setPools(prev => [...prev, { pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])}
+              style={{
+                background: 'transparent',
+                border: `1px dashed ${colors.border}`,
+                borderRadius: radii.md,
+                color: colors.textMuted,
+                padding: `${spacing.sm}px ${spacing.md}px`,
+                fontSize: typography.sizes.body,
+                cursor: 'pointer',
+                textAlign: 'center',
+              }}
+            >
+              + Add another pool
+            </button>
           </Fields>
         </Section>
 
