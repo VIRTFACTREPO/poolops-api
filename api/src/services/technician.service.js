@@ -360,6 +360,6 @@ export async function uploadJobPhoto(jobId, technicianId, { type, mimeType, file
 
   if (storageErr) throw storageErr;
 
-  const publicUrl = `${env.SUPABASE_URL}/storage/v1/object/public/job-photos/${path}`;
-  return { url: publicUrl };
+  const { data: urlData } = supabase.storage.from('job-photos').getPublicUrl(path);
+  return { url: urlData.publicUrl };
 }
