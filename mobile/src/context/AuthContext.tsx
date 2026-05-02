@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import { setApiToken } from '../services/api';
+import { setApiToken, setLogoutCallback } from '../services/api';
 
 interface AuthContextType {
   token: string | null;
@@ -33,6 +33,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(storedToken);
         setRole(storedRole);
         setUser(JSON.parse(storedUser));
+        setLogoutCallback(() => {
+          setToken(null);
+          setRole(null);
+          setUser(null);
+        });
       }
     } catch (error) {
       console.error('Failed to load auth state:', error);
@@ -52,9 +57,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         SecureStore.setItemAsync('auth_role', newRole),
         SecureStore.setItemAsync('auth_user', JSON.stringify(newUser)),
       ]);
+      setApiToken(newToken);
       setToken(newToken);
       setRole(newRole);
       setUser(newUser);
+      setLogoutCallback(() => {
+        setToken(null);
+        setRole(null);
+        setUser(null);
+      });
     } catch (error) {
       console.error('Failed to save auth state:', error);
       throw error;
@@ -67,7 +78,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         SecureStore.deleteItemAsync('auth_token'),
         SecureStore.deleteItemAsync('auth_role'),
         SecureStore.deleteItemAsync('auth_user'),
+        SecureStore.deleteItemAsync('refresh_token'),
       ]);
+      setApiToken(null);
+      setLogoutCallback(null);
       setToken(null);
       setRole(null);
       setUser(null);

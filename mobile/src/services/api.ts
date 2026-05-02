@@ -53,6 +53,8 @@ class ApiClient {
       await SecureStore.deleteItemAsync('auth_token');
       await SecureStore.deleteItemAsync('auth_role');
       await SecureStore.deleteItemAsync('auth_user');
+      this.token = null;
+      logoutCallback?.();
       return;
     }
 
@@ -77,6 +79,7 @@ class ApiClient {
         await SecureStore.deleteItemAsync('auth_role');
         await SecureStore.deleteItemAsync('auth_user');
         this.token = null;
+        logoutCallback?.();
       }
     } catch (error) {
       console.error('Token refresh failed:', error);
@@ -85,6 +88,7 @@ class ApiClient {
       await SecureStore.deleteItemAsync('auth_role');
       await SecureStore.deleteItemAsync('auth_user');
       this.token = null;
+      logoutCallback?.();
     }
   }
 
@@ -137,10 +141,15 @@ class ApiClient {
 // Module-level token so authenticated calls work after login
 let currentToken: string | null = null;
 let apiClient: ApiClient | null = null;
+let logoutCallback: (() => void) | null = null;
 
 export function setApiToken(token: string | null): void {
   currentToken = token;
   apiClient = new ApiClient(API_BASE_URL, token);
+}
+
+export function setLogoutCallback(fn: (() => void) | null): void {
+  logoutCallback = fn;
 }
 
 export function getApiClient(): ApiClient {

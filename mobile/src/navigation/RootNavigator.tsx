@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as SecureStore from 'expo-secure-store';
 import { useAuth } from '../context/AuthContext';
 import { AuthLoadingScreen } from '../context/AuthContext';
 import { OwnerStack } from './OwnerStack';
@@ -106,8 +107,11 @@ export function RootNavigator() {
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      const response = await getApiClient().post<{ success: boolean; data: { token: string; role: string; user: { id: string; email: string; name?: string } } }>('/auth/login', { email, password });
-      const { token, role: userRole, user } = response.data;
+      const response = await getApiClient().post<{ success: boolean; data: { token: string; refreshToken: string; role: string; user: { id: string; email: string; name?: string } } }>('/auth/login', { email, password });
+      const { token, refreshToken, role: userRole, user } = response.data;
+      if (refreshToken) {
+        await SecureStore.setItemAsync('refresh_token', refreshToken);
+      }
       setApiToken(token);
       await login(token, userRole, user);
     } catch (error) {
