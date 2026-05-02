@@ -190,8 +190,11 @@ export default function Dashboard() {
                         {row.done}/{row.assigned}{allPending ? ' pending' : ''}
                       </span>
                     </div>
-                    <div style={{ height: 8, background: '#E5E7EB', borderRadius: 99, overflow: 'hidden' }}>
-                      <div style={{ width: allPending ? '100%' : `${pct}%`, height: '100%', background: allPending ? '#FDE68A' : (pct >= 80 ? '#22C55E' : '#0EA5E9') }} />
+                    <div style={{ height: 8, background: '#E5E7EB', borderRadius: 99, overflow: 'hidden', position: 'relative' }}>
+                      {row.assigned > 0 && (
+                        <div style={{ position: 'absolute', inset: 0, background: '#BFDBFE' }} />
+                      )}
+                      <div style={{ position: 'absolute', width: `${pct}%`, height: '100%', background: pct >= 80 ? '#22C55E' : '#0EA5E9' }} />
                     </div>
                   </div>
                 )

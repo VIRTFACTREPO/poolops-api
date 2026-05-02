@@ -112,8 +112,11 @@ export default function Team() {
                 <div style={{ marginTop: 10, fontSize: 12, color: allPending ? '#D97706' : '#6B7280' }}>
                   Progress {p.done}/{p.assigned}{allPending ? ' – pending' : ''}
                 </div>
-                <div style={{ marginTop: 6, height: 8, borderRadius: 99, background: '#E5E7EB', overflow: 'hidden' }}>
-                  <div style={{ width: allPending ? '100%' : `${pct}%`, height: '100%', background: allPending ? '#FDE68A' : p.color }} />
+                <div style={{ marginTop: 6, height: 8, borderRadius: 99, background: '#E5E7EB', overflow: 'hidden', position: 'relative' }}>
+                  {p.assigned > 0 && (
+                    <div style={{ position: 'absolute', inset: 0, background: `${p.color}33` }} />
+                  )}
+                  <div style={{ position: 'absolute', width: `${pct}%`, height: '100%', background: p.color }} />
                 </div>
 
                 <div style={{ marginTop: 10, fontSize: 12, color: p.currentJob ? '#0369A1' : '#6B7280' }}>
