@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { getUser } from '../lib/auth'
 
 const NAV = [
   {
@@ -62,7 +63,14 @@ const NAV = [
   },
 ]
 
-export default function Sidebar() {
+function initials(name?: string) {
+  if (!name) return '?'
+  return name.trim().split(/\s+/).map(p => p[0]?.toUpperCase() ?? '').slice(0, 2).join('')
+}
+
+export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
+  const user = getUser()
+  const isSuperAdmin = user?.role === 'superadmin'
   return (
     <div style={{
       width: 220,
@@ -154,36 +162,50 @@ export default function Sidebar() {
             )}
           </NavLink>
         ))}
+
+        {isSuperAdmin && (
+          <NavLink
+            to="/platform"
+            className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}
+            style={{ marginTop: 12, borderTop: '1px solid #1F2937', paddingTop: 14 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
+            </svg>
+            Platform
+          </NavLink>
+        )}
       </nav>
 
       {/* User row */}
       <div style={{ padding: '16px 10px', borderTop: '1px solid #1F2937' }}>
-        <div className="sidebar-user" style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          padding: '8px 12px',
-          borderRadius: 10,
-          cursor: 'pointer',
-          transition: 'background 0.15s',
-        }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 10 }}>
           <div style={{
-            width: 30,
-            height: 30,
-            borderRadius: '50%',
-            background: '#374151',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#9CA3AF',
-            flexShrink: 0,
-          }}>SJ</div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#D1D5DB' }}>Simon J.</div>
-            <div style={{ fontSize: 10, color: '#6B7280' }}>Pool Pro NZ</div>
+            width: 30, height: 30, borderRadius: '50%', background: '#374151',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 600, color: '#9CA3AF', flexShrink: 0,
+          }}>
+            {initials(user?.name)}
           </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#D1D5DB', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.name ?? user?.email ?? '—'}
+            </div>
+            <div style={{ fontSize: 10, color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {isSuperAdmin ? 'Platform admin' : (user?.companyName ?? '')}
+            </div>
+          </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Sign out"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4B5563', padding: 4, flexShrink: 0, display: 'flex', alignItems: 'center' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </div>
