@@ -62,8 +62,8 @@ export function M11CompleteScreen() {
       office: officeNote,
     },
     photo_urls: {
-      before: photos.before ?? null,
-      after: photos.after ?? null,
+      before: photos.before?.startsWith('https://') ? photos.before : null,
+      after: photos.after?.startsWith('https://') ? photos.after : null,
       additional: [] as string[],
     },
     completedAt: new Date().toISOString(),

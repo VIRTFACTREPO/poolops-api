@@ -58,19 +58,28 @@ export function PhotoCaptureTab() {
           });
 
           if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            const body = await response.text();
+            throw new Error(`Upload URL failed ${response.status}: ${body}`);
           }
 
           const { data } = await response.json();
 
-          await FileSystem.uploadAsync(data.signedUrl, uri, {
+          const uploadResult = await FileSystem.uploadAsync(data.signedUrl, uri, {
             httpMethod: 'PUT',
             uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
             headers: { 'Content-Type': mimeType },
           });
 
+          if (uploadResult.status < 200 || uploadResult.status >= 300) {
+            throw new Error(`Storage upload failed ${uploadResult.status}: ${uploadResult.body}`);
+          }
+
           setPhotos({ [type]: data.publicUrl });
-        } catch {
+        } catch (uploadErr: any) {
+          console.error('[PhotoCaptureTab] upload error:', uploadErr?.message);
+          Alert.alert('Photo upload failed', uploadErr?.message ?? 'Could not upload photo. It will sync when connectivity improves.');
+          // Clear the local URI from context so it isn't sent to the API as a photo_url
+          setPhotos({ [type]: undefined });
           await enqueuePhotoUpload(jobId, {
             photoType: type,
             uri,
