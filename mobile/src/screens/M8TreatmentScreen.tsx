@@ -76,6 +76,7 @@ export function M8TreatmentScreen() {
         const remaining = Math.max(0, rule.amount - used);
         const low = remaining <= rule.lowThreshold;
         return {
+          id: entry.id,
           name: entry.name,
           remaining,
           low,
@@ -139,7 +140,7 @@ export function M8TreatmentScreen() {
           <Text style={styles.stockEmpty}>No stock changes yet.</Text>
         ) : (
           stockPreview.map((item) => (
-            <View key={`${item.name}-${item.unit}`} style={styles.stockRow}>
+            <View key={item.id} style={styles.stockRow}>
               <Text style={styles.stockName}>{item.name}</Text>
               <Text style={[styles.stockValue, item.low && styles.stockValueLow]}>
                 {item.remaining}{item.unit} remaining

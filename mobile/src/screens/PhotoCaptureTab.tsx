@@ -14,6 +14,8 @@ import { colors, spacing, borderRadius } from '../theme/tokens';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { enqueuePhotoUpload } from '../services/offlineQueue';
+import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system';
 
 export function PhotoCaptureTab() {
   const { jobId, photos, setPhotos } = useActiveJob();
@@ -40,31 +42,42 @@ export function PhotoCaptureTab() {
 
         if (!jobId) return;
 
-        const payload = {
-          photoType: type,
-          uri,
-          fileName: asset.fileName ?? `${type}-${Date.now()}.jpg`,
-          mimeType: asset.mimeType ?? 'image/jpeg',
-          width: asset.width ?? null,
-          height: asset.height ?? null,
-          capturedAt: new Date().toISOString(),
-        };
+        const fileName = asset.fileName ?? `${type}-${Date.now()}.jpg`;
+        const mimeType = asset.mimeType ?? 'image/jpeg';
 
         try {
-          const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3001';
-          const response = await fetch(`${baseUrl}/api/jobs/${jobId}/photos`, {
+          const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3003';
+          const token = await SecureStore.getItemAsync('auth_token');
+          const response = await fetch(`${baseUrl}/technician/jobs/${jobId}/photos/upload-url`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ type, mimeType, fileName }),
           });
 
-          if (!response.ok && response.status !== 409) {
+          if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
           }
+
+          const { data } = await response.json();
+
+          await FileSystem.uploadAsync(data.signedUrl, uri, {
+            httpMethod: 'PUT',
+            uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+            headers: { 'Content-Type': mimeType },
+          });
+
+          setPhotos({ [type]: data.publicUrl });
         } catch {
-          await enqueuePhotoUpload(jobId, payload as Record<string, unknown>);
+          await enqueuePhotoUpload(jobId, {
+            photoType: type,
+            uri,
+            fileName,
+            mimeType,
+            capturedAt: new Date().toISOString(),
+          } as Record<string, unknown>);
         }
       }
     } catch (error) {

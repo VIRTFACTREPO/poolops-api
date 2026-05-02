@@ -311,7 +311,7 @@ export async function completeJob(jobId, technicianId, payload) {
         recommended:   t.recommendedAmount,
         actual:        Number(t.actualAmount || 0),
       })),
-      photo_urls:       { before: null, after: null, additional: [] },
+      photo_urls:       payload.photo_urls ?? { before: null, after: null, additional: [] },
       customer_note:    notes?.customer || null,
       office_note:      notes?.office   || null,
       is_flagged:       flaggedReadings.length > 0,
@@ -333,4 +333,32 @@ export async function completeJob(jobId, technicianId, payload) {
     .eq('id', jobId);
 
   return inserted.map((r) => ({ serviceRecordId: r.id, ref: r.ref, poolId: r.pool_id }));
+}
+
+export async function createPhotoUploadUrl(jobId, technicianId, { type, mimeType, fileName }) {
+  const { data: job, error: fetchErr } = await supabase
+    .from('jobs')
+    .select('id')
+    .eq('id', jobId)
+    .eq('technician_id', technicianId)
+    .maybeSingle();
+
+  if (fetchErr) throw fetchErr;
+  if (!job) {
+    const err = new Error('Job not found');
+    err.code = 'NOT_FOUND';
+    throw err;
+  }
+
+  const ext = (fileName ?? '').split('.').pop() || 'jpg';
+  const path = `${jobId}/${type}-${Date.now()}.${ext}`;
+
+  const { data, error: storageErr } = await supabase.storage
+    .from('job-photos')
+    .createSignedUploadUrl(path);
+
+  if (storageErr) throw storageErr;
+
+  const publicUrl = `${env.SUPABASE_URL}/storage/v1/object/public/job-photos/${path}`;
+  return { signedUrl: data.signedUrl, publicUrl };
 }

@@ -23,6 +23,7 @@ type Record = {
   treatments: Treatment[]
   customer_note: string | null
   office_note: string | null
+  photo_urls: { before: string | null; after: string | null; additional: string[] } | null
   customers: { first_name: string; last_name: string; address: string } | null
   profiles: { full_name: string } | null
   pools: { pool_type: string; volume_litres: number } | null
@@ -51,7 +52,7 @@ export default function RecordDetail() {
     async function load() {
       const { data, error: err } = await supabase
         .from('service_records')
-        .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, technician_id, customers(first_name, last_name, address), pools(pool_type, volume_litres)')
+        .select('id, ref, completed_at, lsi_score, lsi_label, is_flagged, readings, treatments, customer_note, office_note, photo_urls, technician_id, customers(first_name, last_name, address), pools(pool_type, volume_litres)')
         .eq('id', id)
         .single()
       if (err) { setError(err.message); setLoading(false); return }
@@ -74,6 +75,7 @@ export default function RecordDetail() {
         treatments: (r.treatments || []) as Treatment[],
         customer_note: r.customer_note,
         office_note: r.office_note,
+        photo_urls: r.photo_urls ?? null,
         customers: r.customers as Record['customers'],
         profiles: techName ? { full_name: techName } : null,
         pools: r.pools as Record['pools'],
@@ -207,6 +209,26 @@ export default function RecordDetail() {
               {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save note'}
             </button>
           </div>
+
+          {(record.photo_urls?.before || record.photo_urls?.after) && (
+            <div style={card}>
+              <Title>Job Photos</Title>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {record.photo_urls.before && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Before</div>
+                    <img src={record.photo_urls.before} alt="Before" style={{ maxWidth: '100%', borderRadius: 10, border: '1px solid #E5E7EB', display: 'block' }} />
+                  </div>
+                )}
+                {record.photo_urls.after && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#6B7280', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>After</div>
+                    <img src={record.photo_urls.after} alt="After" style={{ maxWidth: '100%', borderRadius: 10, border: '1px solid #E5E7EB', display: 'block' }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

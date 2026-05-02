@@ -1,4 +1,5 @@
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite';
+import * as FileSystem from 'expo-file-system';
 
 export type QueueJobType = 'JOB_COMPLETE' | 'JOB_START' | 'PHOTO_UPLOAD';
 
@@ -111,9 +112,9 @@ async function dispatchItem(item: QueueItem): Promise<DispatchResult> {
       url = `${API_BASE_URL}/technician/jobs/${item.jobId}`;
       method = 'PATCH';
       break;
-    case 'PHOTO_UPLOAD':
-      url = `${API_BASE_URL}/jobs/${item.jobId}/photos`;
-      break;
+    default:
+      // PHOTO_UPLOAD is handled exclusively by drainPhotoQueue — should never reach here.
+      return { outcome: 'client_error' };
   }
 
   try {
@@ -251,6 +252,10 @@ export async function drainPhotoQueue(): Promise<number> {
      ORDER BY created_at ASC, id ASC`,
   );
 
+  const token = await getAuthToken();
+  const authHeaders: Record<string, string> = {};
+  if (token) authHeaders['Authorization'] = `Bearer ${token}`;
+
   for (const row of rows) {
     const item = rowToItem(row);
 
@@ -258,16 +263,54 @@ export async function drainPhotoQueue(): Promise<number> {
       await backoffDelay(item.retryCount);
     }
 
-    const result = await dispatchItem(item);
+    try {
+      const payload = item.payload as {
+        photoType: 'before' | 'after';
+        uri: string;
+        fileName: string;
+        mimeType: string;
+        capturedAt: string;
+      };
 
-    if (result.outcome === 'success' || result.outcome === 'conflict') {
-      await removeItem(db, item.id);
-      processed++;
-    } else if (result.outcome === 'client_error') {
-      await markAttempted(db, item.id, MAX_RETRIES);
-    } else {
+      // Step 1: request a signed upload URL from the API.
+      const urlResponse = await fetch(
+        `${API_BASE_URL}/technician/jobs/${item.jobId}/photos/upload-url`,
+        {
+          method: 'POST',
+          headers: { ...authHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: payload.photoType,
+            mimeType: payload.mimeType,
+            fileName: payload.fileName,
+          }),
+        },
+      );
+
+      if (!urlResponse.ok) {
+        const isRetryable = urlResponse.status >= 500 || urlResponse.status === 429;
+        await markAttempted(db, item.id, isRetryable ? item.retryCount + 1 : MAX_RETRIES);
+        continue;
+      }
+
+      const { data } = (await urlResponse.json()) as { data: { signedUrl: string; publicUrl: string } };
+
+      // Step 2: binary PUT directly to storage via the signed URL.
+      const uploadResult = await FileSystem.uploadAsync(data.signedUrl, payload.uri, {
+        httpMethod: 'PUT',
+        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+        headers: { 'Content-Type': payload.mimeType },
+      });
+
+      if (uploadResult.status >= 200 && uploadResult.status < 300) {
+        await removeItem(db, item.id);
+        processed++;
+      } else {
+        const isRetryable = uploadResult.status >= 500 || uploadResult.status === 429;
+        await markAttempted(db, item.id, isRetryable ? item.retryCount + 1 : MAX_RETRIES);
+      }
+    } catch {
+      // Network / filesystem error — increment retry, continue with remaining photos.
       await markAttempted(db, item.id, item.retryCount + 1);
-      // Continue trying other photos independently — don't break
     }
   }
 

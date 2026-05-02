@@ -7,6 +7,7 @@ import {
   getJobDetail,
   startJob,
   completeJob,
+  createPhotoUploadUrl,
 } from '../services/technician.service.js';
 
 const router = Router();
@@ -48,6 +49,21 @@ router.patch('/jobs/:id', async (req, res) => {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
     if (err.code === 'CONFLICT') return fail(res, 409, 'CONFLICT', err.message);
     console.error('PATCH /technician/jobs/:id', err);
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.post('/jobs/:id/photos/upload-url', async (req, res) => {
+  try {
+    const { type, mimeType, fileName } = req.body;
+    if (!['before', 'after'].includes(type)) {
+      return fail(res, 400, 'VALIDATION_ERROR', 'type must be before or after');
+    }
+    const result = await createPhotoUploadUrl(req.params.id, req.user.id, { type, mimeType, fileName });
+    return ok(res, result);
+  } catch (err) {
+    if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
+    console.error('POST /technician/jobs/:id/photos/upload-url', err);
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }
 });

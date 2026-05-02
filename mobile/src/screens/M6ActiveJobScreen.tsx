@@ -5,7 +5,6 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import {
   ActiveJobProvider,
@@ -71,7 +72,7 @@ const TAB_META: { key: ActiveJobTab; title: string; cta: string; ctaColor: strin
   { key: 'treatment', title: 'Treatment', cta: 'Save treatment', ctaColor: '#111827' },
   { key: 'photos', title: 'Photos', cta: 'Save photos', ctaColor: '#111827' },
   { key: 'notes', title: 'Notes', cta: 'Save notes', ctaColor: '#111827' },
-  { key: 'complete', title: 'Complete', cta: 'Complete job', ctaColor: '#22C55E' },
+  { key: 'complete', title: 'Complete', cta: 'Complete job', ctaColor: '#111827' },
 ];
 
 function formatVisitDate(dateStr: string): string {
@@ -274,6 +275,7 @@ function ActiveJobContent() {
   const { jobId, pools, startedAt, currentTab, completedTabs, readingsPoolIndex, setReadingsPoolIndex, setCurrentTab, markTabComplete, setPools } = useActiveJob();
   const [elapsed, setElapsed] = useState(() => Date.now() - startedAt);
   const [showAbandonSheet, setShowAbandonSheet] = useState(false);
+  const [poolInfoExpanded, setPoolInfoExpanded] = useState(false);
   const queue = useOfflineQueue();
 
   useEffect(() => {
@@ -364,7 +366,7 @@ function ActiveJobContent() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setShowAbandonSheet(true)} style={styles.backBtn}>
           <Text style={styles.backText}>←</Text>
@@ -385,7 +387,21 @@ function ActiveJobContent() {
 
       {pools.length > 0 && (
         <View style={styles.poolSection}>
-          {pools.map((pool, idx) => (
+          <TouchableOpacity style={styles.poolToggle} onPress={() => setPoolInfoExpanded((v) => !v)} activeOpacity={0.7}>
+            <View style={styles.poolToggleLeft}>
+              <Text style={styles.poolToggleTitle}>
+                {pools.length === 1
+                  ? `Pool 1${pools[0].name ? ` — ${pools[0].name}` : ''}`
+                  : `${pools.length} pools`}
+              </Text>
+              <Text style={styles.poolToggleMeta}>
+                {`${pools[0].type ?? '—'} · ${pools[0].volumeLitres != null ? `${pools[0].volumeLitres}L` : '—'}`}
+              </Text>
+            </View>
+            <Ionicons name={poolInfoExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          {poolInfoExpanded && pools.map((pool, idx) => (
             <View key={pool.poolId} style={styles.poolCard}>
               <Text style={styles.poolTitle}>{`Pool ${idx + 1}${pool.name ? ` — ${pool.name}` : ''}`}</Text>
               <Text style={styles.poolMeta}>{`Type: ${pool.type ?? '—'} · Volume: ${pool.volumeLitres ?? '—'}L`}</Text>
@@ -418,22 +434,24 @@ function ActiveJobContent() {
       </View>
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        {currentTab === 'readings' ? (
-          <ReadingsTab />
-        ) : currentTab === 'treatment' ? (
-          <M8TreatmentScreen />
-        ) : currentTab === 'photos' ? (
-          <PhotoCaptureTab />
-        ) : currentTab === 'notes' ? (
-          <JobNotesTab />
-        ) : currentTab === 'complete' ? (
-          <M11CompleteScreen />
-        ) : (
-          <View style={styles.slotCard}>
-            <Text style={styles.slotTitle}>{activeTabMeta.title} tab content</Text>
-            <Text style={styles.slotBody}>This tab slot is wired to ActiveJobContext and persists active state across all five tabs.</Text>
-          </View>
-        )}
+        <View style={styles.tabSlot}>
+          {currentTab === 'readings' ? (
+            <ReadingsTab />
+          ) : currentTab === 'treatment' ? (
+            <M8TreatmentScreen />
+          ) : currentTab === 'photos' ? (
+            <PhotoCaptureTab />
+          ) : currentTab === 'notes' ? (
+            <JobNotesTab />
+          ) : currentTab === 'complete' ? (
+            <M11CompleteScreen />
+          ) : (
+            <View style={styles.slotCard}>
+              <Text style={styles.slotTitle}>{activeTabMeta.title} tab content</Text>
+              <Text style={styles.slotBody}>This tab slot is wired to ActiveJobContext and persists active state across all five tabs.</Text>
+            </View>
+          )}
+        </View>
 
         {currentTab !== 'complete' ? (
           <View style={styles.stickyCtaWrap}>
@@ -462,10 +480,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F3',
-    paddingHorizontal: spacing.screen,
   },
   header: {
     marginTop: spacing.sm,
+    marginHorizontal: spacing.screen,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
@@ -495,6 +513,7 @@ const styles = StyleSheet.create({
   },
   timerPill: {
     marginTop: spacing.md,
+    marginHorizontal: spacing.screen,
     backgroundColor: '#DCFCE7',
     borderRadius: borderRadius.full,
     paddingHorizontal: spacing.md,
@@ -522,7 +541,32 @@ const styles = StyleSheet.create({
   },
   poolSection: {
     marginTop: spacing.md,
+    marginHorizontal: spacing.screen,
     gap: spacing.sm,
+  },
+  poolToggle: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  poolToggleLeft: {
+    flex: 1,
+    gap: 2,
+  },
+  poolToggleTitle: {
+    fontSize: typography.fontSizes.sm,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  poolToggleMeta: {
+    fontSize: typography.fontSizes.xs,
+    color: colors.textLight,
   },
   poolCard: {
     backgroundColor: '#FFFFFF',
@@ -550,6 +594,7 @@ const styles = StyleSheet.create({
   },
   tabBarWrap: {
     marginTop: spacing.md,
+    marginHorizontal: spacing.screen,
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: spacing.xs,
@@ -736,12 +781,19 @@ const styles = StyleSheet.create({
     color: colors.textLight,
     lineHeight: 20,
   },
+  tabSlot: {
+    flex: 1,
+    paddingHorizontal: spacing.screen,
+  },
   stickyCtaWrap: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    marginHorizontal: spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.07)',
+    paddingVertical: 14,
+    paddingHorizontal: spacing.screen,
   },
   ctaBtn: {
+    width: '100%',
     minHeight: 56,
     borderRadius: borderRadius.xxxl,
     alignItems: 'center',

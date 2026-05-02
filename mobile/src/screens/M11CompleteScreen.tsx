@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useActiveJob } from '../context/ActiveJobContext';
@@ -10,6 +10,7 @@ import { borderRadius, colors, spacing, typography } from '../theme/tokens';
 import { getApiClient } from '../services/api';
 
 function toNum(value: string) {
+  if (value === '' || value == null) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 }
@@ -60,9 +61,14 @@ export function M11CompleteScreen() {
       customer: customerNote,
       office: officeNote,
     },
+    photo_urls: {
+      before: photos.before ?? null,
+      after: photos.after ?? null,
+      additional: [] as string[],
+    },
     completedAt: new Date().toISOString(),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [customerNote, officeNote, perPoolLsi, poolReadings, pools, treatmentEntries]);
+  }), [customerNote, officeNote, perPoolLsi, photos, poolReadings, pools, treatmentEntries]);
 
   const handleComplete = async () => {
     if (!jobId || loading) return;
@@ -100,79 +106,98 @@ export function M11CompleteScreen() {
   if (completionRefs !== null) {
     return (
       <View style={styles.container}>
-        <View style={[styles.card, styles.confirmCard]}>
-          <Text style={styles.confirmTitle}>Job Complete</Text>
-          {completionRefs.length === 0 ? (
-            <Text style={styles.cardBody}>Saved offline — will sync when connected.</Text>
-          ) : completionRefs[0]?.ref === 'saved' ? (
-            <Text style={styles.cardBody}>Saved successfully.</Text>
-          ) : (
-            completionRefs.map((ref, i) => (
-              <View key={ref.serviceRecordId ?? String(i)} style={styles.refRow}>
-                <Text style={styles.refLabel}>{`Pool ${i + 1}`}</Text>
-                <Text style={styles.refValue}>{ref.ref ?? ref.serviceRecordId ?? '—'}</Text>
-              </View>
-            ))
-          )}
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+          <View style={[styles.card, styles.confirmCard]}>
+            <Text style={styles.confirmTitle}>Job Complete</Text>
+            {completionRefs.length === 0 ? (
+              <Text style={styles.cardBody}>Saved offline — will sync when connected.</Text>
+            ) : completionRefs[0]?.ref === 'saved' ? (
+              <Text style={styles.cardBody}>Saved successfully.</Text>
+            ) : (
+              completionRefs.map((ref, i) => (
+                <View key={ref.serviceRecordId ?? String(i)} style={styles.refRow}>
+                  <Text style={styles.refLabel}>{`Pool ${i + 1}`}</Text>
+                  <Text style={styles.refValue}>{ref.ref ?? ref.serviceRecordId ?? '—'}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        </ScrollView>
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.completeBtn} onPress={handleDismissConfirmation}>
+            <Text style={styles.completeBtnText}>Back to home</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.completeBtn} onPress={handleDismissConfirmation}>
-          <Text style={styles.completeBtnText}>Back to home</Text>
-        </TouchableOpacity>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{`Pool ${Math.min(activePoolIndex + 1, Math.max(pools.length, 1))} of ${Math.max(pools.length, 1)} — ${pools[activePoolIndex]?.name ?? pools[activePoolIndex]?.type ?? 'Pool'}`}</Text>
-        {pools.length > 1 && (
-          <View style={styles.poolStepRow}>
-            <TouchableOpacity onPress={() => setActivePoolIndex(Math.max(0, activePoolIndex - 1))}><Text style={styles.poolStepBtn}>Previous</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setActivePoolIndex(Math.min(pools.length - 1, activePoolIndex + 1))}><Text style={styles.poolStepBtn}>Next</Text></TouchableOpacity>
-          </View>
-        )}
-        <Text style={styles.cardBody}>FC {displayReadings?.freeChlorine || '—'} · pH {displayReadings?.ph || '—'} · TA {displayReadings?.alkalinity || '—'}</Text>
-        <Text style={styles.cardBody}>CH {displayReadings?.calciumHardness || '—'} · CYA {displayReadings?.cyanuricAcid || '—'}</Text>
-        <Text style={styles.cardMeta}>LSI: {displayLsi ? displayLsi.score.toFixed(2) : '—'}</Text>
-      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{`Pool ${Math.min(activePoolIndex + 1, Math.max(pools.length, 1))} of ${Math.max(pools.length, 1)} — ${pools[activePoolIndex]?.name ?? pools[activePoolIndex]?.type ?? 'Pool'}`}</Text>
+          {pools.length > 1 && (
+            <View style={styles.poolStepRow}>
+              <TouchableOpacity onPress={() => setActivePoolIndex(Math.max(0, activePoolIndex - 1))}><Text style={styles.poolStepBtn}>Previous</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setActivePoolIndex(Math.min(pools.length - 1, activePoolIndex + 1))}><Text style={styles.poolStepBtn}>Next</Text></TouchableOpacity>
+            </View>
+          )}
+          <Text style={styles.cardBody}>FC {displayReadings?.freeChlorine || '—'} · pH {displayReadings?.ph || '—'} · TA {displayReadings?.alkalinity || '—'}</Text>
+          <Text style={styles.cardBody}>CH {displayReadings?.calciumHardness || '—'} · CYA {displayReadings?.cyanuricAcid || '—'}</Text>
+          <Text style={styles.cardMeta}>LSI: {displayLsi ? displayLsi.score.toFixed(2) : '—'}</Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Treatments</Text>
-        {treatmentEntries.length === 0 ? (
-          <Text style={styles.cardBody}>No treatments entered</Text>
-        ) : (
-          treatmentEntries.map((item) => (
-            <Text key={item.id} style={styles.cardBody}>
-              {item.name || 'Custom chemical'} · {item.actualAmount || '0'}{item.unit}
-            </Text>
-          ))
-        )}
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Treatments</Text>
+          {treatmentEntries.length === 0 ? (
+            <Text style={styles.cardBody}>No treatments entered</Text>
+          ) : (
+            treatmentEntries.map((item) => (
+              <Text key={item.id} style={styles.cardBody}>
+                {item.name || 'Custom chemical'} · {item.actualAmount || '0'}{item.unit}
+              </Text>
+            ))
+          )}
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Photos</Text>
-        <Text style={styles.cardBody}>{photoCount} attached</Text>
-      </View>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Photos</Text>
+          <Text style={styles.cardBody}>{photoCount} attached</Text>
+        </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Notes</Text>
-        <Text style={styles.cardBody}>Customer: {customerNote || '—'}</Text>
-        <Text style={styles.cardBody}>Office: {officeNote || '—'}</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Notes</Text>
+          <Text style={styles.cardBody}>Customer: {customerNote || '—'}</Text>
+          <Text style={styles.cardBody}>Office: {officeNote || '—'}</Text>
+        </View>
+      </ScrollView>
+      <View style={styles.footer}>
+        <TouchableOpacity style={[styles.completeBtn, loading && styles.completeBtnDisabled]} onPress={handleComplete} disabled={loading}>
+          {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.completeBtnText}>Mark complete</Text>}
+        </TouchableOpacity>
       </View>
-
-      <TouchableOpacity style={[styles.completeBtn, loading && styles.completeBtnDisabled]} onPress={handleComplete} disabled={loading}>
-        {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.completeBtnText}>Mark complete</Text>}
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     marginTop: spacing.md,
+  },
+  scroll: { flex: 1 },
+  scrollContent: {
     gap: spacing.sm,
     paddingBottom: spacing.md,
+  },
+  footer: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.07)',
+    paddingVertical: 14,
+    paddingHorizontal: spacing.screen,
+    marginHorizontal: -spacing.screen,
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -202,11 +227,11 @@ const styles = StyleSheet.create({
   completeBtn: {
     width: '100%',
     minHeight: 56,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xxxl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#22C55E',
-    paddingHorizontal: spacing.md,
+    backgroundColor: '#111827',
+    paddingVertical: 16,
   },
   completeBtnDisabled: {
     opacity: 0.7,

@@ -16,7 +16,15 @@ import { getApiClient } from '../services/api';
 
 export function ProfileScreen() {
   const navigation = useNavigation();
-  const { logout } = useAuth();
+  const { logout, user, role } = useAuth();
+
+  const getInitials = (name?: string) => {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0].slice(0, 2).toUpperCase();
+  };
   const [settings, setSettings] = useState({
     scheduleChanges: true,
     stockAlerts: true,
@@ -59,9 +67,9 @@ export function ProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Profile Header */}
       <View style={styles.profileHeader}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>JT</Text></View>
-        <Text style={styles.profileName}>James Thompson</Text>
-        <Text style={styles.profileRole}>Technician</Text>
+        <View style={styles.avatar}><Text style={styles.avatarText}>{getInitials(user?.name)}</Text></View>
+        <Text style={styles.profileName}>{user?.name ?? '—'}</Text>
+        <Text style={styles.profileRole}>{role ?? '—'}</Text>
       </View>
 
       {/* Scroll Area */}
@@ -74,7 +82,7 @@ export function ProfileScreen() {
               <Ionicons name="person" size={15} color={colors.textMuted} />
             </View>
             <Text style={styles.settingsLabel}>Personal details</Text>
-            <Text style={styles.settingsValue}>james@poolpro.co.nz</Text>
+            <Text style={styles.settingsValue}>{user?.email ?? '—'}</Text>
             <Ionicons name="chevron-forward" size={14} color={colors.border} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.settingsRow}>

@@ -155,13 +155,15 @@ export function M5Screen() {
         {specs.length > 0 && (
           <>
             <Text style={styles.sectionLabel}>Pool specs</Text>
-            <View style={styles.specsRow}>
-              {specs.map((spec, idx) => (
-                <View key={idx} style={styles.specPill}>
-                  <Ionicons name={spec.icon as React.ComponentProps<typeof Ionicons>['name']} size={13} color="#374151" />
-                  <Text style={styles.specPillText}>{spec.label}</Text>
-                </View>
-              ))}
+            <View style={styles.specsCard}>
+              <View style={styles.specsRow}>
+                {specs.map((spec, idx) => (
+                  <View key={idx} style={styles.specPill}>
+                    <Ionicons name={spec.icon as React.ComponentProps<typeof Ionicons>['name']} size={13} color="#374151" />
+                    <Text style={styles.specPillText}>{spec.label}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           </>
         )}
@@ -205,14 +207,16 @@ export function M5Screen() {
       </ScrollView>
 
       {/* Sticky Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={[styles.startBtn, starting && { opacity: 0.7 }]} onPress={handleStartJob} disabled={starting}>
-          {starting
-            ? <ActivityIndicator color="#FFFFFF" />
-            : <Text style={styles.startBtnText}>Start job</Text>
-          }
-        </TouchableOpacity>
-      </View>
+      {job.status !== 'complete' && (
+        <View style={styles.footer}>
+          <TouchableOpacity style={[styles.startBtn, starting && { opacity: 0.7 }]} onPress={handleStartJob} disabled={starting}>
+            {starting
+              ? <ActivityIndicator color="#FFFFFF" />
+              : <Text style={styles.startBtnText}>{job.status === 'in_progress' ? 'Resume job' : 'Start job'}</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -256,9 +260,13 @@ const styles = StyleSheet.create({
   accessKey: { fontSize: 12, fontWeight: '600', color: '#92400E', minWidth: 90 },
   accessVal: { fontSize: 12, color: '#92400E', flex: 1 },
   sectionLabel: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, color: colors.textMuted },
+  specsCard: {
+    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)',
+    borderRadius: borderRadius.xxl, padding: 12,
+  },
   specsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
   specPill: {
-    backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)',
+    backgroundColor: '#F5F5F3', borderWidth: 1, borderColor: 'rgba(0,0,0,0.07)',
     borderRadius: borderRadius.lg, paddingVertical: 7, paddingHorizontal: 12,
     flexDirection: 'row', alignItems: 'center', gap: 5,
   },
@@ -293,8 +301,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 16,
   },
   startBtn: {
-    width: '100%', backgroundColor: '#111827', borderRadius: borderRadius.xxl,
-    paddingVertical: 16, alignItems: 'center', justifyContent: 'center',
+    width: '100%', backgroundColor: '#111827', borderRadius: borderRadius.xxxl,
+    minHeight: 56, paddingVertical: 16, alignItems: 'center', justifyContent: 'center',
   },
   startBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
 });
