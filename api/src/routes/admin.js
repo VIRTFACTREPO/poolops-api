@@ -18,6 +18,31 @@ router.use(requireAuth, authedRateLimit, requireRole('admin'), requireActiveSubs
 
 router.get('/dashboard', stub('get', '/admin/dashboard'));
 router.get('/customers', stub('get', '/admin/customers'));
+
+router.get('/customers/:id', async (req, res) => {
+  try {
+    const { data: customer, error } = await supabase
+      .from('customers')
+      .select(`
+        id, first_name, last_name, email, phone, address, active, created_at,
+        pools (
+          id, volume_litres, pool_type, surface_type, equipment_notes, gate_access, warnings,
+          service_plans (
+            id, frequency, day_of_week, active,
+            technician:profiles!technician_id (full_name)
+          )
+        )
+      `)
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
+    return ok(res, customer);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
 router.post('/jobs', stub('post', '/admin/jobs'));
 router.get('/inbox', stub('get', '/admin/inbox'));
 router.patch('/inbox/:id', stub('patch', '/admin/inbox/:id'));
