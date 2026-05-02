@@ -5,6 +5,7 @@ import {
   getCurrentUserProfile,
   loginWithPassword,
   logoutFromSession,
+  refreshAccessToken,
   setPasswordByInviteToken,
 } from '../services/auth.service.js';
 
@@ -102,6 +103,28 @@ router.post('/set-password', async (req, res) => {
     return res.status(500).json({
       success: false,
       error: { code: 'INTERNAL_ERROR', message: err?.message || 'Failed to set password' },
+    });
+  }
+});
+
+router.post('/refresh', async (req, res) => {
+  try {
+    const header = req.headers.authorization || '';
+    const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        error: { code: 'UNAUTHORIZED', message: 'Missing bearer token' },
+      });
+    }
+
+    const data = await refreshAccessToken(token);
+    return res.status(200).json({ success: true, data });
+  } catch (err) {
+    const status = err?.code === 'UNAUTHORIZED' ? 401 : 500;
+    return res.status(status).json({
+      success: false,
+      error: { code: err?.code || 'INTERNAL_ERROR', message: err?.message || 'Token refresh failed' },
     });
   }
 });

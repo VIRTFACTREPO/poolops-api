@@ -197,6 +197,34 @@ export async function setPasswordByInviteToken(inviteToken, password) {
   };
 }
 
+export async function refreshAccessToken(refreshToken) {
+  let payload;
+  try {
+    payload = jwt.verify(refreshToken, env.JWT_SECRET);
+  } catch {
+    const err = new Error('Invalid or expired refresh token');
+    err.code = 'UNAUTHORIZED';
+    throw err;
+  }
+
+  if (payload.type !== 'refresh' || !payload.sub) {
+    const err = new Error('Invalid refresh token type');
+    err.code = 'UNAUTHORIZED';
+    throw err;
+  }
+
+  assertSupabaseReady();
+  const { data: userData, error } = await supabaseAdmin.auth.admin.getUserById(payload.sub);
+  if (error || !userData?.user) {
+    const err = new Error('User not found');
+    err.code = 'UNAUTHORIZED';
+    throw err;
+  }
+
+  const { token, refreshToken: newRefreshToken, role } = issueTokens(userData.user);
+  return { token, refreshToken: newRefreshToken, role };
+}
+
 export async function logoutFromSession(accessToken) {
   assertSupabaseReady();
   const { error } = await supabaseAdmin.auth.admin.signOut(accessToken);
