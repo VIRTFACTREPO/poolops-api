@@ -137,6 +137,11 @@ export default function Schedule() {
   )
 
   useEffect(() => {
+    const interval = setInterval(() => setRefreshKey((k) => k + 1), 30_000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
