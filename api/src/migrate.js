@@ -13,6 +13,24 @@ const MIGRATIONS = [
       sync_queue, pool_equipment
     TO service_role`,
   },
+  {
+    id: '006_subscription_and_invite',
+    sql: `
+      DO $$ BEGIN
+        CREATE TYPE subscription_status AS ENUM ('trialing', 'active', 'past_due', 'cancelled');
+      EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+      ALTER TABLE companies
+        ADD COLUMN IF NOT EXISTS subscription_status subscription_status NOT NULL DEFAULT 'trialing',
+        ADD COLUMN IF NOT EXISTS trial_started_at timestamptz,
+        ADD COLUMN IF NOT EXISTS trial_ends_at timestamptz;
+
+      UPDATE companies SET subscription_status = 'active' WHERE subscription_status = 'trialing';
+
+      ALTER TABLE profiles ADD COLUMN IF NOT EXISTS invite_token text UNIQUE;
+      CREATE INDEX IF NOT EXISTS idx_profiles_invite_token ON profiles (invite_token) WHERE invite_token IS NOT NULL;
+    `,
+  },
 ];
 
 export async function runMigrations() {

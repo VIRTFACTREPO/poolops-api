@@ -7,6 +7,7 @@ import {
   logoutFromSession,
   refreshAccessToken,
   setPasswordByInviteToken,
+  signupCompany,
 } from '../services/auth.service.js';
 
 const router = Router();
@@ -126,6 +127,22 @@ router.post('/refresh', async (req, res) => {
       success: false,
       error: { code: err?.code || 'INTERNAL_ERROR', message: err?.message || 'Token refresh failed' },
     });
+  }
+});
+
+router.post('/signup', async (req, res) => {
+  try {
+    const { companyName, adminName, email, password } = req.body || {};
+    if (!companyName || !adminName || !email || !password) {
+      return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'All fields are required' } });
+    }
+    const data = await signupCompany({ companyName, adminName, email, password });
+    return res.status(201).json({ success: true, data });
+  } catch (err) {
+    if (err?.code === 'CONFLICT') return res.status(409).json({ success: false, error: { code: 'CONFLICT', message: err.message } });
+    if (err?.code === 'VALIDATION_ERROR') return res.status(422).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+    console.error('POST /auth/signup', err);
+    return res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message || 'Signup failed' } });
   }
 });
 

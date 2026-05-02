@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.js';
 import technicianRoutes from './routes/technician.js';
 import ownerRoutes from './routes/owner.js';
 import adminRoutes from './routes/admin.js';
+import superadminRoutes from './routes/superadmin.js';
 import sharedRoutes from './routes/shared.js';
 import webhookRoutes from './routes/webhooks.js';
 

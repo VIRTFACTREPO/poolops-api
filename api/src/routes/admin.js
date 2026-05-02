@@ -1,21 +1,97 @@
-import { Router } from "express";
-import { requireAuth, requireRole } from "../middleware/auth.js";
-import { authedRateLimit } from "../middleware/rateLimit.js";
-import { checkTechnicianLimit, checkPoolLimit } from "../middleware/planEnforcement.js";
-import { stub } from "./stubs.js";
+import { Router } from 'express';
+import { requireAuth, requireRole } from '../middleware/auth.js';
+import { authedRateLimit } from '../middleware/rateLimit.js';
+import { requireActiveSubscription } from '../middleware/subscriptionGuard.js';
+import { checkTechnicianLimit, checkPoolLimit } from '../middleware/planEnforcement.js';
+import { ok, fail } from '../utils/response.js';
+import { createInviteForUser } from '../services/auth.service.js';
+import {
+  getBillingStatus,
+  createCheckoutSession,
+  createBillingPortalSession,
+} from '../services/billing.service.js';
+import { supabase } from '../lib/supabase.js';
+import { stub } from './stubs.js';
 
 const router = Router();
-router.use(requireAuth, authedRateLimit, requireRole("admin"));
+router.use(requireAuth, authedRateLimit, requireRole('admin'), requireActiveSubscription);
 
-router.get("/dashboard", stub("get", "/admin/dashboard"));
-router.get("/customers", stub("get", "/admin/customers"));
-router.post("/jobs", stub("post", "/admin/jobs"));
-router.get("/inbox", stub("get", "/admin/inbox"));
-router.patch("/inbox/:id", stub("patch", "/admin/inbox/:id"));
-router.get("/audit-log", stub("get", "/admin/audit-log"));
+router.get('/dashboard', stub('get', '/admin/dashboard'));
+router.get('/customers', stub('get', '/admin/customers'));
+router.post('/jobs', stub('post', '/admin/jobs'));
+router.get('/inbox', stub('get', '/admin/inbox'));
+router.patch('/inbox/:id', stub('patch', '/admin/inbox/:id'));
+router.get('/audit-log', stub('get', '/admin/audit-log'));
 
 // Plan-enforced creation endpoints
-router.post("/technicians", checkTechnicianLimit, stub("post", "/admin/technicians"));
-router.post("/pools", checkPoolLimit, stub("post", "/admin/pools"));
+router.post('/technicians', checkTechnicianLimit, stub('post', '/admin/technicians'));
+router.post('/pools', checkPoolLimit, stub('post', '/admin/pools'));
+
+// Invite a technician or pool owner
+router.post('/invite', async (req, res) => {
+  try {
+    const { email, fullName, role, customerId } = req.body || {};
+    if (!email || !fullName || !['technician', 'pool_owner'].includes(role)) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'email, fullName, and role (technician|pool_owner) are required');
+    }
+    const result = await createInviteForUser({
+      email,
+      fullName,
+      role,
+      companyId: req.user.companyId,
+      customerId: customerId || null,
+    });
+    return ok(res, result);
+  } catch (err) {
+    if (err?.code === 'CONFLICT') return fail(res, 409, 'CONFLICT', err.message);
+    console.error('POST /admin/invite', err);
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+// Billing routes — requireActiveSubscription exempts /billing/* paths itself
+router.get('/billing/status', async (req, res) => {
+  try {
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select('id, plan, subscription_status, trial_started_at, trial_ends_at')
+      .eq('id', req.user.companyId)
+      .maybeSingle();
+    if (error || !company) return fail(res, 404, 'NOT_FOUND', 'Company not found');
+    return ok(res, getBillingStatus(company));
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.post('/billing/checkout', async (req, res) => {
+  try {
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select('id, plan, stripe_customer_id')
+      .eq('id', req.user.companyId)
+      .maybeSingle();
+    if (error || !company) return fail(res, 404, 'NOT_FOUND', 'Company not found');
+    const result = await createCheckoutSession(company);
+    return ok(res, result);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.post('/billing/portal', async (req, res) => {
+  try {
+    const { data: company, error } = await supabase
+      .from('companies')
+      .select('id, stripe_customer_id')
+      .eq('id', req.user.companyId)
+      .maybeSingle();
+    if (error || !company) return fail(res, 404, 'NOT_FOUND', 'Company not found');
+    const result = await createBillingPortalSession(company);
+    return ok(res, result);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
 
 export default router;
