@@ -181,14 +181,17 @@ export default function Dashboard() {
             <div style={{ display: 'grid', gap: 10 }}>
               {teamProgress.map((row) => {
                 const pct = row.assigned > 0 ? Math.round((row.done / row.assigned) * 100) : 0
+                const allPending = row.assigned > 0 && row.done === 0
                 return (
                   <div key={row.id} style={{ display: 'grid', gap: 6 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                       <span style={{ color: '#374151' }}>{row.name}</span>
-                      <span style={{ color: '#6B7280' }}>{row.done}/{row.assigned}</span>
+                      <span style={{ color: allPending ? '#D97706' : '#6B7280' }}>
+                        {row.done}/{row.assigned}{allPending ? ' pending' : ''}
+                      </span>
                     </div>
                     <div style={{ height: 8, background: '#E5E7EB', borderRadius: 99, overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: pct >= 80 ? '#22C55E' : '#0EA5E9' }} />
+                      <div style={{ width: allPending ? '100%' : `${pct}%`, height: '100%', background: allPending ? '#FDE68A' : (pct >= 80 ? '#22C55E' : '#0EA5E9') }} />
                     </div>
                   </div>
                 )

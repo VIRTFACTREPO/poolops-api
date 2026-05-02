@@ -99,6 +99,7 @@ export default function Team() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
           {team.map((p) => {
             const pct = p.assigned > 0 ? Math.round((p.done / p.assigned) * 100) : 0
+            const allPending = p.assigned > 0 && p.done === 0
             return (
               <div key={p.id} style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -108,9 +109,11 @@ export default function Team() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{p.name}</div>
                 </div>
 
-                <div style={{ marginTop: 10, fontSize: 12, color: '#6B7280' }}>Progress {p.done}/{p.assigned}</div>
+                <div style={{ marginTop: 10, fontSize: 12, color: allPending ? '#D97706' : '#6B7280' }}>
+                  Progress {p.done}/{p.assigned}{allPending ? ' – pending' : ''}
+                </div>
                 <div style={{ marginTop: 6, height: 8, borderRadius: 99, background: '#E5E7EB', overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: p.color }} />
+                  <div style={{ width: allPending ? '100%' : `${pct}%`, height: '100%', background: allPending ? '#FDE68A' : p.color }} />
                 </div>
 
                 <div style={{ marginTop: 10, fontSize: 12, color: p.currentJob ? '#0369A1' : '#6B7280' }}>
