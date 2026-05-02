@@ -107,7 +107,7 @@ class ApiClient {
       headers,
     });
 
-    if (response.status === 401 && this.token) {
+    if (response.status === 401) {
       await this.refreshToken();
       const retryHeaders = await this.getAuthenticatedHeaders();
       const retryResponse = await fetch(fullUrl, { ...options, headers: retryHeaders });
