@@ -48,37 +48,27 @@ export function PhotoCaptureTab() {
         try {
           const baseUrl = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3003';
           const token = await SecureStore.getItemAsync('auth_token');
-          const response = await fetch(`${baseUrl}/technician/jobs/${jobId}/photos/upload-url`, {
+          const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+
+          const response = await fetch(`${baseUrl}/technician/jobs/${jobId}/photos`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({ type, mimeType, fileName }),
+            body: JSON.stringify({ type, mimeType, fileName, base64 }),
           });
 
           if (!response.ok) {
             const body = await response.text();
-            throw new Error(`Upload URL failed ${response.status}: ${body}`);
+            throw new Error(`Upload failed ${response.status}: ${body}`);
           }
 
           const { data } = await response.json();
-
-          const uploadResult = await FileSystem.uploadAsync(data.signedUrl, uri, {
-            httpMethod: 'PUT',
-            uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-            headers: { 'Content-Type': mimeType },
-          });
-
-          if (uploadResult.status < 200 || uploadResult.status >= 300) {
-            throw new Error(`Storage upload failed ${uploadResult.status}: ${uploadResult.body}`);
-          }
-
-          setPhotos({ [type]: data.publicUrl });
+          setPhotos({ [type]: data.url });
         } catch (uploadErr: any) {
           console.error('[PhotoCaptureTab] upload error:', uploadErr?.message);
           Alert.alert('Photo upload failed', uploadErr?.message ?? 'Could not upload photo. It will sync when connectivity improves.');
-          // Clear the local URI from context so it isn't sent to the API as a photo_url
           setPhotos({ [type]: undefined });
           await enqueuePhotoUpload(jobId, {
             photoType: type,

@@ -7,7 +7,7 @@ import {
   getJobDetail,
   startJob,
   completeJob,
-  createPhotoUploadUrl,
+  uploadJobPhoto,
 } from '../services/technician.service.js';
 
 const router = Router();
@@ -53,17 +53,16 @@ router.patch('/jobs/:id', async (req, res) => {
   }
 });
 
-router.post('/jobs/:id/photos/upload-url', async (req, res) => {
+router.post('/jobs/:id/photos', async (req, res) => {
   try {
-    const { type, mimeType, fileName } = req.body;
-    if (!['before', 'after'].includes(type)) {
-      return fail(res, 400, 'VALIDATION_ERROR', 'type must be before or after');
-    }
-    const result = await createPhotoUploadUrl(req.params.id, req.user.id, { type, mimeType, fileName });
+    const { type, mimeType, fileName, base64 } = req.body;
+    if (!['before', 'after'].includes(type)) return fail(res, 400, 'VALIDATION_ERROR', 'type must be before or after');
+    if (!base64) return fail(res, 400, 'VALIDATION_ERROR', 'base64 is required');
+    const result = await uploadJobPhoto(req.params.id, req.user.id, { type, mimeType, fileName, base64 });
     return ok(res, result);
   } catch (err) {
     if (err.code === 'NOT_FOUND') return fail(res, 404, 'NOT_FOUND', err.message);
-    console.error('POST /technician/jobs/:id/photos/upload-url', err);
+    console.error('POST /technician/jobs/:id/photos', err);
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }
 });

@@ -335,7 +335,7 @@ export async function completeJob(jobId, technicianId, payload) {
   return inserted.map((r) => ({ serviceRecordId: r.id, ref: r.ref, poolId: r.pool_id }));
 }
 
-export async function createPhotoUploadUrl(jobId, technicianId, { type, mimeType, fileName }) {
+export async function uploadJobPhoto(jobId, technicianId, { type, mimeType, fileName, base64 }) {
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
     .select('id')
@@ -352,13 +352,14 @@ export async function createPhotoUploadUrl(jobId, technicianId, { type, mimeType
 
   const ext = (fileName ?? '').split('.').pop() || 'jpg';
   const path = `${jobId}/${type}-${Date.now()}.${ext}`;
+  const buffer = Buffer.from(base64, 'base64');
 
-  const { data, error: storageErr } = await supabase.storage
+  const { error: storageErr } = await supabase.storage
     .from('job-photos')
-    .createSignedUploadUrl(path);
+    .upload(path, buffer, { contentType: mimeType ?? 'image/jpeg', upsert: true });
 
   if (storageErr) throw storageErr;
 
   const publicUrl = `${env.SUPABASE_URL}/storage/v1/object/public/job-photos/${path}`;
-  return { signedUrl: data.signedUrl, publicUrl };
+  return { url: publicUrl };
 }

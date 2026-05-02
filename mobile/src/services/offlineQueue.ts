@@ -272,9 +272,13 @@ export async function drainPhotoQueue(): Promise<number> {
         capturedAt: string;
       };
 
-      // Step 1: request a signed upload URL from the API.
-      const urlResponse = await fetch(
-        `${API_BASE_URL}/technician/jobs/${item.jobId}/photos/upload-url`,
+      // Read file as base64 and POST to API which uploads to storage server-side.
+      const base64 = await FileSystem.readAsStringAsync(payload.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      const uploadResponse = await fetch(
+        `${API_BASE_URL}/technician/jobs/${item.jobId}/photos`,
         {
           method: 'POST',
           headers: { ...authHeaders, 'Content-Type': 'application/json' },
@@ -282,30 +286,16 @@ export async function drainPhotoQueue(): Promise<number> {
             type: payload.photoType,
             mimeType: payload.mimeType,
             fileName: payload.fileName,
+            base64,
           }),
         },
       );
 
-      if (!urlResponse.ok) {
-        const isRetryable = urlResponse.status >= 500 || urlResponse.status === 429;
-        await markAttempted(db, item.id, isRetryable ? item.retryCount + 1 : MAX_RETRIES);
-        continue;
-      }
-
-      const { data } = (await urlResponse.json()) as { data: { signedUrl: string; publicUrl: string } };
-
-      // Step 2: binary PUT directly to storage via the signed URL.
-      const uploadResult = await FileSystem.uploadAsync(data.signedUrl, payload.uri, {
-        httpMethod: 'PUT',
-        uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
-        headers: { 'Content-Type': payload.mimeType },
-      });
-
-      if (uploadResult.status >= 200 && uploadResult.status < 300) {
+      if (uploadResponse.ok) {
         await removeItem(db, item.id);
         processed++;
       } else {
-        const isRetryable = uploadResult.status >= 500 || uploadResult.status === 429;
+        const isRetryable = uploadResponse.status >= 500 || uploadResponse.status === 429;
         await markAttempted(db, item.id, isRetryable ? item.retryCount + 1 : MAX_RETRIES);
       }
     } catch {
