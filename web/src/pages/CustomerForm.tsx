@@ -51,7 +51,7 @@ export default function CustomerForm() {
       const { data: existing } = await supabase
         .from('customers')
         .select('id')
-        .eq('email', email.trim().toLowerCase())
+        .eq('email', email.trim())
         .eq('company_id', company.id)
         .maybeSingle()
 
