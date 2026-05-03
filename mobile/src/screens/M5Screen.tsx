@@ -60,6 +60,11 @@ function buildMultiPoolSummary(pools: { poolType: string }[]) {
   return `${pools.length} services — ${labels.join(' + ')}`;
 }
 
+function formatCapacity(volumeLitres?: number) {
+  if (!volumeLitres || volumeLitres <= 0) return null;
+  return `${Math.round(volumeLitres).toLocaleString()} L`;
+}
+
 export function M5Screen() {
   const route = useRoute<M5ScreenRouteProp>();
   const navigation = useNavigation();
@@ -96,7 +101,7 @@ export function M5Screen() {
   const pool = job?.pool;
   const specs = pool
     ? ([
-        pool.volumeLitres ? { icon: 'water-outline', label: `${Math.round(pool.volumeLitres / 1000)}k L` } : null,
+        pool.volumeLitres ? { icon: 'water-outline', label: formatCapacity(pool.volumeLitres) ?? '—' } : null,
         pool.surfaceType ? { icon: 'layers-outline', label: capitalize(pool.surfaceType) } : null,
         pool.poolType ? { icon: 'flask-outline', label: capitalize(pool.poolType) } : null,
         pool.indoorOutdoor === 'outdoor' ? { icon: 'sunny-outline', label: 'Outdoor' } :
@@ -162,7 +167,7 @@ export function M5Screen() {
         {(job.pools && job.pools.length > 0 ? job.pools : pool ? [{ id: pool.id, poolType: pool.poolType, volumeLitres: pool.volumeLitres, gateAccess: pool.gateAccess, warnings: pool.warnings }] : []).map((p, idx) => {
           const spa = isSpaType(p.poolType);
           const poolSpecs = [
-            p.volumeLitres ? { icon: 'water-outline', label: `${p.volumeLitres >= 1000 ? `${Math.round(p.volumeLitres / 1000)}k` : p.volumeLitres} L` } : null,
+            p.volumeLitres ? { icon: 'water-outline', label: formatCapacity(p.volumeLitres) ?? '—' } : null,
             p.poolType ? { icon: 'flask-outline', label: capitalize(p.poolType) } : null,
           ].filter(Boolean) as { icon: string; label: string }[];
           const poolAccessItems: { label: string; value: string }[] = [];
