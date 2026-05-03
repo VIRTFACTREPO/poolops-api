@@ -50,20 +50,31 @@ export function M11CompleteScreen() {
 
   const photoCount = Object.values(photos).filter(Boolean).length;
 
-  const treatments = treatmentEntries.map((t) => ({
+  const normalizeTreatment = (t: typeof treatmentEntries[number]) => ({
     id: t.id,
     name: t.name,
     recommendedAmount: t.recommendedAmount,
     actualAmount: Number(t.actualAmount || 0),
     unit: t.unit,
-  }));
+  });
+
+  const treatmentsByPool = useMemo(() => {
+    const custom = treatmentEntries.filter((t) => t.id.startsWith('custom-')).map(normalizeTreatment);
+    return effectivePools.map((_, i) => {
+      const prefixed = treatmentEntries
+        .filter((t) => t.id.startsWith(`p${i}-`))
+        .map((t) => normalizeTreatment({ ...t, id: t.id.replace(`p${i}-`, '') }));
+      if (effectivePools.length > 1) return [...prefixed, ...custom];
+      return treatmentEntries.map(normalizeTreatment);
+    });
+  }, [effectivePools, treatmentEntries]);
 
   const payload = useMemo(() => ({
     pools: effectivePools.map((pool, i) => ({
       poolId: pool.poolId,
       readings: poolReadings[i] ?? poolReadings[0],
       lsi: perPoolLsi[i] ?? null,
-      treatments,
+      treatments: treatmentsByPool[i] ?? [],
     })),
     notes: {
       customer: customerNote,
@@ -76,7 +87,7 @@ export function M11CompleteScreen() {
     },
     completedAt: new Date().toISOString(),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [customerNote, officeNote, perPoolLsi, photos, poolReadings, pools, treatmentEntries]);
+  }), [customerNote, officeNote, perPoolLsi, photos, poolReadings, pools, treatmentsByPool]);
 
   const handleComplete = async () => {
     if (!jobId || loading) return;
@@ -167,11 +178,24 @@ export function M11CompleteScreen() {
           {treatmentEntries.length === 0 ? (
             <Text style={styles.cardBody}>No treatments entered</Text>
           ) : (
-            treatmentEntries.map((item) => (
-              <Text key={item.id} style={styles.cardBody}>
-                {item.name || 'Custom chemical'} · {item.actualAmount || '0'}{item.unit}
-              </Text>
-            ))
+            effectivePools.map((pool, i) => {
+              const label = `${poolDisplayLabel(pool)} ${i + 1}${pool.name ? ` — ${pool.name}` : ''}`;
+              const lines = treatmentsByPool[i] ?? [];
+              return (
+                <View key={`${pool.poolId}-${i}`} style={styles.treatmentGroup}>
+                  <Text style={styles.treatmentGroupTitle}>{label}</Text>
+                  {lines.length === 0 ? (
+                    <Text style={styles.cardBody}>No treatments entered</Text>
+                  ) : (
+                    lines.map((item) => (
+                      <Text key={`${pool.poolId}-${item.id}`} style={styles.cardBody}>
+                        {item.name || 'Custom chemical'} · {item.actualAmount || '0'}{item.unit}
+                      </Text>
+                    ))
+                  )}
+                </View>
+              );
+            })
           )}
         </View>
 
@@ -279,5 +303,17 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.sm,
     color: '#374151',
     fontFamily: 'monospace',
+  },
+  treatmentGroup: {
+    marginTop: spacing.xs,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  treatmentGroupTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
   },
 });
