@@ -5,14 +5,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Image,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { colors, spacing, borderRadius } from '../theme/tokens';
 import { Ionicons } from '@expo/vector-icons';
+import { getApiClient } from '../services/api';
 
-type NotificationType = 'schedule' | 'stock' | 'message' | 'flagged' | 'complete';
+type NotificationType = 'service_complete' | 'visit_confirmed' | 'schedule_change' | 'flagged_reading' | 'office_message' | 'request_received';
 
 interface Notification {
   id: string;
@@ -21,83 +22,95 @@ interface Notification {
   body: string;
   time: string;
   isRead: boolean;
+  reference_id?: string;
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    type: 'schedule',
-    title: 'Schedule updated',
-    body: 'Peters, Sarah moved to 2:30pm — Wong, Helen added to route',
-    time: '8 minutes ago',
-    isRead: false,
-  },
-  {
-    id: '2',
-    type: 'stock',
-    title: 'Low stock — pH Buffer',
-    body: 'Less than 1kg remaining. Restock before end of day.',
-    time: '42 minutes ago',
-    isRead: false,
-  },
-  {
-    id: '3',
-    type: 'message',
-    title: 'Message from office',
-    body: "Can you call the Chen's after their service today? They have a question about the equipment.",
-    time: '1 hour ago',
-    isRead: false,
-  },
-  {
-    id: '4',
-    type: 'flagged',
-    title: 'Flagged reading noted',
-    body: 'Smith, David — Chlorine LOW flagged. Simon reviewed.',
-    time: '2 hours ago',
-    isRead: true,
-  },
-  {
-    id: '5',
-    type: 'complete',
-    title: 'Report sent',
-    body: 'Service report delivered to Williams, James — 22 Ponsonby Rd',
-    time: '3 hours ago',
-    isRead: true,
-  },
-];
+function formatRelativeTime(isoString: string): string {
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  return `${days} days ago`;
+}
+
+function getNavTarget(notif: Notification): { screen: string; params?: object } | null {
+  switch (notif.type) {
+    case 'service_complete':
+      return { screen: 'M5', params: { jobId: notif.reference_id } };
+    case 'visit_confirmed':
+      return { screen: 'Schedule', params: undefined };
+    case 'schedule_change':
+      return { screen: 'Home', params: undefined };
+    case 'flagged_reading':
+    case 'office_message':
+      return null;
+    case 'request_received':
+      return { screen: 'Home', params: undefined };
+    default:
+      return null;
+  }
+}
 
 const NOTIFICATION_COLORS: Record<NotificationType, string> = {
-  schedule: colors.primary,
-  stock: colors.warning,
-  message: colors.text,
-  flagged: colors.error,
-  complete: colors.success,
+  service_complete: colors.success,
+  visit_confirmed: colors.primary,
+  schedule_change: colors.primary,
+  flagged_reading: colors.error,
+  office_message: colors.text,
+  request_received: colors.warning,
 };
 
 const NOTIFICATION_BG_COLORS: Record<NotificationType, string> = {
-  schedule: '#EFF6FF',
-  stock: '#FFFBEB',
-  message: '#F3F4F6',
-  flagged: '#FEF2F2',
-  complete: '#F0FDF4',
-};
-
-// Map notification types to tab screen names (must match RootNavigator Tab.Screen names)
-const NOTIFICATION_TYPE_MAP: Record<NotificationType, string | null> = {
-  schedule: 'Home',        // RunSheetScreen — registered as "Home" tab
-  stock: null,             // No dedicated screen — stay in notifications
-  message: null,           // No dedicated screen — stay in notifications
-  flagged: null,           // No dedicated screen — stay in notifications
-  complete: null,          // No dedicated screen — stay in notifications
+  service_complete: '#F0FDF4',
+  visit_confirmed: '#EFF6FF',
+  schedule_change: '#EFF6FF',
+  flagged_reading: '#FEF2F2',
+  office_message: '#F3F4F6',
+  request_received: '#FFFBEB',
 };
 
 export function NotificationsScreen() {
-  const navigation = useNavigation();
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const navigation = useNavigation<any>();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      setLoading(true);
+      getApiClient().get<{ data: any[] }>('/technician/notifications')
+        .then((res) => {
+          if (!active) return;
+          const rows = Array.isArray((res as any)?.data?.data)
+            ? (res as any).data.data
+            : Array.isArray((res as any)?.data)
+              ? (res as any).data
+              : [];
+          const mapped: Notification[] = rows.map((n: any) => ({
+            id: String(n.id),
+            type: n.type as NotificationType,
+            title: n.title,
+            body: n.body,
+            time: formatRelativeTime(n.created_at),
+            isRead: Boolean(n.read),
+            reference_id: n.reference_id,
+          }));
+          setNotifications(mapped);
+        })
+        .catch((err) => console.error('Notifications fetch failed:', err))
+        .finally(() => { if (active) setLoading(false); });
+      return () => { active = false; };
+    }, [])
+  );
 
   const handleMarkAllRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    getApiClient().patch('/technician/notifications/read-all').catch(() => {});
   }, []);
 
   const handleNotificationPress = useCallback(
@@ -105,11 +118,12 @@ export function NotificationsScreen() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
       );
-      const targetScreen = NOTIFICATION_TYPE_MAP[notification.type];
-      if (targetScreen) {
-        navigation.navigate(targetScreen as never);
+      getApiClient().patch(`/technician/notifications/${notification.id}/read`).catch(() => {});
+
+      const target = getNavTarget(notification);
+      if (target) {
+        navigation.navigate(target.screen as never, target.params as never);
       } else {
-        // No navigation target — expand/collapse body in place
         setExpandedId((prev) => (prev === notification.id ? null : notification.id));
       }
     },
@@ -118,18 +132,13 @@ export function NotificationsScreen() {
 
   const getNotificationIcon = (type: NotificationType) => {
     switch (type) {
-      case 'schedule':
-        return <Ionicons name="calendar" size={17} color={colors.primaryDark} />;
-      case 'stock':
-        return <Ionicons name="alert-circle" size={17} color={colors.warningDark} />;
-      case 'message':
-        return <Ionicons name="chatbubble" size={17} color={colors.textMuted} />;
-      case 'flagged':
-        return <Ionicons name="alert" size={17} color={colors.errorDark} />;
-      case 'complete':
-        return <Ionicons name="checkmark-circle" size={17} color={colors.successDark} />;
-      default:
-        return null;
+      case 'service_complete': return <Ionicons name="checkmark-circle" size={17} color={colors.successDark} />;
+      case 'visit_confirmed': return <Ionicons name="calendar-outline" size={17} color={colors.primaryDark} />;
+      case 'schedule_change': return <Ionicons name="calendar" size={17} color={colors.primaryDark} />;
+      case 'flagged_reading': return <Ionicons name="alert" size={17} color={colors.errorDark} />;
+      case 'office_message': return <Ionicons name="chatbubble" size={17} color={colors.textMuted} />;
+      case 'request_received': return <Ionicons name="alert-circle" size={17} color={colors.warningDark} />;
+      default: return null;
     }
   };
 
@@ -142,7 +151,6 @@ export function NotificationsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Notifications</Text>
         <TouchableOpacity style={styles.markReadBtn} onPress={handleMarkAllRead}>
@@ -150,15 +158,15 @@ export function NotificationsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Scroll Area */}
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {/* Unread Notifications */}
+        {loading && <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} />}
+
         {filteredNotifications('unread').length > 0 && (
           <>
             <Text style={styles.sectionLabel}>New</Text>
             {filteredNotifications('unread').map((notif) => {
               const isExpanded = expandedId === notif.id;
-              const hasNav = !!NOTIFICATION_TYPE_MAP[notif.type];
+              const hasNav = !!getNavTarget(notif);
               return (
                 <TouchableOpacity
                   key={notif.id}
@@ -185,13 +193,12 @@ export function NotificationsScreen() {
           </>
         )}
 
-        {/* Read Notifications */}
         {filteredNotifications('read').length > 0 && (
           <>
             <Text style={styles.sectionLabel}>Earlier today</Text>
             {filteredNotifications('read').map((notif) => {
               const isExpanded = expandedId === notif.id;
-              const hasNav = !!NOTIFICATION_TYPE_MAP[notif.type];
+              const hasNav = !!getNavTarget(notif);
               return (
                 <TouchableOpacity
                   key={notif.id}
@@ -215,7 +222,7 @@ export function NotificationsScreen() {
           </>
         )}
 
-        {notifications.length === 0 && (
+        {!loading && notifications.length === 0 && (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Ionicons name="time-outline" size={48} color={colors.border} />
@@ -315,13 +322,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#111827',
-    lineHeight: 1.4,
+    lineHeight: 18,
   },
   subtitle: {
     fontSize: 12,
     color: colors.textLight,
     marginTop: 3,
-    lineHeight: 1.4,
+    lineHeight: 18,
   },
   time: {
     fontSize: 11,
