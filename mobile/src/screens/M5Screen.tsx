@@ -30,7 +30,7 @@ interface JobDetail {
     warnings?: string;
     equipmentNotes?: string;
   } | null;
-  pools?: { id: string; poolType: string; name?: string }[];
+  pools?: { id: string; poolType: string; name?: string; volumeLitres?: number; gateAccess?: string | null; warnings?: string | null }[];
   equipment: { id: string; name: string; type: string; manufacturer?: string; model?: string }[];
   lastVisits: { date: string; isFlagged: boolean; lsiLabel: string; lsiScore: number }[];
 }
@@ -158,45 +158,57 @@ export function M5Screen() {
           </View>
         )}
 
-        {/* Access Notes */}
-        {accessItems.length > 0 && (
-          <View style={styles.accessCard}>
-            <View style={styles.accessHeader}>
-              <Ionicons name="key" size={13} color="#B45309" />
-              <Text style={styles.accessLabel}>Access notes</Text>
-            </View>
-            {accessItems.map((item, idx) => (
-              <View key={idx} style={styles.accessRow}>
-                <Text style={styles.accessKey}>{item.label}</Text>
-                <Text style={styles.accessVal}>{item.value}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Pool Specs */}
-        {specs.length > 0 && (
-          <>
-            <View style={styles.sectionRow}>
-              <Text style={styles.sectionLabel}>Pool specs</Text>
-              <View style={[styles.typeBadge, isSpaType(pool?.poolType) ? styles.typeBadgeSpa : styles.typeBadgePool]}>
-                <Text style={[styles.typeBadgeText, isSpaType(pool?.poolType) ? styles.typeBadgeTextSpa : styles.typeBadgeTextPool]}>
-                  {poolLabel(pool?.poolType)}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.specsCard}>
-              <View style={styles.specsRow}>
-                {specs.map((spec, idx) => (
-                  <View key={idx} style={styles.specPill}>
-                    <Ionicons name={spec.icon as React.ComponentProps<typeof Ionicons>['name']} size={13} color="#374151" />
-                    <Text style={styles.specPillText}>{spec.label}</Text>
+        {/* Per-pool specs + access notes */}
+        {(job.pools && job.pools.length > 0 ? job.pools : pool ? [{ id: pool.id, poolType: pool.poolType, volumeLitres: pool.volumeLitres, gateAccess: pool.gateAccess, warnings: pool.warnings }] : []).map((p, idx) => {
+          const spa = isSpaType(p.poolType);
+          const poolSpecs = [
+            p.volumeLitres ? { icon: 'water-outline', label: `${p.volumeLitres >= 1000 ? `${Math.round(p.volumeLitres / 1000)}k` : p.volumeLitres} L` } : null,
+            p.poolType ? { icon: 'flask-outline', label: capitalize(p.poolType) } : null,
+          ].filter(Boolean) as { icon: string; label: string }[];
+          const poolAccessItems: { label: string; value: string }[] = [];
+          if (p.gateAccess) poolAccessItems.push({ label: 'Gate access', value: p.gateAccess });
+          if (p.warnings) poolAccessItems.push({ label: 'Warning', value: p.warnings });
+          return (
+            <React.Fragment key={p.id ?? idx}>
+              {poolAccessItems.length > 0 && (
+                <View style={styles.accessCard}>
+                  <View style={styles.accessHeader}>
+                    <Ionicons name="key" size={13} color="#B45309" />
+                    <Text style={styles.accessLabel}>Access notes</Text>
                   </View>
-                ))}
-              </View>
-            </View>
-          </>
-        )}
+                  {poolAccessItems.map((item, i) => (
+                    <View key={i} style={styles.accessRow}>
+                      <Text style={styles.accessKey}>{item.label}</Text>
+                      <Text style={styles.accessVal}>{item.value}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              {poolSpecs.length > 0 && (
+                <>
+                  <View style={styles.sectionRow}>
+                    <Text style={styles.sectionLabel}>Pool specs</Text>
+                    <View style={[styles.typeBadge, spa ? styles.typeBadgeSpa : styles.typeBadgePool]}>
+                      <Text style={[styles.typeBadgeText, spa ? styles.typeBadgeTextSpa : styles.typeBadgeTextPool]}>
+                        {poolLabel(p.poolType)}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.specsCard}>
+                    <View style={styles.specsRow}>
+                      {poolSpecs.map((spec, i) => (
+                        <View key={i} style={styles.specPill}>
+                          <Ionicons name={spec.icon as React.ComponentProps<typeof Ionicons>['name']} size={13} color="#374151" />
+                          <Text style={styles.specPillText}>{spec.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </>
+              )}
+            </React.Fragment>
+          );
+        })}
 
         {/* Equipment */}
         {job.equipment.length > 0 && (
