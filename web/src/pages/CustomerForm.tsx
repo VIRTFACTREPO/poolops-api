@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { importLibrary, setOptions } from '@googlemaps/js-api-loader'
+import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete'
 import { supabase } from '../lib/supabase'
 import { colors, radii, spacing, typography } from '../theme/tokens'
 
@@ -14,9 +16,71 @@ export default function CustomerForm() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
+  const [addressLat, setAddressLat] = useState<number | null>(null)
+  const [addressLng, setAddressLng] = useState<number | null>(null)
+  const [placesReady, setPlacesReady] = useState(false)
+  const [placesEnabled, setPlacesEnabled] = useState(false)
+  const placesContainerRef = useRef<HTMLDivElement | null>(null)
+
+  const {
+    ready,
+    value,
+    setValue,
+    suggestions: { status, data },
+    clearSuggestions,
+  } = usePlacesAutocomplete({
+    requestOptions: {
+      componentRestrictions: { country: 'nz' },
+      types: ['address'],
+    },
+    debounce: 250,
+    initOnMount: false,
+  })
   const [pools, setPools] = useState<PoolEntry[]>([{ category: 'pool', pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const key = (import.meta.env.VITE_GOOGLE_PLACES_API_KEY || '').trim()
+    if (!key) {
+      setPlacesEnabled(false)
+      setPlacesReady(false)
+      return
+    }
+
+    let cancelled = false
+    setOptions({ key, libraries: ['places'] })
+    importLibrary('places').then(() => {
+      if (!cancelled) {
+        setPlacesEnabled(true)
+        setPlacesReady(true)
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setPlacesEnabled(false)
+        setPlacesReady(false)
+      }
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    setValue(address, false)
+  }, [address, setValue])
+
+  useEffect(() => {
+    if (!placesEnabled || !placesReady) return
+    function onClickOutside(e: MouseEvent) {
+      if (placesContainerRef.current && !placesContainerRef.current.contains(e.target as Node)) {
+        clearSuggestions()
+      }
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [placesEnabled, placesReady, clearSuggestions])
 
   const formatVolume = (raw: string) => {
     const digits = raw.replace(/\D/g, '')
@@ -58,13 +122,41 @@ export default function CustomerForm() {
       if (existing) {
         customerId = existing.id
       } else {
-        const { data: customer, error: custErr } = await supabase
+        const customerPayload: Record<string, unknown> = {
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          phone: phone || null,
+          address,
+          address_lat: addressLat,
+          address_lng: addressLng,
+          company_id: company.id,
+        }
+
+        let createResult = await supabase
           .from('customers')
-          .insert({ first_name: firstName, last_name: lastName, email, phone: phone || null, address, company_id: company.id })
+          .insert(customerPayload)
           .select('id')
           .single()
-        if (custErr) throw custErr
-        customerId = customer.id
+
+        if (createResult.error?.message?.toLowerCase().includes('address_lat') || createResult.error?.message?.toLowerCase().includes('address_lng')) {
+          const fallbackPayload = {
+            first_name: firstName,
+            last_name: lastName,
+            email,
+            phone: phone || null,
+            address,
+            company_id: company.id,
+          }
+          createResult = await supabase
+            .from('customers')
+            .insert(fallbackPayload)
+            .select('id')
+            .single()
+        }
+
+        if (createResult.error) throw createResult.error
+        customerId = createResult.data.id
       }
 
       for (const pool of pools) {
@@ -102,7 +194,67 @@ export default function CustomerForm() {
             </Row>
             <input style={field} placeholder='Email' type='email' value={email} onChange={(e) => setEmail(e.target.value)} />
             <input style={field} placeholder='Phone (optional)' value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <input style={field} placeholder='Address' value={address} onChange={(e) => setAddress(e.target.value)} />
+            {placesEnabled && placesReady ? (
+              <div ref={placesContainerRef} style={{ position: 'relative' }}>
+                <input
+                  style={field}
+                  placeholder='Address'
+                  value={value}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setValue(next)
+                    setAddress(next)
+                    setAddressLat(null)
+                    setAddressLng(null)
+                  }}
+                  disabled={!ready}
+                />
+                {status === 'OK' && data.length > 0 && (
+                  <div style={{ position: 'absolute', zIndex: 30, top: 'calc(100% + 6px)', left: 0, right: 0, background: '#111827', borderRadius: radii.md, border: '1px solid #374151', overflow: 'hidden' }}>
+                    {data.map((suggestion) => (
+                      <button
+                        key={suggestion.place_id}
+                        type='button'
+                        onClick={async () => {
+                          const selectedAddress = suggestion.description
+                          setValue(selectedAddress, false)
+                          setAddress(selectedAddress)
+                          clearSuggestions()
+                          try {
+                            const geocode = await getGeocode({ placeId: suggestion.place_id })
+                            const formatted = geocode[0]?.formatted_address || selectedAddress
+                            const { lat, lng } = getLatLng(geocode[0])
+                            setAddress(formatted)
+                            setValue(formatted, false)
+                            setAddressLat(lat)
+                            setAddressLng(lng)
+                          } catch {
+                            setAddressLat(null)
+                            setAddressLng(null)
+                          }
+                        }}
+                        style={{ width: '100%', textAlign: 'left', background: '#111827', color: '#FFFFFF', border: 'none', borderBottom: '1px solid #374151', padding: `${spacing.sm}px ${spacing.md}px`, cursor: 'pointer' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#374151' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#111827' }}
+                      >
+                        {suggestion.description}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <input
+                style={field}
+                placeholder='Address'
+                value={address}
+                onChange={(e) => {
+                  setAddress(e.target.value)
+                  setAddressLat(null)
+                  setAddressLng(null)
+                }}
+              />
+            )}
           </Fields>
         </Section>
 
