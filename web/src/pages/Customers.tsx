@@ -52,11 +52,12 @@ export default function Customers() {
 
       if (error || !customers) { setLoading(false); return }
 
-      // Collect unique technician IDs
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      // Collect unique technician IDs — filter(Boolean) alone passes string "null", so use UUID regex
       const techIds = [...new Set(
         customers.flatMap((c: any) =>
           (c.pools || []).flatMap((p: any) =>
-            (p.service_plans || []).map((sp: any) => sp.technician_id).filter(Boolean)
+            (p.service_plans || []).map((sp: any) => sp.technician_id).filter((id: any) => id && UUID_RE.test(id))
           )
         )
       )] as string[]
