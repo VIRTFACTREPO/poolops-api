@@ -3,6 +3,11 @@ import jwt from 'jsonwebtoken';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env.js';
 import { createStripeCustomer } from './billing.service.js';
+import {
+  sendOwnerInviteEmail,
+  sendPasswordResetEmail,
+  sendTechnicianInviteEmail,
+} from './email.service.js';
 
 const hasSupabase = Boolean(env.SUPABASE_URL && env.SUPABASE_ANON_KEY && env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -256,7 +261,26 @@ export async function forgotPassword(email) {
     return { sent: false, mode: 'stub' };
   }
 
-  return { sent: true, mode: env.RESEND_ENABLED ? 'resend' : 'stub' };
+  if (!env.RESEND_ENABLED) {
+    return { sent: false, mode: 'stub' };
+  }
+
+  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'recovery',
+    email,
+    options: {
+      redirectTo: `${env.APP_URL}/set-password`,
+    },
+  });
+
+  if (linkError || !linkData?.properties?.action_link) {
+    return { sent: false, mode: 'stub' };
+  }
+
+  return sendPasswordResetEmail({
+    to: email,
+    resetLink: linkData.properties.action_link,
+  });
 }
 
 export async function signupCompany({ companyName, adminName, email, password }) {
@@ -398,8 +422,27 @@ export async function createInviteForUser({ email, fullName, role, companyId, cu
       .eq('id', customerId);
   }
 
-  // Email invite stub — implement when RESEND_ENABLED=true
-  console.log(`[invite] token for ${email}: ${inviteToken}`);
+  const { data: company } = await supabaseAdmin
+    .from('companies')
+    .select('name')
+    .eq('id', companyId)
+    .maybeSingle();
+
+  if (role === 'pool_owner') {
+    await sendOwnerInviteEmail({
+      to: email,
+      ownerName: fullName,
+      companyName: company?.name,
+      token: inviteToken,
+    });
+  } else {
+    await sendTechnicianInviteEmail({
+      to: email,
+      name: fullName,
+      companyName: company?.name,
+      token: inviteToken,
+    });
+  }
 
   return { inviteToken, userId: user.id };
 }
