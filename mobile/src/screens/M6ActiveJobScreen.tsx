@@ -162,8 +162,14 @@ function buildRecommendedTreatments(readings: ChemicalReadings): TreatmentRecomm
   if (alk !== null && alk > 120) {
     output.push({ id: 'alk-down', name: 'Muriatic Acid', recommendedAmount: 500, unit: 'ml', reason: 'Lower alkalinity — add acid in small doses with pump running' });
   }
+  if (calcium !== null && calcium < 200) {
+    output.push({ id: 'calcium-low', name: 'Calcium Hardness Increaser', recommendedAmount: 500, unit: 'g', reason: 'Raise calcium hardness into 200–400 range' });
+  }
   if (calcium !== null && calcium > 400) {
     output.push({ id: 'calcium-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Calcium hardness too high — no chemical fix, dilution required' });
+  }
+  if (cya !== null && cya < 30) {
+    output.push({ id: 'cya-low', name: 'Cyanuric Acid (Stabiliser)', recommendedAmount: 200, unit: 'g', reason: 'Raise stabiliser into 30–50 range' });
   }
   if (cya !== null && cya > 50) {
     output.push({ id: 'cya-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Cyanuric acid too high — no chemical fix, dilution required' });
