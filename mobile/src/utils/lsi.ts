@@ -3,7 +3,6 @@ export type LsiInput = {
   alkalinity: number;
   calciumHardness: number;
   cyanuricAcid: number;
-  temperatureC?: number;
 };
 
 export type LsiResult = {
@@ -17,15 +16,14 @@ function clamp(value: number, min: number, max: number) {
 }
 
 // Lightweight saturation-index approximation for MVP UI feedback.
+// Temperature is omitted — defaults to 25°C baseline (±0.1 per 10°C, not worth a field).
 export function calculateLsi(input: LsiInput): LsiResult {
-  const temp = input.temperatureC ?? 25;
   const phTerm = input.ph - 7.5;
   const alkTerm = Math.log10(clamp(input.alkalinity, 1, 500) / 100);
   const calTerm = Math.log10(clamp(input.calciumHardness, 1, 1000) / 250);
   const cyaPenalty = clamp(input.cyanuricAcid, 0, 150) / 300;
-  const tempAdj = (temp - 25) * 0.01;
 
-  const score = Number((phTerm + alkTerm + calTerm - cyaPenalty + tempAdj).toFixed(2));
+  const score = Number((phTerm + alkTerm + calTerm - cyaPenalty).toFixed(2));
 
   if (score < -0.3) {
     return { score, label: 'corrosive', description: 'Slightly corrosive water' };

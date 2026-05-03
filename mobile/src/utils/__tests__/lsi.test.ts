@@ -35,14 +35,14 @@ describe('calculateLsi', () => {
     expect(withCya.score).toBeLessThan(base.score);
   });
 
-  test('warmer water increases LSI score', () => {
-    const cold = calculateLsi({ ph: 7.5, alkalinity: 100, calciumHardness: 250, cyanuricAcid: 0, temperatureC: 15 });
-    const warm = calculateLsi({ ph: 7.5, alkalinity: 100, calciumHardness: 250, cyanuricAcid: 0, temperatureC: 35 });
-    expect(warm.score).toBeGreaterThan(cold.score);
+  test('higher CYA lowers LSI score (CYA acts as buffering penalty)', () => {
+    const lowCya = calculateLsi({ ph: 7.5, alkalinity: 100, calciumHardness: 250, cyanuricAcid: 0 });
+    const highCya = calculateLsi({ ph: 7.5, alkalinity: 100, calciumHardness: 250, cyanuricAcid: 50 });
+    expect(highCya.score).toBeLessThan(lowCya.score);
   });
 
   test('balanced band is -0.3 to +0.3 exclusive', () => {
-    // CYA=100 → cyaPenalty=0.333 → score=-0.333 which is < -0.3 → corrosive
+    // CYA=100 → cyaPenalty=0.333 → score=-0.333 → corrosive
     const justCorrosive = calculateLsi({ ph: 7.5, alkalinity: 100, calciumHardness: 250, cyanuricAcid: 100 });
     expect(justCorrosive.label).toBe('corrosive');
 
