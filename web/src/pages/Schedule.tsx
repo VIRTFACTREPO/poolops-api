@@ -97,6 +97,10 @@ function poolTypeLabel(type: string): string {
     mineral: 'Pool (Mineral)',
     freshwater: 'Pool (Freshwater)',
     spa: 'Spa Pool',
+    'spa-salt': 'Spa (Salt)',
+    'spa-chlorine': 'Spa (Chlorine)',
+    'spa-mineral': 'Spa (Mineral)',
+    'spa-freshwater': 'Spa (Freshwater)',
   }
   return labels[type] || type
 }

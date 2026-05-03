@@ -22,7 +22,7 @@ export default function CustomerForm() {
     setPools(prev => prev.map((p, idx) => {
       if (idx !== i) return p
       if (field === 'category') {
-        return { ...p, category: value as PoolCategory, pool_type: value === 'spa' ? 'spa' : 'salt' }
+        return { ...p, category: value as PoolCategory, pool_type: value === 'spa' ? 'spa-salt' : 'salt' }
       }
       return { ...p, [field]: value }
     }))
@@ -107,20 +107,23 @@ export default function CustomerForm() {
                   <div style={{ display: 'grid', gap: spacing.sm }}>
                     <Row>
                       <input style={field} placeholder='Volume (litres)' value={pool.volume_litres} onChange={(e) => updatePool(i, 'volume_litres', e.target.value)} type='number' min='1' />
-                      {isSpa ? (
-                        <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
-                          <option value='spa'>Standard Spa</option>
-                          <option value='spa-chlorine'>Spa (Chlorine)</option>
-                          <option value='spa-bromine'>Spa (Bromine)</option>
-                        </select>
-                      ) : (
-                        <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
-                          <option value='salt'>Salt</option>
-                          <option value='chlorine'>Chlorine</option>
-                          <option value='mineral'>Mineral</option>
-                          <option value='freshwater'>Freshwater</option>
-                        </select>
-                      )}
+                      <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
+                        {isSpa ? (
+                          <>
+                            <option value='spa-salt'>Salt</option>
+                            <option value='spa-chlorine'>Chlorine</option>
+                            <option value='spa-mineral'>Mineral</option>
+                            <option value='spa-freshwater'>Freshwater</option>
+                          </>
+                        ) : (
+                          <>
+                            <option value='salt'>Salt</option>
+                            <option value='chlorine'>Chlorine</option>
+                            <option value='mineral'>Mineral</option>
+                            <option value='freshwater'>Freshwater</option>
+                          </>
+                        )}
+                      </select>
                     </Row>
                     <input style={field} placeholder='Gate code / lockbox' value={pool.gate_access} onChange={(e) => updatePool(i, 'gate_access', e.target.value)} />
                     <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={pool.warnings} onChange={(e) => updatePool(i, 'warnings', e.target.value)} />
@@ -138,7 +141,7 @@ export default function CustomerForm() {
               </button>
               <button
                 type='button'
-                onClick={() => setPools(prev => [...prev, { category: 'spa', pool_type: 'spa', volume_litres: '', gate_access: '', warnings: '' }])}
+                onClick={() => setPools(prev => [...prev, { category: 'spa', pool_type: 'spa-salt', volume_litres: '', gate_access: '', warnings: '' }])}
                 style={{ background: 'transparent', border: `1px dashed #DDD6FE`, borderRadius: radii.md, color: '#6D28D9', padding: `${spacing.sm}px ${spacing.md}px`, fontSize: typography.sizes.small, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const }}
               >
                 + Add spa pool

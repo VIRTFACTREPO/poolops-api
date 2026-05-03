@@ -52,7 +52,7 @@ type ReadingRule = {
 };
 
 function getReadingsConfig(poolType?: string): ReadingRule[] {
-  if (poolType === 'spa') {
+  if (poolType === 'spa' || poolType?.startsWith('spa-')) {
     return [
       { key: 'freeChlorine', label: 'Free Chlorine', min: 3.0, max: 5.0, step: '0.1' },
       { key: 'ph', label: 'pH', min: 7.2, max: 7.8, step: '0.1' },
@@ -181,7 +181,7 @@ function ReadingsTab() {
   const [focusedField, setFocusedField] = useState<ReadingKey | null>(null);
 
   const currentPoolType = pools[readingsPoolIndex]?.type;
-  const isSpa = currentPoolType === 'spa';
+  const isSpa = currentPoolType === 'spa' || currentPoolType?.startsWith('spa-');
   const readingRules = useMemo(() => getReadingsConfig(currentPoolType), [currentPoolType]);
 
   const derived = useMemo(
