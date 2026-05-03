@@ -23,11 +23,27 @@ describe('buildRecommendedTreatments — chlorine', () => {
   test('low free chlorine (<1) → Liquid Chlorine', () => {
     const result = buildRecommendedTreatments(readings({ freeChlorine: '0.5' }));
     expect(result.some((r) => r.id === 'liq-chlorine')).toBe(true);
+    expect(result.every((r) => r.id !== 'cl-high')).toBe(true);
   });
 
   test('chlorine at exact lower bound (1) → no chlorine recommendation', () => {
     const result = buildRecommendedTreatments(readings({ freeChlorine: '1' }));
     expect(result.every((r) => r.id !== 'liq-chlorine')).toBe(true);
+    expect(result.every((r) => r.id !== 'cl-high')).toBe(true);
+  });
+
+  test('high free chlorine (>3) → Partial drain & refill', () => {
+    const result = buildRecommendedTreatments(readings({ freeChlorine: '6' }), 50000);
+    const rec = result.find((r) => r.id === 'cl-high');
+    expect(rec).toBeDefined();
+    expect(rec?.name).toBe('Partial drain & refill');
+    expect(rec?.unit).toBe('L');
+    expect(rec?.recommendedAmount).toBeGreaterThan(0);
+  });
+
+  test('chlorine in range does not include drain recommendation', () => {
+    const result = buildRecommendedTreatments(readings({ freeChlorine: '2.5' }), 50000);
+    expect(result.every((r) => r.id !== 'cl-high')).toBe(true);
   });
 });
 
@@ -116,6 +132,81 @@ describe('buildRecommendedTreatments — multiple issues', () => {
     }));
     expect(result.length).toBeGreaterThanOrEqual(5);
     expect(result.every((r) => r.id !== 'maintain')).toBe(true);
+  });
+});
+
+describe('buildRecommendedTreatments — spa mode', () => {
+  function spaReadings(overrides: Partial<Record<string, string>> = {}) {
+    return {
+      freeChlorine: '4',      // in spa range 3-5
+      ph: '7.4',              // in range 7.2-7.8
+      alkalinity: '100',      // in range 80-120
+      calciumHardness: '200', // in spa range 150-250
+      cyanuricAcid: '',       // not used for spa
+      ...overrides,
+    };
+  }
+
+  test('spa with all readings in range → "No correction needed"', () => {
+    const result = buildRecommendedTreatments(spaReadings(), undefined, true);
+    expect(result[0].id).toBe('maintain');
+  });
+
+  test('spa low calcium (<150) → Calcium Hardness Increaser 200g', () => {
+    const result = buildRecommendedTreatments(spaReadings({ calciumHardness: '10' }), undefined, true);
+    const rec = result.find((r) => r.id === 'calcium-low');
+    expect(rec).toBeDefined();
+    expect(rec?.recommendedAmount).toBe(200);
+    expect(rec?.unit).toBe('g');
+  });
+
+  test('spa high calcium (>250) → Partial drain with volume calc', () => {
+    const result = buildRecommendedTreatments(spaReadings({ calciumHardness: '400' }), 1000, true);
+    const rec = result.find((r) => r.id === 'calcium-high');
+    expect(rec).toBeDefined();
+    expect(rec?.unit).toBe('L');
+    expect(rec?.recommendedAmount).toBeGreaterThan(0);
+  });
+
+  test('spa low chlorine (<3) → Chlorine / Bromine', () => {
+    const result = buildRecommendedTreatments(spaReadings({ freeChlorine: '1' }), undefined, true);
+    const rec = result.find((r) => r.id === 'liq-chlorine');
+    expect(rec?.name).toBe('Chlorine / Bromine');
+    expect(rec?.recommendedAmount).toBe(150);
+  });
+
+  test('spa does not produce CYA recommendation', () => {
+    const result = buildRecommendedTreatments(spaReadings({ cyanuricAcid: '0' }), undefined, true);
+    expect(result.every((r) => r.id !== 'cya-low' && r.id !== 'cya-high')).toBe(true);
+  });
+
+  test('spa ph > 7.8 → Muriatic Acid (spa phHigh is 7.8, not 7.6)', () => {
+    const atLimit = buildRecommendedTreatments(spaReadings({ ph: '7.8' }), undefined, true);
+    expect(atLimit.every((r) => r.id !== 'ph-down')).toBe(true);
+    const overLimit = buildRecommendedTreatments(spaReadings({ ph: '7.9' }), undefined, true);
+    expect(overLimit.some((r) => r.id === 'ph-down')).toBe(true);
+  });
+});
+
+describe('buildRecommendedTreatments — drain volume calculation', () => {
+  test('high calcium with known volume → non-zero drain litres', () => {
+    const result = buildRecommendedTreatments(readings({ calciumHardness: '600' }), 50000);
+    const rec = result.find((r) => r.id === 'calcium-high');
+    expect(rec?.recommendedAmount).toBeGreaterThan(0);
+    expect(rec?.unit).toBe('L');
+  });
+
+  test('high CYA with known volume → non-zero drain litres', () => {
+    const result = buildRecommendedTreatments(readings({ cyanuricAcid: '80' }), 50000);
+    const rec = result.find((r) => r.id === 'cya-high');
+    expect(rec?.recommendedAmount).toBeGreaterThan(0);
+  });
+
+  test('drain litres rounded to nearest 500', () => {
+    // Ca=600, target=300, pool=50000L → drain = 50000*(1-300/600) = 25000
+    const result = buildRecommendedTreatments(readings({ calciumHardness: '600' }), 50000);
+    const rec = result.find((r) => r.id === 'calcium-high');
+    expect(rec?.recommendedAmount! % 500).toBe(0);
   });
 });
 
