@@ -94,23 +94,23 @@ const NOTIFICATION_TYPE_MAP: Record<NotificationType, string | null> = {
 export function NotificationsScreen() {
   const navigation = useNavigation();
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const handleMarkAllRead = useCallback(async () => {
-    // Mock API call to mark all as read
-    // In production: await API.post('/notifications/mark-all-read');
-    
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   }, []);
 
   const handleNotificationPress = useCallback(
     (notification: Notification) => {
-      // Mark as read on tap
       setNotifications((prev) =>
         prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
       );
       const targetScreen = NOTIFICATION_TYPE_MAP[notification.type];
       if (targetScreen) {
         navigation.navigate(targetScreen as never);
+      } else {
+        // No navigation target — expand/collapse body in place
+        setExpandedId((prev) => (prev === notification.id ? null : notification.id));
       }
     },
     [navigation]
@@ -156,25 +156,32 @@ export function NotificationsScreen() {
         {filteredNotifications('unread').length > 0 && (
           <>
             <Text style={styles.sectionLabel}>New</Text>
-            {filteredNotifications('unread').map((notif) => (
-              <TouchableOpacity
-                key={notif.id}
-                style={[styles.card, styles.cardUnread, { borderLeftColor: NOTIFICATION_COLORS[notif.type] }]}
-                onPress={() => handleNotificationPress(notif)}
-              >
-                <View style={[styles.icon, { backgroundColor: NOTIFICATION_BG_COLORS[notif.type] }]}>
-                  {getNotificationIcon(notif.type)}
-                </View>
-                <View style={styles.body}>
-                  <Text style={styles.title}>{notif.title}</Text>
-                  <Text style={styles.subtitle}>{notif.body}</Text>
-                  <Text style={styles.time}>{notif.time}</Text>
-                </View>
-                <View
-                  style={[styles.unreadDot, { backgroundColor: NOTIFICATION_COLORS[notif.type], right: 13, top: 13 }]}
-                />
-              </TouchableOpacity>
-            ))}
+            {filteredNotifications('unread').map((notif) => {
+              const isExpanded = expandedId === notif.id;
+              const hasNav = !!NOTIFICATION_TYPE_MAP[notif.type];
+              return (
+                <TouchableOpacity
+                  key={notif.id}
+                  style={[styles.card, styles.cardUnread, { borderLeftColor: NOTIFICATION_COLORS[notif.type] }]}
+                  onPress={() => handleNotificationPress(notif)}
+                >
+                  <View style={[styles.icon, { backgroundColor: NOTIFICATION_BG_COLORS[notif.type] }]}>
+                    {getNotificationIcon(notif.type)}
+                  </View>
+                  <View style={styles.body}>
+                    <Text style={styles.title}>{notif.title}</Text>
+                    <Text style={styles.subtitle} numberOfLines={isExpanded ? undefined : 2}>{notif.body}</Text>
+                    <Text style={styles.time}>{notif.time}</Text>
+                    {!hasNav && isExpanded && (
+                      <Text style={styles.expandHint}>Tap to collapse</Text>
+                    )}
+                  </View>
+                  <View
+                    style={[styles.unreadDot, { backgroundColor: NOTIFICATION_COLORS[notif.type], right: 13, top: 13 }]}
+                  />
+                </TouchableOpacity>
+              );
+            })}
           </>
         )}
 
@@ -182,22 +189,29 @@ export function NotificationsScreen() {
         {filteredNotifications('read').length > 0 && (
           <>
             <Text style={styles.sectionLabel}>Earlier today</Text>
-            {filteredNotifications('read').map((notif) => (
-              <TouchableOpacity
-                key={notif.id}
-                style={styles.card}
-                onPress={() => handleNotificationPress(notif)}
-              >
-                <View style={[styles.icon, { backgroundColor: NOTIFICATION_BG_COLORS[notif.type] }]}>
-                  {getNotificationIcon(notif.type)}
-                </View>
-                <View style={styles.body}>
-                  <Text style={[styles.title, { color: colors.text }]}>{notif.title}</Text>
-                  <Text style={styles.subtitle}>{notif.body}</Text>
-                  <Text style={styles.time}>{notif.time}</Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+            {filteredNotifications('read').map((notif) => {
+              const isExpanded = expandedId === notif.id;
+              const hasNav = !!NOTIFICATION_TYPE_MAP[notif.type];
+              return (
+                <TouchableOpacity
+                  key={notif.id}
+                  style={styles.card}
+                  onPress={() => handleNotificationPress(notif)}
+                >
+                  <View style={[styles.icon, { backgroundColor: NOTIFICATION_BG_COLORS[notif.type] }]}>
+                    {getNotificationIcon(notif.type)}
+                  </View>
+                  <View style={styles.body}>
+                    <Text style={[styles.title, { color: colors.text }]}>{notif.title}</Text>
+                    <Text style={styles.subtitle} numberOfLines={isExpanded ? undefined : 2}>{notif.body}</Text>
+                    <Text style={styles.time}>{notif.time}</Text>
+                    {!hasNav && isExpanded && (
+                      <Text style={styles.expandHint}>Tap to collapse</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </>
         )}
 
@@ -313,6 +327,11 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
+  },
+  expandHint: {
+    fontSize: 11,
+    color: colors.primary,
+    marginTop: 4,
   },
   unreadDot: {
     position: 'absolute',
