@@ -6,7 +6,7 @@ import { borderRadius, colors, spacing, typography } from '../theme/tokens';
 type StockRule = {
   amount: number;
   lowThreshold: number;
-  unit: 'ml' | 'g';
+  unit: 'ml' | 'g' | 'L';
 };
 
 const STOCK_RULES: Record<string, StockRule> = {
@@ -18,8 +18,15 @@ const STOCK_RULES: Record<string, StockRule> = {
 };
 
 function parseReading(value: string) {
+  if (!value?.trim()) return null;
   const num = Number(value);
   return Number.isFinite(num) ? num : null;
+}
+
+function calcDrainLitres(volumeLitres: number | undefined, current: number, target: number): number {
+  if (!volumeLitres || volumeLitres <= 0) return 0;
+  const raw = volumeLitres * (1 - target / current);
+  return Math.max(0, Math.round(raw / 500) * 500);
 }
 
 function isSpa(type?: string): boolean {
@@ -30,7 +37,7 @@ function poolDisplayLabel(pool?: PoolSnapshot): string {
   return isSpa(pool?.type) ? 'Spa Pool' : 'Pool';
 }
 
-function buildPoolTreatments(readings: ChemicalReadings, poolType?: string): TreatmentRecommendation[] {
+function buildPoolTreatments(readings: ChemicalReadings, poolType?: string, volumeLitres?: number): TreatmentRecommendation[] {
   const spa = isSpa(poolType);
   const cl = parseReading(readings.freeChlorine);
   const ph = parseReading(readings.ph);
@@ -38,8 +45,8 @@ function buildPoolTreatments(readings: ChemicalReadings, poolType?: string): Tre
   const calcium = parseReading(readings.calciumHardness);
   const cya = spa ? 0 : parseReading(readings.cyanuricAcid);
 
-  // Only generate recommendations when all relevant readings are present
-  if (cl === null || ph === null || alk === null || calcium === null || (!spa && cya === null)) return [];
+  // Only gate on core readings — CYA is optional; its items guard themselves below
+  if (cl === null || ph === null || alk === null || calcium === null) return [];
 
   const output: TreatmentRecommendation[] = [];
 
@@ -68,14 +75,17 @@ function buildPoolTreatments(readings: ChemicalReadings, poolType?: string): Tre
     output.push({ id: 'calcium-low', name: 'Calcium Hardness Increaser', recommendedAmount: spa ? 200 : 500, unit: 'g', reason: 'Raise calcium hardness into range' });
   }
   if (calcium > (spa ? 250 : 400)) {
-    output.push({ id: 'calcium-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Calcium hardness too high — no chemical fix, dilution required' });
+    const caTarget = spa ? 200 : 300;
+    const drain = calcDrainLitres(volumeLitres, calcium, caTarget);
+    output.push({ id: 'calcium-high', name: 'Partial drain & refill', recommendedAmount: drain, unit: 'L', reason: `Calcium too high — drain & refill to dilute to ~${caTarget} ppm` });
   }
   // CYA not applicable to spa pools
   if (!spa && cya !== null && cya < 30) {
     output.push({ id: 'cya-low', name: 'Cyanuric Acid (Stabiliser)', recommendedAmount: 200, unit: 'g', reason: 'Raise stabiliser into 30–50 range' });
   }
   if (!spa && cya !== null && cya > 50) {
-    output.push({ id: 'cya-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Cyanuric acid too high — no chemical fix, dilution required' });
+    const drain = calcDrainLitres(volumeLitres, cya, 40);
+    output.push({ id: 'cya-high', name: 'Partial drain & refill', recommendedAmount: drain, unit: 'L', reason: 'CYA too high — drain & refill to dilute to ~40 ppm' });
   }
 
   if (output.length === 0) {
@@ -86,7 +96,7 @@ function buildPoolTreatments(readings: ChemicalReadings, poolType?: string): Tre
 }
 
 function normalizePrefillToEntries(
-  prefill: Array<{ id: string; name: string; recommendedAmount: number; unit: 'ml' | 'g' }>,
+  prefill: Array<{ id: string; name: string; recommendedAmount: number; unit: 'ml' | 'g' | 'L' }>,
   existing: TreatmentEntry[],
 ): TreatmentEntry[] {
   if (prefill.length === 0) return existing;
@@ -120,10 +130,10 @@ export function M8TreatmentScreen() {
       derivedPrefill = pools.flatMap((pool, i) => {
         const readings = poolReadings[i];
         if (!readings) return [];
-        return buildPoolTreatments(readings, pool.type).map((r) => ({ ...r, id: `p${i}-${r.id}` }));
+        return buildPoolTreatments(readings, pool.type, pool.volumeLitres).map((r) => ({ ...r, id: `p${i}-${r.id}` }));
       });
     } else if (pools.length === 1 && poolReadings[0]) {
-      derivedPrefill = buildPoolTreatments(poolReadings[0], pools[0].type);
+      derivedPrefill = buildPoolTreatments(poolReadings[0], pools[0].type, pools[0].volumeLitres);
     } else {
       derivedPrefill = treatmentPrefill;
     }
@@ -173,34 +183,56 @@ export function M8TreatmentScreen() {
 
   const customEntries = treatmentEntries.filter((e) => e.id.startsWith('custom-'));
 
-  const renderEntry = (entry: TreatmentEntry) => (
-    <View key={entry.id} style={styles.row}>
-      <View style={styles.infoCol}>
-        {entry.id.startsWith('custom-') ? (
-          <TextInput
-            style={styles.nameInput}
-            value={entry.name}
-            onChangeText={(text) => updateEntry(entry.id, { name: text })}
-            placeholder="Chemical name"
-            placeholderTextColor="#9CA3AF"
-          />
-        ) : (
-          <Text style={styles.name}>{entry.name}</Text>
-        )}
-        <Text style={styles.recommended}>Recommended: {entry.recommendedAmount}{entry.unit}</Text>
-      </View>
+  const isDrainEntry = (entry: TreatmentEntry) =>
+    entry.unit === 'L' && (entry.id.endsWith('calcium-high') || entry.id.endsWith('cya-high'));
 
-      <TextInput
-        style={styles.amountInput}
-        keyboardType="decimal-pad"
-        value={entry.actualAmount}
-        onChangeText={(text) => updateEntry(entry.id, { actualAmount: text.replace(/[^0-9.]/g, '') })}
-        placeholder={entry.recommendedAmount > 0 ? String(entry.recommendedAmount) : '0'}
-        placeholderTextColor="#9CA3AF"
-      />
-      <Text style={styles.unit}>{entry.unit}</Text>
-    </View>
-  );
+  const formatAmount = (amount: number, unit: TreatmentEntry['unit']) => {
+    if (unit === 'L') return amount > 0 ? amount.toLocaleString() : '—';
+    return String(amount);
+  };
+
+  const renderEntry = (entry: TreatmentEntry) => {
+    const drain = isDrainEntry(entry);
+    return (
+      <View key={entry.id} style={styles.row}>
+        <View style={styles.infoCol}>
+          {entry.id.startsWith('custom-') ? (
+            <TextInput
+              style={styles.nameInput}
+              value={entry.name}
+              onChangeText={(text) => updateEntry(entry.id, { name: text })}
+              placeholder="Chemical name"
+              placeholderTextColor="#9CA3AF"
+            />
+          ) : (
+            <Text style={styles.name}>{entry.name}</Text>
+          )}
+          <Text style={styles.recommended}>
+            Recommended: {formatAmount(entry.recommendedAmount, entry.unit)}{entry.unit === 'L' ? ' L' : entry.unit}
+            {drain ? ' to drain' : ''}
+          </Text>
+        </View>
+
+        {drain ? (
+          <Text style={styles.drainAmount}>
+            {entry.recommendedAmount > 0 ? entry.recommendedAmount.toLocaleString() : '—'} L
+          </Text>
+        ) : (
+          <>
+            <TextInput
+              style={styles.amountInput}
+              keyboardType="decimal-pad"
+              value={entry.actualAmount}
+              onChangeText={(text) => updateEntry(entry.id, { actualAmount: text.replace(/[^0-9.]/g, '') })}
+              placeholder={entry.recommendedAmount > 0 ? String(entry.recommendedAmount) : '0'}
+              placeholderTextColor="#9CA3AF"
+            />
+            <Text style={styles.unit}>{entry.unit}</Text>
+          </>
+        )}
+      </View>
+    );
+  };
 
   return (
     <ScrollView
@@ -352,6 +384,13 @@ const styles = StyleSheet.create({
     minWidth: 22,
     fontSize: 12,
     color: '#6B7280',
+  },
+  drainAmount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#EF4444',
+    minWidth: 80,
+    textAlign: 'right',
   },
   addLink: {
     flexDirection: 'row',
