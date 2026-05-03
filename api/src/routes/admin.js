@@ -15,6 +15,10 @@ import { stub } from './stubs.js';
 
 const router = Router();
 router.use(requireAuth, authedRateLimit, requireRole('admin'), requireActiveSubscription);
+router.use((req, res, next) => {
+  if (!req.user.companyId) return fail(res, 403, 'FORBIDDEN', 'No company associated with this account');
+  next();
+});
 
 router.get('/dashboard', stub('get', '/admin/dashboard'));
 router.get('/customers', stub('get', '/admin/customers'));
