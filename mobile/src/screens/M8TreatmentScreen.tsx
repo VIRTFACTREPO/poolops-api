@@ -64,10 +64,16 @@ function buildPoolTreatments(readings: ChemicalReadings, poolType?: string): Tre
   if (alk > 120) {
     output.push({ id: 'alk-down', name: 'Muriatic Acid', recommendedAmount: spa ? 150 : 500, unit: 'ml', reason: 'Lower alkalinity — add acid in small doses with pump running' });
   }
-  if (calcium > 400) {
+  if (calcium < (spa ? 150 : 200)) {
+    output.push({ id: 'calcium-low', name: 'Calcium Hardness Increaser', recommendedAmount: spa ? 200 : 500, unit: 'g', reason: 'Raise calcium hardness into range' });
+  }
+  if (calcium > (spa ? 250 : 400)) {
     output.push({ id: 'calcium-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Calcium hardness too high — no chemical fix, dilution required' });
   }
   // CYA not applicable to spa pools
+  if (!spa && cya !== null && cya < 30) {
+    output.push({ id: 'cya-low', name: 'Cyanuric Acid (Stabiliser)', recommendedAmount: 200, unit: 'g', reason: 'Raise stabiliser into 30–50 range' });
+  }
   if (!spa && cya !== null && cya > 50) {
     output.push({ id: 'cya-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Cyanuric acid too high — no chemical fix, dilution required' });
   }
