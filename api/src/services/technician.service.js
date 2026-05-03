@@ -155,6 +155,8 @@ export async function getJobDetail(jobId, technicianId) {
 
   const firstPoolDetail = poolDetails.filter(Boolean)[0] || null;
 
+  const allPoolDetails = poolDetails.filter(Boolean);
+
   return {
     id: job.id,
     status: job.status,
@@ -174,6 +176,15 @@ export async function getJobDetail(jobId, technicianId) {
       warnings: firstPoolDetail.warnings,
       equipmentNotes: firstPoolDetail.equipmentNotes,
     } : null,
+    pools: allPoolDetails.map((p) => ({
+      id: p.id,
+      poolType: p.poolType,
+      volumeLitres: p.volumeLitres,
+      gateAccess: p.gateAccess,
+      warnings: p.warnings,
+      equipment: p.equipment,
+      lastVisits: p.lastVisits,
+    })),
     equipment: firstPoolDetail?.equipment || [],
     lastVisits: firstPoolDetail?.lastVisits || [],
   };

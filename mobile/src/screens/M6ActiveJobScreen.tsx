@@ -416,9 +416,11 @@ function ActiveJobContent() {
             <Ionicons name={poolInfoExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {poolInfoExpanded && pools.map((pool, idx) => (
+          {poolInfoExpanded && pools.map((pool, idx) => {
+            const isSpaPool = pool.type === 'spa' || pool.type?.startsWith('spa-');
+            return (
             <View key={pool.poolId} style={styles.poolCard}>
-              <Text style={styles.poolTitle}>{`Pool ${idx + 1}${pool.name ? ` — ${pool.name}` : ''}`}</Text>
+              <Text style={styles.poolTitle}>{`${isSpaPool ? 'Spa Pool' : 'Pool'} ${idx + 1}${pool.name ? ` — ${pool.name}` : ''}`}</Text>
               <Text style={styles.poolMeta}>{`Type: ${pool.type ?? '—'} · Volume: ${pool.volumeLitres ?? '—'}L`}</Text>
               <Text style={styles.poolMeta}>{`Gate access: ${pool.gateAccess ?? '—'}`}</Text>
               <Text style={styles.poolMeta}>{`Warnings: ${(pool.warnings ?? []).length ? pool.warnings?.join(', ') : 'None'}`}</Text>
@@ -431,7 +433,8 @@ function ActiveJobContent() {
                 <Text key={`${pool.poolId}-visit-${vIdx}`} style={styles.poolMeta}>• {visit.date ? formatVisitDate(visit.date) : '—'}{visit.lsiLabel ? ` · ${visit.lsiLabel}` : ''}</Text>
               ))}
             </View>
-          ))}
+            );
+          })}
         </View>
       )}
 

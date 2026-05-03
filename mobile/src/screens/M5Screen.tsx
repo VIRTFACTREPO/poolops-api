@@ -48,11 +48,11 @@ function daysAgo(dateStr: string) {
 }
 
 function poolLabel(type?: string) {
-  return type === 'spa' ? 'Spa Pool' : 'Pool';
+  return type === 'spa' || type?.startsWith('spa-') ? 'Spa Pool' : 'Pool';
 }
 
 function isSpaType(type?: string) {
-  return type === 'spa';
+  return type === 'spa' || type?.startsWith('spa-');
 }
 
 function buildMultiPoolSummary(pools: { poolType: string }[]) {
