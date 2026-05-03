@@ -21,24 +21,61 @@ router.get('/customers', stub('get', '/admin/customers'));
 
 router.get('/customers/:id', async (req, res) => {
   try {
-    const { data: customer, error } = await supabase
+    const param = req.params.id;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(param);
+    const isNumber = /^\d+$/.test(param);
+    if (!isUuid && !isNumber) return fail(res, 400, 'BAD_REQUEST', 'Invalid customer identifier');
+
+    const baseQuery = supabase
       .from('customers')
       .select(`
-        id, first_name, last_name, email, phone, address, active, created_at,
+        id, company_id, customer_number, first_name, last_name, email, phone, address, active, created_at,
         pools (
           id, volume_litres, pool_type, surface_type, equipment_notes, gate_access, warnings,
           service_plans (
-            id, frequency, day_of_week, active,
-            technician:profiles!technician_id (full_name)
+            id, frequency, day_of_week, active, technician_id
           )
         )
       `)
-      .eq('id', req.params.id)
-      .eq('company_id', req.user.companyId)
-      .maybeSingle();
+      .eq('company_id', req.user.companyId);
+
+    const { data: customer, error } = await (
+      isUuid ? baseQuery.eq('id', param) : baseQuery.eq('customer_number', Number(param))
+    ).maybeSingle();
     if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
     if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
-    return ok(res, customer);
+
+    // Collect unique technician IDs across all pools/plans, then batch-fetch names
+    const techIds = [
+      ...new Set(
+        (customer.pools ?? [])
+          .flatMap((p) => (p.service_plans ?? []).map((sp) => sp.technician_id))
+          .filter(Boolean),
+      ),
+    ];
+
+    let techMap = {};
+    if (techIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', techIds);
+      techMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name]));
+    }
+
+    // Attach technician object to each plan (mirrors the old joined shape)
+    const enriched = {
+      ...customer,
+      pools: (customer.pools ?? []).map((pool) => ({
+        ...pool,
+        service_plans: (pool.service_plans ?? []).map((sp) => ({
+          ...sp,
+          technician: sp.technician_id ? { full_name: techMap[sp.technician_id] ?? null } : null,
+        })),
+      })),
+    };
+
+    return ok(res, enriched);
   } catch (err) {
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }
