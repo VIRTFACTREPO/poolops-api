@@ -16,7 +16,7 @@ export type TreatmentRecommendation = {
   id: string;
   name: string;
   recommendedAmount: number;
-  unit: 'ml' | 'g';
+  unit: 'ml' | 'g' | 'L';
   reason: string;
 };
 
@@ -25,7 +25,7 @@ export type TreatmentEntry = {
   name: string;
   recommendedAmount: number;
   actualAmount: string;
-  unit: 'ml' | 'g';
+  unit: 'ml' | 'g' | 'L';
 };
 
 export type PoolSnapshot = {
@@ -51,7 +51,7 @@ export type ActiveJobState = {
   readingsPoolIndex: number;
   treatmentPrefill: TreatmentRecommendation[];
   treatmentEntries: TreatmentEntry[];
-  photos: { before?: string; after?: string };
+  photos: Record<string, string>;
   customerNote: string;
   officeNote: string;
 };
@@ -67,7 +67,7 @@ type ActiveJobContextType = ActiveJobState & {
   setTreatmentPrefill: (items: TreatmentRecommendation[]) => void;
   setTreatmentEntries: (items: TreatmentEntry[]) => void;
   useLastReadings: (readings: ChemicalReadings) => void;
-  setPhotos: (photos: { before?: string; after?: string }) => void;
+  setPhotos: (photos: Record<string, string | undefined>) => void;
   setCustomerNote: (note: string) => void;
   setOfficeNote: (note: string) => void;
   resetJob: (jobId?: string) => void;
@@ -93,7 +93,7 @@ export function ActiveJobProvider({ children, jobId }: { children: React.ReactNo
   const [poolReadings, setPoolReadingsState] = useState<ChemicalReadings[]>([EMPTY_READINGS]);
   const [treatmentPrefill, setTreatmentPrefill] = useState<TreatmentRecommendation[]>([]);
   const [treatmentEntries, setTreatmentEntries] = useState<TreatmentEntry[]>([]);
-  const [photos, setPhotosState] = useState<{ before?: string; after?: string }>({});
+  const [photos, setPhotosState] = useState<Record<string, string>>({});
   const [customerNote, setCustomerNoteState] = useState('');
   const [officeNote, setOfficeNoteState] = useState('');
 
@@ -135,8 +135,15 @@ export function ActiveJobProvider({ children, jobId }: { children: React.ReactNo
     });
   };
 
-  const setPhotos = (next: { before?: string; after?: string }) => {
-    setPhotosState((prev) => ({ ...prev, ...next }));
+  const setPhotos = (next: Record<string, string | undefined>) => {
+    setPhotosState((prev) => {
+      const merged = { ...prev };
+      for (const [k, v] of Object.entries(next)) {
+        if (v === undefined) delete merged[k];
+        else merged[k] = v;
+      }
+      return merged;
+    });
   };
 
   const setCustomerNote = (next: string) => {
@@ -157,7 +164,7 @@ export function ActiveJobProvider({ children, jobId }: { children: React.ReactNo
     setPoolReadingsState([EMPTY_READINGS]);
     setTreatmentPrefill([]);
     setTreatmentEntries([]);
-    setPhotosState({});
+    setPhotosState({} as Record<string, string>);
     setCustomerNoteState('');
     setOfficeNoteState('');
   };

@@ -144,6 +144,7 @@ function readingState(value: string, min: number, max: number, isFocused = false
 function ReadingsTab() {
   const { readings, pools, readingsPoolIndex, setReadings, useLastReadings, setTreatmentPrefill, setTabComplete } = useActiveJob();
   const [focusedField, setFocusedField] = useState<ReadingKey | null>(null);
+  const scrollRef = React.useRef<import('react-native').ScrollView>(null);
 
   const currentPoolType = pools[readingsPoolIndex]?.type;
   const isSpa = currentPoolType === 'spa' || currentPoolType?.startsWith('spa-');
@@ -171,10 +172,14 @@ function ReadingsTab() {
     return calculateLsi({ ph, alkalinity, calciumHardness, cyanuricAcid });
   }, [isSpa, hasAllReadings, readings]);
 
+  const currentPoolVolume = pools[readingsPoolIndex]?.volumeLitres;
   const recommendations = useMemo(() => {
+    // Spa pools skip LSI but still need recommendations when all readings are entered
+    if (isSpa && hasAllReadings) return buildRecommendedTreatments(readings, currentPoolVolume, true);
     if (!lsiResult) return [];
-    return buildRecommendedTreatments(readings);
-  }, [lsiResult, readings]);
+    return buildRecommendedTreatments(readings, currentPoolVolume);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSpa, hasAllReadings, lsiResult, readings, currentPoolVolume]);
 
   useEffect(() => {
     setTabComplete('readings', allValid && hasAllReadings);
@@ -184,8 +189,13 @@ function ReadingsTab() {
     setTreatmentPrefill(recommendations.filter((r) => r.recommendedAmount > 0));
   }, [recommendations, setTreatmentPrefill]);
 
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [readingsPoolIndex]);
+
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1 }}
       keyboardDismissMode="on-drag"
       keyboardShouldPersistTaps="handled"
@@ -193,9 +203,15 @@ function ReadingsTab() {
     >
       {pools.length > 1 && (
         <View style={styles.readingsPoolHeader}>
+          {readingsPoolIndex > 0 && (
+            <TouchableOpacity onPress={() => setReadingsPoolIndex(readingsPoolIndex - 1)} style={styles.poolNavBtn}>
+              <Text style={styles.poolNavText}>← {pools[readingsPoolIndex - 1]?.type?.startsWith('spa') ? 'Spa Pool' : 'Pool'} {readingsPoolIndex}</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.readingsPoolLabel}>
             {`${isSpa ? 'Spa Pool' : 'Pool'} · ${readingsPoolIndex + 1} of ${pools.length}`}
           </Text>
+          <View style={{ width: readingsPoolIndex > 0 ? undefined : 0 }} />
         </View>
       )}
 
@@ -231,14 +247,18 @@ function ReadingsTab() {
         </View>
       )}
 
-      {lsiResult && (
+      {(lsiResult || (isSpa && recommendations.length > 0)) && (
         <View style={styles.recoCard}>
           <Text style={styles.recoLabel}>Recommended Treatment</Text>
           {recommendations.map((item) => (
             <View key={item.id} style={styles.recoItem}>
               <View style={styles.recoDot} />
               <Text style={styles.recoText}>
-                {item.recommendedAmount > 0 ? `Add ${item.recommendedAmount}${item.unit} ${item.name}` : item.name}
+                {item.unit === 'L' && item.recommendedAmount > 0
+                  ? `Drain ${item.recommendedAmount.toLocaleString()} L — ${item.name}`
+                  : item.recommendedAmount > 0
+                  ? `Add ${item.recommendedAmount}${item.unit} ${item.name}`
+                  : item.name}
                 {' · '}
                 {item.reason}
               </Text>
@@ -257,6 +277,13 @@ function ActiveJobContent() {
   const [showAbandonSheet, setShowAbandonSheet] = useState(false);
   const [poolInfoExpanded, setPoolInfoExpanded] = useState(true);
   const queue = useOfflineQueue();
+
+  // Reset to pool 1 whenever the readings tab is re-entered so the user starts from the beginning
+  useEffect(() => {
+    if (currentTab === 'readings') {
+      setReadingsPoolIndex(0);
+    }
+  }, [currentTab]);
 
   useEffect(() => {
     const timer = setInterval(() => setElapsed(Date.now() - startedAt), 1000);
@@ -372,7 +399,7 @@ function ActiveJobContent() {
               {pools.length === 1 ? (
                 <>
                   <Text style={styles.poolToggleTitle}>{`Pool 1${pools[0].name ? ` — ${pools[0].name}` : ''}`}</Text>
-                  <Text style={styles.poolToggleMeta}>{`${pools[0].type ?? '—'} · ${pools[0].volumeLitres != null ? `${pools[0].volumeLitres.toLocaleString()}L` : '—'}`}</Text>
+                  <Text style={styles.poolToggleMeta}>{`${pools[0].type ?? '—'} · ${pools[0].volumeLitres != null ? `${pools[0].volumeLitres.toLocaleString()} L` : '—'}`}</Text>
                 </>
               ) : (
                 <>
@@ -621,11 +648,25 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderWidth: 1,
     borderColor: '#BFDBFE',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   readingsPoolLabel: {
     fontSize: typography.fontSizes.sm,
     fontWeight: '700',
     color: '#1D4ED8',
+    flex: 1,
+    textAlign: 'center',
+  },
+  poolNavBtn: {
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+  },
+  poolNavText: {
+    fontSize: typography.fontSizes.sm,
+    color: '#3B82F6',
+    fontWeight: '600',
   },
   readingField: {
     backgroundColor: colors.surface,

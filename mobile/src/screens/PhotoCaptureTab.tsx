@@ -5,11 +5,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Platform,
+  ScrollView,
   Alert,
-  FlatList,
 } from 'react-native';
-import { useActiveJob } from '../context/ActiveJobContext';
+import { useActiveJob, PoolSnapshot } from '../context/ActiveJobContext';
 import { colors, spacing, borderRadius } from '../theme/tokens';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,11 +16,23 @@ import { enqueuePhotoUpload } from '../services/offlineQueue';
 import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system/legacy';
 
-export function PhotoCaptureTab() {
-  const { jobId, photos, setPhotos } = useActiveJob();
-  const { before, after } = photos;
+function photoKey(poolIndex: number, type: 'before' | 'after', isMulti: boolean) {
+  return isMulti ? `p${poolIndex}-${type}` : type;
+}
 
-  const openImagePicker = async (type: 'before' | 'after') => {
+function isSpaPool(pool: PoolSnapshot) {
+  return pool.type === 'spa' || pool.type?.startsWith('spa-');
+}
+
+function poolLabel(pool: PoolSnapshot, index: number) {
+  return isSpaPool(pool) ? `Spa Pool ${index + 1}` : `Pool ${index + 1}`;
+}
+
+export function PhotoCaptureTab() {
+  const { jobId, pools, photos, setPhotos } = useActiveJob();
+  const isMulti = pools.length > 1;
+
+  const openImagePicker = async (poolIndex: number, type: 'before' | 'after') => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -38,11 +49,12 @@ export function PhotoCaptureTab() {
       if (!result.canceled && result.assets.length > 0) {
         const asset = result.assets[0];
         const uri = asset.uri;
-        setPhotos({ [type]: uri });
+        const key = photoKey(poolIndex, type, isMulti);
+        setPhotos({ [key]: uri });
 
         if (!jobId) return;
 
-        const fileName = asset.fileName ?? `${type}-${Date.now()}.jpg`;
+        const fileName = asset.fileName ?? `${key}-${Date.now()}.jpg`;
         const mimeType = asset.mimeType ?? 'image/jpeg';
 
         try {
@@ -56,7 +68,7 @@ export function PhotoCaptureTab() {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`,
             },
-            body: JSON.stringify({ type, mimeType, fileName, base64 }),
+            body: JSON.stringify({ type: key, mimeType, fileName, base64 }),
           });
 
           if (!response.ok) {
@@ -65,13 +77,13 @@ export function PhotoCaptureTab() {
           }
 
           const { data } = await response.json();
-          setPhotos({ [type]: data.url });
+          setPhotos({ [key]: data.url });
         } catch (uploadErr: any) {
           console.error('[PhotoCaptureTab] upload error:', uploadErr?.message);
           Alert.alert('Photo upload failed', uploadErr?.message ?? 'Could not upload photo. It will sync when connectivity improves.');
-          setPhotos({ [type]: undefined });
+          setPhotos({ [key]: undefined });
           await enqueuePhotoUpload(jobId, {
-            photoType: type,
+            photoType: key,
             uri,
             fileName,
             mimeType,
@@ -85,25 +97,17 @@ export function PhotoCaptureTab() {
     }
   };
 
-  const handleAddAdditional = () => {
-    Alert.alert('Add photo', 'Please use the Before or After cells to add photos.');
-  };
-
-  const renderPhotoCell = ({
-    type,
-    label,
-    value,
-  }: {
-    type: 'before' | 'after';
-    label: string;
-    value: string | undefined;
-  }) => {
+  const renderPhotoCell = (poolIndex: number, type: 'before' | 'after') => {
+    const key = photoKey(poolIndex, type, isMulti);
+    const value = photos[key];
     const isTaken = !!value;
+    const label = type === 'before' ? 'Before' : 'After';
 
     return (
       <TouchableOpacity
+        key={key}
         style={[styles.photoCell, isTaken && styles.photoCellTaken]}
-        onPress={() => openImagePicker(type)}
+        onPress={() => openImagePicker(poolIndex, type)}
       >
         {isTaken ? (
           <>
@@ -126,34 +130,45 @@ export function PhotoCaptureTab() {
     );
   };
 
+  const renderPoolSection = (pool: PoolSnapshot, index: number) => (
+    <View key={pool.poolId} style={styles.poolSection}>
+      {isMulti && (
+        <Text style={styles.poolHeader}>{poolLabel(pool, index)}</Text>
+      )}
+      {!isMulti && (
+        <Text style={styles.sectionLabel}>Before &amp; after</Text>
+      )}
+      <View style={styles.gridRow}>
+        {renderPhotoCell(index, 'before')}
+        {renderPhotoCell(index, 'after')}
+      </View>
+    </View>
+  );
+
+  const displayPools = pools.length > 0 ? pools : [{ poolId: 'default' } as PoolSnapshot];
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.sectionLabel}>Before &amp; after</Text>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      {isMulti && (
+        <Text style={styles.sectionLabel}>Before &amp; after</Text>
+      )}
 
-      <FlatList
-        data={[{ type: 'before' as const, label: 'Before', value: before }, { type: 'after' as const, label: 'After', value: after }]}
-        keyExtractor={(item) => item.type}
-        renderItem={({ item }) => renderPhotoCell(item)}
-        numColumns={2}
-        columnWrapperStyle={styles.gridRow}
-        contentContainerStyle={styles.scrollContent}
-      />
-
-      <TouchableOpacity style={styles.addLink} onPress={handleAddAdditional}>
-        <Ionicons name="add-circle" size={16} color="#9CA3AF" />
-        <Text style={styles.addLinkText}>Add additional photo</Text>
-      </TouchableOpacity>
+      {displayPools.map((pool, i) => renderPoolSection(pool, i))}
 
       <Text style={styles.photoHint}>All photos optional but recommended</Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#F5F5F3',
     paddingHorizontal: spacing.md,
+    paddingBottom: 16,
+    gap: spacing.sm,
   },
   sectionLabel: {
     fontSize: 10,
@@ -161,16 +176,25 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     color: colors.textMuted,
-    paddingVertical: 8,
+    paddingTop: 8,
+  },
+  poolSection: {
+    gap: 6,
+  },
+  poolHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: '#374151',
+    marginTop: spacing.xs,
   },
   gridRow: {
+    flexDirection: 'row',
     gap: 10,
   },
-  scrollContent: {
-    paddingBottom: 16,
-  },
   photoCell: {
-    width: '48%',
+    flex: 1,
     aspectRatio: 1,
     backgroundColor: '#FFFFFF',
     borderWidth: 2,
@@ -216,16 +240,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: borderRadius.xxl,
-  },
-  addLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 4,
-  },
-  addLinkText: {
-    fontSize: 12,
-    color: colors.textMuted,
   },
   photoHint: {
     fontSize: 11,
