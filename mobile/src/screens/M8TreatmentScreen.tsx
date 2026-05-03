@@ -50,13 +50,25 @@ function buildPoolTreatments(readings: ChemicalReadings, poolType?: string, volu
 
   const output: TreatmentRecommendation[] = [];
 
-  if (cl < 1) {
+  const clLow = spa ? 3 : 1;
+  const clHigh = spa ? 5 : 3;
+
+  if (cl < clLow) {
     output.push({
       id: 'liq-chlorine',
       name: spa ? 'Chlorine / Bromine' : 'Liquid Chlorine',
       recommendedAmount: spa ? 150 : 400,
       unit: 'ml',
       reason: 'Raise free chlorine',
+    });
+  }
+  if (cl > clHigh) {
+    output.push({
+      id: 'cl-high',
+      name: 'Partial drain & refill',
+      recommendedAmount: calcDrainLitres(volumeLitres, cl, (clLow + clHigh) / 2),
+      unit: 'L',
+      reason: 'Free chlorine too high — dilute by draining & refilling',
     });
   }
   if (ph < 7.2) {
@@ -184,7 +196,7 @@ export function M8TreatmentScreen() {
   const customEntries = treatmentEntries.filter((e) => e.id.startsWith('custom-'));
 
   const isDrainEntry = (entry: TreatmentEntry) =>
-    entry.unit === 'L' && (entry.id.endsWith('calcium-high') || entry.id.endsWith('cya-high'));
+    entry.unit === 'L' && (entry.id.endsWith('cl-high') || entry.id.endsWith('calcium-high') || entry.id.endsWith('cya-high'));
 
   const formatAmount = (amount: number, unit: TreatmentEntry['unit']) => {
     if (unit === 'L') return amount > 0 ? amount.toLocaleString() : '—';
