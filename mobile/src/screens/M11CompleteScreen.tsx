@@ -2,12 +2,20 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { useActiveJob } from '../context/ActiveJobContext';
+import { PoolSnapshot, useActiveJob } from '../context/ActiveJobContext';
 import { calculateLsi } from '../utils/lsi';
 import { enqueueJobCompletion } from '../services/offlineQueue';
 import { markJobCompleted } from '../state/completedJobsStore';
 import { borderRadius, colors, spacing, typography } from '../theme/tokens';
 import { getApiClient } from '../services/api';
+
+function isSpa(type?: string): boolean {
+  return !!type && type.toLowerCase().includes('spa');
+}
+
+function poolDisplayLabel(pool?: PoolSnapshot): string {
+  return isSpa(pool?.type) ? 'Spa Pool' : 'Pool';
+}
 
 function toNum(value: string) {
   if (value === '' || value == null) return null;
@@ -116,7 +124,7 @@ export function M11CompleteScreen() {
             ) : (
               completionRefs.map((ref, i) => (
                 <View key={ref.serviceRecordId ?? String(i)} style={styles.refRow}>
-                  <Text style={styles.refLabel}>{`Pool ${i + 1}`}</Text>
+                  <Text style={styles.refLabel}>{completionRefs.length > 1 ? `${poolDisplayLabel(effectivePools[i])} ${i + 1}` : poolDisplayLabel(effectivePools[i])}</Text>
                   <Text style={styles.refValue}>{ref.ref ?? ref.serviceRecordId ?? '—'}</Text>
                 </View>
               ))
@@ -136,7 +144,13 @@ export function M11CompleteScreen() {
     <View style={styles.container}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>{`Pool ${Math.min(activePoolIndex + 1, Math.max(pools.length, 1))} of ${Math.max(pools.length, 1)} — ${pools[activePoolIndex]?.name ?? pools[activePoolIndex]?.type ?? 'Pool'}`}</Text>
+          <Text style={styles.cardTitle}>{(() => {
+            const label = poolDisplayLabel(pools[activePoolIndex]);
+            const count = Math.max(pools.length, 1);
+            const idx = Math.min(activePoolIndex + 1, count);
+            const name = pools[activePoolIndex]?.name;
+            return `${label} ${idx} of ${count}${name ? ` — ${name}` : ''}`;
+          })()}</Text>
           {pools.length > 1 && (
             <View style={styles.poolStepRow}>
               <TouchableOpacity onPress={() => setActivePoolIndex(Math.max(0, activePoolIndex - 1))}><Text style={styles.poolStepBtn}>Previous</Text></TouchableOpacity>

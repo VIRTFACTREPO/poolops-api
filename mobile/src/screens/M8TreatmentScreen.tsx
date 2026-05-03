@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { TreatmentEntry, useActiveJob } from '../context/ActiveJobContext';
+import { ChemicalReadings, PoolSnapshot, TreatmentEntry, TreatmentRecommendation, useActiveJob } from '../context/ActiveJobContext';
 import { borderRadius, colors, spacing, typography } from '../theme/tokens';
 
 type StockRule = {
@@ -11,10 +11,73 @@ type StockRule = {
 
 const STOCK_RULES: Record<string, StockRule> = {
   'liquid chlorine': { amount: 5000, lowThreshold: 1000, unit: 'ml' },
+  'chlorine / bromine': { amount: 2000, lowThreshold: 500, unit: 'ml' },
   'ph buffer': { amount: 2000, lowThreshold: 600, unit: 'g' },
   'muriatic acid': { amount: 3500, lowThreshold: 800, unit: 'ml' },
   'alkalinity up': { amount: 2400, lowThreshold: 700, unit: 'g' },
 };
+
+function parseReading(value: string) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function isSpa(type?: string): boolean {
+  return !!type && type.toLowerCase().includes('spa');
+}
+
+function poolDisplayLabel(pool?: PoolSnapshot): string {
+  return isSpa(pool?.type) ? 'Spa Pool' : 'Pool';
+}
+
+function buildPoolTreatments(readings: ChemicalReadings, poolType?: string): TreatmentRecommendation[] {
+  const spa = isSpa(poolType);
+  const cl = parseReading(readings.freeChlorine);
+  const ph = parseReading(readings.ph);
+  const alk = parseReading(readings.alkalinity);
+  const calcium = parseReading(readings.calciumHardness);
+  const cya = spa ? 0 : parseReading(readings.cyanuricAcid);
+
+  // Only generate recommendations when all relevant readings are present
+  if (cl === null || ph === null || alk === null || calcium === null || (!spa && cya === null)) return [];
+
+  const output: TreatmentRecommendation[] = [];
+
+  if (cl < 1) {
+    output.push({
+      id: 'liq-chlorine',
+      name: spa ? 'Chlorine / Bromine' : 'Liquid Chlorine',
+      recommendedAmount: spa ? 150 : 400,
+      unit: 'ml',
+      reason: 'Raise free chlorine',
+    });
+  }
+  if (ph < 7.2) {
+    output.push({ id: 'ph-up', name: 'pH Buffer', recommendedAmount: spa ? 50 : 150, unit: 'g', reason: 'Raise pH into target range' });
+  }
+  if (ph > 7.6) {
+    output.push({ id: 'ph-down', name: 'Muriatic Acid', recommendedAmount: spa ? 80 : 250, unit: 'ml', reason: 'Lower pH into target range' });
+  }
+  if (alk < 80) {
+    output.push({ id: 'alk-up', name: 'Alkalinity Up', recommendedAmount: spa ? 100 : 300, unit: 'g', reason: 'Raise alkalinity' });
+  }
+  if (alk > 120) {
+    output.push({ id: 'alk-down', name: 'Muriatic Acid', recommendedAmount: spa ? 150 : 500, unit: 'ml', reason: 'Lower alkalinity — add acid in small doses with pump running' });
+  }
+  if (calcium > 400) {
+    output.push({ id: 'calcium-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Calcium hardness too high — no chemical fix, dilution required' });
+  }
+  // CYA not applicable to spa pools
+  if (!spa && cya !== null && cya > 50) {
+    output.push({ id: 'cya-high', name: 'Partial drain & refill', recommendedAmount: 0, unit: 'g', reason: 'Cyanuric acid too high — no chemical fix, dilution required' });
+  }
+
+  if (output.length === 0) {
+    output.push({ id: 'maintain', name: 'No correction needed', recommendedAmount: 0, unit: 'g', reason: 'All readings within target range' });
+  }
+
+  return output;
+}
 
 function normalizePrefillToEntries(
   prefill: Array<{ id: string; name: string; recommendedAmount: number; unit: 'ml' | 'g' }>,
@@ -39,14 +102,31 @@ function normalizePrefillToEntries(
 }
 
 export function M8TreatmentScreen() {
-  const { treatmentPrefill, treatmentEntries, setTreatmentEntries } = useActiveJob();
+  const { pools, poolReadings, treatmentPrefill, treatmentEntries, setTreatmentEntries } = useActiveJob();
+
+  const isMultiPool = pools.length > 1;
 
   useEffect(() => {
-    const next = normalizePrefillToEntries(treatmentPrefill, treatmentEntries);
+    let derivedPrefill: TreatmentRecommendation[];
+
+    if (pools.length > 1) {
+      // Per-pool entries use prefixed IDs (p0-, p1-, …) to keep sections separate in the flat array
+      derivedPrefill = pools.flatMap((pool, i) => {
+        const readings = poolReadings[i];
+        if (!readings) return [];
+        return buildPoolTreatments(readings, pool.type).map((r) => ({ ...r, id: `p${i}-${r.id}` }));
+      });
+    } else if (pools.length === 1 && poolReadings[0]) {
+      derivedPrefill = buildPoolTreatments(poolReadings[0], pools[0].type);
+    } else {
+      derivedPrefill = treatmentPrefill;
+    }
+
+    const next = normalizePrefillToEntries(derivedPrefill, treatmentEntries);
     if (JSON.stringify(next) !== JSON.stringify(treatmentEntries)) {
       setTreatmentEntries(next);
     }
-  }, [treatmentPrefill, treatmentEntries, setTreatmentEntries]);
+  }, [pools, poolReadings, treatmentPrefill, treatmentEntries, setTreatmentEntries]);
 
   const updateEntry = (id: string, patch: Partial<TreatmentEntry>) => {
     setTreatmentEntries(treatmentEntries.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)));
@@ -85,6 +165,37 @@ export function M8TreatmentScreen() {
       });
   }, [treatmentEntries]);
 
+  const customEntries = treatmentEntries.filter((e) => e.id.startsWith('custom-'));
+
+  const renderEntry = (entry: TreatmentEntry) => (
+    <View key={entry.id} style={styles.row}>
+      <View style={styles.infoCol}>
+        {entry.id.startsWith('custom-') ? (
+          <TextInput
+            style={styles.nameInput}
+            value={entry.name}
+            onChangeText={(text) => updateEntry(entry.id, { name: text })}
+            placeholder="Chemical name"
+            placeholderTextColor="#9CA3AF"
+          />
+        ) : (
+          <Text style={styles.name}>{entry.name}</Text>
+        )}
+        <Text style={styles.recommended}>Recommended: {entry.recommendedAmount}{entry.unit}</Text>
+      </View>
+
+      <TextInput
+        style={styles.amountInput}
+        keyboardType="decimal-pad"
+        value={entry.actualAmount}
+        onChangeText={(text) => updateEntry(entry.id, { actualAmount: text.replace(/[^0-9.]/g, '') })}
+        placeholder={entry.recommendedAmount > 0 ? String(entry.recommendedAmount) : '0'}
+        placeholderTextColor="#9CA3AF"
+      />
+      <Text style={styles.unit}>{entry.unit}</Text>
+    </View>
+  );
+
   return (
     <ScrollView
       style={{ flex: 1 }}
@@ -94,40 +205,43 @@ export function M8TreatmentScreen() {
     >
       <Text style={styles.sectionLabel}>Chemicals added</Text>
 
-      <View style={styles.card}>
-        {treatmentEntries.length === 0 ? (
-          <Text style={styles.emptyText}>No recommendations yet. Add a chemical below.</Text>
-        ) : (
-          treatmentEntries.map((entry) => (
-            <View key={entry.id} style={styles.row}>
-              <View style={styles.infoCol}>
-                {entry.id.startsWith('custom-') ? (
-                  <TextInput
-                    style={styles.nameInput}
-                    value={entry.name}
-                    onChangeText={(text) => updateEntry(entry.id, { name: text })}
-                    placeholder="Chemical name"
-                    placeholderTextColor="#9CA3AF"
-                  />
-                ) : (
-                  <Text style={styles.name}>{entry.name}</Text>
-                )}
-                <Text style={styles.recommended}>Recommended: {entry.recommendedAmount}{entry.unit}</Text>
+      {isMultiPool ? (
+        <>
+          {pools.map((pool, i) => {
+            const sectionEntries = treatmentEntries.filter((e) => !e.id.startsWith('custom-') && e.id.startsWith(`p${i}-`));
+            return (
+              <View key={pool.poolId}>
+                <Text style={styles.poolHeader}>{poolDisplayLabel(pool)}</Text>
+                <View style={styles.card}>
+                  {sectionEntries.length === 0 ? (
+                    <Text style={styles.emptyText}>No recommendations yet.</Text>
+                  ) : (
+                    sectionEntries.map(renderEntry)
+                  )}
+                </View>
               </View>
-
-              <TextInput
-                style={styles.amountInput}
-                keyboardType="decimal-pad"
-                value={entry.actualAmount}
-                onChangeText={(text) => updateEntry(entry.id, { actualAmount: text.replace(/[^0-9.]/g, '') })}
-                placeholder={entry.recommendedAmount > 0 ? String(entry.recommendedAmount) : '0'}
-                placeholderTextColor="#9CA3AF"
-              />
-              <Text style={styles.unit}>{entry.unit}</Text>
+            );
+          })}
+          {customEntries.length > 0 && (
+            <View style={styles.card}>
+              {customEntries.map(renderEntry)}
             </View>
-          ))
-        )}
-      </View>
+          )}
+        </>
+      ) : (
+        <>
+          {pools.length === 1 && (
+            <Text style={styles.poolHeader}>{poolDisplayLabel(pools[0])}</Text>
+          )}
+          <View style={styles.card}>
+            {treatmentEntries.length === 0 ? (
+              <Text style={styles.emptyText}>No recommendations yet. Add a chemical below.</Text>
+            ) : (
+              treatmentEntries.map(renderEntry)
+            )}
+          </View>
+        </>
+      )}
 
       <TouchableOpacity style={styles.addLink} onPress={addCustomRow}>
         <Text style={styles.addLinkIcon}>＋</Text>
@@ -165,6 +279,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     color: '#9CA3AF',
+  },
+  poolHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: '#374151',
+    marginTop: spacing.xs,
+    marginBottom: 2,
   },
   card: {
     backgroundColor: colors.surface,

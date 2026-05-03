@@ -9,6 +9,7 @@ export type ChemicalReadings = {
   alkalinity: string;
   calciumHardness: string;
   cyanuricAcid: string;
+  temperature?: string;
 };
 
 export type TreatmentRecommendation = {

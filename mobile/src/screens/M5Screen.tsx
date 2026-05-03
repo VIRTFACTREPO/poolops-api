@@ -30,6 +30,7 @@ interface JobDetail {
     warnings?: string;
     equipmentNotes?: string;
   } | null;
+  pools?: { id: string; poolType: string; name?: string }[];
   equipment: { id: string; name: string; type: string; manufacturer?: string; model?: string }[];
   lastVisits: { date: string; isFlagged: boolean; lsiLabel: string; lsiScore: number }[];
 }
@@ -44,6 +45,19 @@ function daysAgo(dateStr: string) {
   if (days === 0) return 'Today';
   if (days === 1) return '1 day ago';
   return `${days} days ago`;
+}
+
+function poolLabel(type?: string) {
+  return type === 'spa' ? 'Spa Pool' : 'Pool';
+}
+
+function isSpaType(type?: string) {
+  return type === 'spa';
+}
+
+function buildMultiPoolSummary(pools: { poolType: string }[]) {
+  const labels = pools.map((p) => poolLabel(p.poolType));
+  return `${pools.length} services — ${labels.join(' + ')}`;
 }
 
 export function M5Screen() {
@@ -95,6 +109,8 @@ export function M5Screen() {
   if (pool?.warnings) accessItems.push({ label: 'Warning', value: pool.warnings });
   if (pool?.equipmentNotes) accessItems.push({ label: 'Notes', value: pool.equipmentNotes });
 
+  const multiPoolSummary = job?.pools && job.pools.length > 1 ? buildMultiPoolSummary(job.pools) : null;
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -135,6 +151,13 @@ export function M5Screen() {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {/* Multi-pool summary */}
+        {multiPoolSummary && (
+          <View style={styles.multiPoolBanner}>
+            <Text style={styles.multiPoolText}>{multiPoolSummary}</Text>
+          </View>
+        )}
+
         {/* Access Notes */}
         {accessItems.length > 0 && (
           <View style={styles.accessCard}>
@@ -154,7 +177,14 @@ export function M5Screen() {
         {/* Pool Specs */}
         {specs.length > 0 && (
           <>
-            <Text style={styles.sectionLabel}>Pool specs</Text>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionLabel}>Pool specs</Text>
+              <View style={[styles.typeBadge, isSpaType(pool?.poolType) ? styles.typeBadgeSpa : styles.typeBadgePool]}>
+                <Text style={[styles.typeBadgeText, isSpaType(pool?.poolType) ? styles.typeBadgeTextSpa : styles.typeBadgeTextPool]}>
+                  {poolLabel(pool?.poolType)}
+                </Text>
+              </View>
+            </View>
             <View style={styles.specsCard}>
               <View style={styles.specsRow}>
                 {specs.map((spec, idx) => (
@@ -296,6 +326,18 @@ const styles = StyleSheet.create({
   visitDot: { width: 7, height: 7, borderRadius: borderRadius.full },
   noVisits: { alignItems: 'center', paddingVertical: 24 },
   noVisitsText: { fontSize: 13, color: colors.textMuted },
+  multiPoolBanner: {
+    backgroundColor: '#F0F9FF', borderWidth: 1, borderColor: '#BAE6FD',
+    borderRadius: borderRadius.xl, paddingVertical: 10, paddingHorizontal: 14,
+  },
+  multiPoolText: { fontSize: 13, fontWeight: '600', color: '#0369A1' },
+  sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  typeBadge: { borderRadius: borderRadius.full, paddingVertical: 3, paddingHorizontal: 10 },
+  typeBadgePool: { backgroundColor: '#DBEAFE' },
+  typeBadgeSpa: { backgroundColor: '#EDE9FE' },
+  typeBadgeText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  typeBadgeTextPool: { color: '#1D4ED8' },
+  typeBadgeTextSpa: { color: '#7C3AED' },
   footer: {
     backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.07)',
     paddingVertical: 14, paddingHorizontal: 16,

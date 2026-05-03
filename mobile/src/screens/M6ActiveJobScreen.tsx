@@ -51,13 +51,24 @@ type ReadingRule = {
   step?: string;
 };
 
-const READING_RULES: ReadingRule[] = [
-  { key: 'freeChlorine', label: 'Free Chlorine', min: 1.0, max: 3.0, step: '0.1' },
-  { key: 'ph', label: 'pH', min: 7.2, max: 7.6, step: '0.1' },
-  { key: 'alkalinity', label: 'Alkalinity', min: 80, max: 120, step: '1' },
-  { key: 'calciumHardness', label: 'Calcium Hardness', min: 200, max: 400, step: '1' },
-  { key: 'cyanuricAcid', label: 'Cyanuric Acid', min: 30, max: 50, step: '1' },
-];
+function getReadingsConfig(poolType?: string): ReadingRule[] {
+  if (poolType === 'spa') {
+    return [
+      { key: 'freeChlorine', label: 'Free Chlorine', min: 3.0, max: 5.0, step: '0.1' },
+      { key: 'ph', label: 'pH', min: 7.2, max: 7.8, step: '0.1' },
+      { key: 'alkalinity', label: 'Alkalinity', min: 80, max: 120, step: '1' },
+      { key: 'calciumHardness', label: 'Calcium Hardness', min: 150, max: 250, step: '1' },
+      { key: 'temperature', label: 'Temperature (°C)', min: 37, max: 40, step: '0.1' },
+    ];
+  }
+  return [
+    { key: 'freeChlorine', label: 'Free Chlorine', min: 1.0, max: 3.0, step: '0.1' },
+    { key: 'ph', label: 'pH', min: 7.2, max: 7.6, step: '0.1' },
+    { key: 'alkalinity', label: 'Alkalinity', min: 80, max: 120, step: '1' },
+    { key: 'calciumHardness', label: 'Calcium Hardness', min: 200, max: 400, step: '1' },
+    { key: 'cyanuricAcid', label: 'Cyanuric Acid', min: 30, max: 50, step: '1' },
+  ];
+}
 
 const LAST_READINGS_MOCK: ChemicalReadings = {
   freeChlorine: '0.8',
@@ -169,27 +180,31 @@ function ReadingsTab() {
   const { readings, pools, readingsPoolIndex, setReadings, useLastReadings, setTreatmentPrefill, setTabComplete } = useActiveJob();
   const [focusedField, setFocusedField] = useState<ReadingKey | null>(null);
 
+  const currentPoolType = pools[readingsPoolIndex]?.type;
+  const isSpa = currentPoolType === 'spa';
+  const readingRules = useMemo(() => getReadingsConfig(currentPoolType), [currentPoolType]);
+
   const derived = useMemo(
     () =>
-      READING_RULES.map((rule) => ({
+      readingRules.map((rule) => ({
         ...rule,
-        ...readingState(readings[rule.key], rule.min, rule.max, focusedField === rule.key),
+        ...readingState(readings[rule.key] ?? '', rule.min, rule.max, focusedField === rule.key),
       })),
-    [readings, focusedField],
+    [readings, focusedField, readingRules],
   );
 
-  const hasAllReadings = READING_RULES.every((r) => readings[r.key].trim() !== '');
+  const hasAllReadings = readingRules.every((r) => (readings[r.key] ?? '').trim() !== '');
   const allValid = derived.every((d) => d.isValid);
 
   const lsiResult = useMemo(() => {
-    if (!hasAllReadings) return null;
+    if (isSpa || !hasAllReadings) return null;
     const ph = parseReading(readings.ph);
     const alkalinity = parseReading(readings.alkalinity);
     const calciumHardness = parseReading(readings.calciumHardness);
     const cyanuricAcid = parseReading(readings.cyanuricAcid);
     if (ph === null || alkalinity === null || calciumHardness === null || cyanuricAcid === null) return null;
     return calculateLsi({ ph, alkalinity, calciumHardness, cyanuricAcid });
-  }, [hasAllReadings, readings]);
+  }, [isSpa, hasAllReadings, readings]);
 
   const recommendations = useMemo(() => {
     if (!lsiResult) return [];
@@ -214,7 +229,7 @@ function ReadingsTab() {
       {pools.length > 1 && (
         <View style={styles.readingsPoolHeader}>
           <Text style={styles.readingsPoolLabel}>
-            {`Pool ${readingsPoolIndex + 1} of ${pools.length} — ${pools[readingsPoolIndex]?.name ?? pools[readingsPoolIndex]?.type ?? 'Pool'}`}
+            {`${isSpa ? 'Spa Pool' : 'Pool'} · ${readingsPoolIndex + 1} of ${pools.length}`}
           </Text>
         </View>
       )}
@@ -226,7 +241,7 @@ function ReadingsTab() {
           <TextInput
             style={[styles.readingInput, field.status ? styles.readingInputError : null]}
             keyboardType="decimal-pad"
-            value={readings[field.key]}
+            value={readings[field.key] ?? ''}
             onChangeText={(text) => setReadings({ [field.key]: text.replace(/[^0-9.]/g, '') })}
             onFocus={() => setFocusedField(field.key)}
             onBlur={() => setFocusedField(null)}
