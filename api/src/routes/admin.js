@@ -29,7 +29,7 @@ router.get('/customers/:id', async (req, res) => {
     const baseQuery = supabase
       .from('customers')
       .select(`
-        id, company_id, first_name, last_name, email, phone, address, active, created_at,
+        id, company_id, customer_number, first_name, last_name, email, phone, address, active, created_at,
         pools (
           id, volume_litres, pool_type, surface_type, equipment_notes, gate_access, warnings,
           service_plans (
