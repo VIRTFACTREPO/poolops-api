@@ -255,7 +255,7 @@ function ActiveJobContent() {
   const { jobId, pools, startedAt, currentTab, completedTabs, readingsPoolIndex, setReadingsPoolIndex, setCurrentTab, markTabComplete, setPools } = useActiveJob();
   const [elapsed, setElapsed] = useState(() => Date.now() - startedAt);
   const [showAbandonSheet, setShowAbandonSheet] = useState(false);
-  const [poolInfoExpanded, setPoolInfoExpanded] = useState(false);
+  const [poolInfoExpanded, setPoolInfoExpanded] = useState(true);
   const queue = useOfflineQueue();
 
   useEffect(() => {
@@ -367,39 +367,32 @@ function ActiveJobContent() {
 
       {pools.length > 0 && (
         <View style={styles.poolSection}>
-          <TouchableOpacity style={styles.poolToggle} onPress={() => setPoolInfoExpanded((v) => !v)} activeOpacity={0.7}>
+          <View style={styles.poolToggle}>
             <View style={styles.poolToggleLeft}>
-              <Text style={styles.poolToggleTitle}>
-                {pools.length === 1
-                  ? `Pool 1${pools[0].name ? ` — ${pools[0].name}` : ''}`
-                  : `${pools.length} pools`}
-              </Text>
-              <Text style={styles.poolToggleMeta}>
-                {`${pools[0].type ?? '—'} · ${pools[0].volumeLitres != null ? `${pools[0].volumeLitres}L` : '—'}`}
-              </Text>
+              {pools.length === 1 ? (
+                <>
+                  <Text style={styles.poolToggleTitle}>{`Pool 1${pools[0].name ? ` — ${pools[0].name}` : ''}`}</Text>
+                  <Text style={styles.poolToggleMeta}>{`${pools[0].type ?? '—'} · ${pools[0].volumeLitres != null ? `${pools[0].volumeLitres.toLocaleString()}L` : '—'}`}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.poolToggleTitle}>{`${pools.length} pools on this job`}</Text>
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 4 }}>
+                    {pools.map((pool, idx) => {
+                      const isSpaPool = pool.type === 'spa' || pool.type?.startsWith('spa-');
+                      return (
+                        <View key={pool.poolId} style={{ backgroundColor: isSpaPool ? '#EDE9FE' : '#DBEAFE', borderRadius: 99, paddingVertical: 2, paddingHorizontal: 8 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: isSpaPool ? '#6D28D9' : '#1D4ED8' }}>
+                            {`${isSpaPool ? 'Spa Pool' : 'Pool'} ${idx + 1}`}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
             </View>
-            <Ionicons name={poolInfoExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-
-          {poolInfoExpanded && pools.map((pool, idx) => {
-            const isSpaPool = pool.type === 'spa' || pool.type?.startsWith('spa-');
-            return (
-            <View key={pool.poolId} style={styles.poolCard}>
-              <Text style={styles.poolTitle}>{`${isSpaPool ? 'Spa Pool' : 'Pool'} ${idx + 1}${pool.name ? ` — ${pool.name}` : ''}`}</Text>
-              <Text style={styles.poolMeta}>{`Type: ${pool.type ?? '—'} · Volume: ${pool.volumeLitres ?? '—'}L`}</Text>
-              <Text style={styles.poolMeta}>{`Gate access: ${pool.gateAccess ?? '—'}`}</Text>
-              <Text style={styles.poolMeta}>{`Warnings: ${(pool.warnings ?? []).length ? pool.warnings?.join(', ') : 'None'}`}</Text>
-              {!!pool.equipment?.length && <Text style={styles.poolSubhead}>Equipment</Text>}
-              {pool.equipment?.map((eq, eIdx) => (
-                <Text key={`${pool.poolId}-eq-${eIdx}`} style={styles.poolMeta}>• {eq.name ?? eq.type ?? 'Equipment'}</Text>
-              ))}
-              {!!pool.lastVisits?.length && <Text style={styles.poolSubhead}>Last visits</Text>}
-              {pool.lastVisits?.map((visit, vIdx) => (
-                <Text key={`${pool.poolId}-visit-${vIdx}`} style={styles.poolMeta}>• {visit.date ? formatVisitDate(visit.date) : '—'}{visit.lsiLabel ? ` · ${visit.lsiLabel}` : ''}</Text>
-              ))}
-            </View>
-            );
-          })}
+          </View>
         </View>
       )}
 
