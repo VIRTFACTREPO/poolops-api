@@ -82,13 +82,13 @@ const NOTIFICATION_BG_COLORS: Record<NotificationType, string> = {
   complete: '#F0FDF4',
 };
 
-// Map notification types to screen names for navigation
-const NOTIFICATION_TYPE_MAP: Record<NotificationType, string> = {
-  schedule: 'RunSheet',
-  stock: 'Notifications', // Stock alerts typically don't navigate to specific screens
-  message: 'Notifications', // Messages stay in notifications for now
-  flagged: 'Notifications', // Flagged readings stay in notifications
-  complete: 'Notifications', // Completed jobs stay in notifications
+// Map notification types to tab screen names (must match RootNavigator Tab.Screen names)
+const NOTIFICATION_TYPE_MAP: Record<NotificationType, string | null> = {
+  schedule: 'Home',        // RunSheetScreen — registered as "Home" tab
+  stock: null,             // No dedicated screen — stay in notifications
+  message: null,           // No dedicated screen — stay in notifications
+  flagged: null,           // No dedicated screen — stay in notifications
+  complete: null,          // No dedicated screen — stay in notifications
 };
 
 export function NotificationsScreen() {
@@ -104,9 +104,14 @@ export function NotificationsScreen() {
 
   const handleNotificationPress = useCallback(
     (notification: Notification) => {
+      // Mark as read on tap
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
+      );
       const targetScreen = NOTIFICATION_TYPE_MAP[notification.type];
-      // Navigate to the mapped screen, or stay in notifications for others
-      navigation.navigate(targetScreen as never);
+      if (targetScreen) {
+        navigation.navigate(targetScreen as never);
+      }
     },
     [navigation]
   );
