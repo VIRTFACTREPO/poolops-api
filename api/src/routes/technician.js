@@ -56,7 +56,7 @@ router.patch('/jobs/:id', async (req, res) => {
 router.post('/jobs/:id/photos', async (req, res) => {
   try {
     const { type, mimeType, fileName, base64 } = req.body;
-    if (!['before', 'after'].includes(type)) return fail(res, 400, 'VALIDATION_ERROR', 'type must be before or after');
+    if (!type || !/^(p\d+-)?(before|after)$/.test(type)) return fail(res, 400, 'VALIDATION_ERROR', 'type must be before, after, or p{n}-before/after');
     if (!base64) return fail(res, 400, 'VALIDATION_ERROR', 'base64 is required');
     const result = await uploadJobPhoto(req.params.id, req.user.id, { type, mimeType, fileName, base64 });
     return ok(res, result);
