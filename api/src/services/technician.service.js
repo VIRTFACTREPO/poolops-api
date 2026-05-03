@@ -5,6 +5,22 @@ const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
+export async function insertNotification({ userId, type, title, body, referenceId = null }) {
+  if (!userId) return;
+  try {
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      type,
+      title,
+      body,
+      reference_id: referenceId,
+      read: false,
+    });
+  } catch (err) {
+    console.error('[notifications] insert failed', err?.message || err);
+  }
+}
+
 export async function getTodaysJobs(technicianId, today) {
   if (!today) today = new Date().toISOString().split('T')[0];
 
@@ -232,7 +248,7 @@ function readingStatus(value, min, max) {
 export async function completeJob(jobId, technicianId, payload) {
   const { data: job, error: fetchErr } = await supabase
     .from('jobs')
-    .select('id, company_id, status, started_at, job_pools ( pools ( id, customers ( id ) ) )')
+    .select('id, company_id, status, started_at, job_pools ( pools ( id, customers ( id, user_id, address ) ) )')
     .eq('id', jobId)
     .eq('technician_id', technicianId)
     .maybeSingle();
@@ -342,6 +358,44 @@ export async function completeJob(jobId, technicianId, payload) {
     .from('jobs')
     .update({ status: 'complete', completed_at: completedAtDate.toISOString() })
     .eq('id', jobId);
+
+  try {
+    const { data: adminProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('company_id', job.company_id)
+      .eq('role', 'admin')
+      .limit(1)
+      .maybeSingle();
+
+    for (const record of inserted || []) {
+      const pool = jobPoolMap.get(record.pool_id);
+      const ownerUserId = pool?.customers?.user_id || null;
+      const draft = records.find((r) => r.pool_id === record.pool_id);
+
+      if (ownerUserId) {
+        await insertNotification({
+          userId: ownerUserId,
+          type: 'service_complete',
+          title: 'Service complete',
+          body: 'Your pool service has been completed.',
+          referenceId: record.id,
+        });
+      }
+
+      if (draft?.is_flagged && adminProfile?.id) {
+        await insertNotification({
+          userId: adminProfile.id,
+          type: 'flagged_reading',
+          title: `⚠ Flagged reading — ${pool?.customers?.address || 'Pool'}`,
+          body: 'A completed service record has out-of-range readings.',
+          referenceId: record.id,
+        });
+      }
+    }
+  } catch (err) {
+    console.error('[completeJob] notification trigger failed', err?.message || err);
+  }
 
   return inserted.map((r) => ({ serviceRecordId: r.id, ref: r.ref, poolId: r.pool_id }));
 }

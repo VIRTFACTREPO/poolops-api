@@ -9,6 +9,7 @@ import {
   completeJob,
   uploadJobPhoto,
 } from '../services/technician.service.js';
+import { supabase } from '../lib/supabase.js';
 
 const router = Router();
 router.use(requireAuth, authedRateLimit, requireRole('technician'));
@@ -81,8 +82,54 @@ router.post('/jobs/:id/complete', async (req, res) => {
 
 router.get('/profile', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/profile'));
 router.patch('/profile', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'PATCH /technician/profile'));
-router.get('/notifications', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/notifications'));
-router.patch('/notifications/:id/read', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'PATCH /technician/notifications/:id/read'));
+
+router.get('/notifications', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('id, type, title, body, reference_id, read, created_at')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return res.status(200).json({ ok: true, data: data || [] });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/notifications/:id/read', async (req, res) => {
+  try {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id);
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/notifications/read-all', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', req.user.id)
+      .eq('read', false)
+      .select('id');
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return res.status(200).json({ ok: true, updated: (data || []).length });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
 router.get('/stock', (_req, res) => fail(res, 501, 'NOT_IMPLEMENTED', 'GET /technician/stock'));
 
 export default router;

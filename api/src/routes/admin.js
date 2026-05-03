@@ -12,6 +12,7 @@ import {
 } from '../services/billing.service.js';
 import { supabase } from '../lib/supabase.js';
 import { stub } from './stubs.js';
+import { insertNotification } from '../services/technician.service.js';
 
 const router = Router();
 router.use(requireAuth, authedRateLimit, requireRole('admin'), requireActiveSubscription);
@@ -86,8 +87,143 @@ router.get('/customers/:id', async (req, res) => {
   }
 });
 router.post('/jobs', stub('post', '/admin/jobs'));
+
+router.patch('/jobs/:id/reassign', async (req, res) => {
+  try {
+    const { technicianId } = req.body || {};
+    if (!technicianId) return fail(res, 422, 'VALIDATION_ERROR', 'technicianId is required');
+
+    const { data: existing, error: fetchErr } = await supabase
+      .from('jobs')
+      .select('id, technician_id, company_id')
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+
+    if (fetchErr) return fail(res, 500, 'INTERNAL_ERROR', fetchErr.message);
+    if (!existing) return fail(res, 404, 'NOT_FOUND', 'Job not found');
+
+    const previousTechnicianId = existing.technician_id || null;
+
+    const { data: updated, error: updateErr } = await supabase
+      .from('jobs')
+      .update({ technician_id: technicianId })
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId)
+      .select('id, technician_id')
+      .single();
+
+    if (updateErr) return fail(res, 500, 'INTERNAL_ERROR', updateErr.message);
+
+    try {
+      await insertNotification({
+        userId: technicianId,
+        type: 'schedule_change',
+        title: 'Schedule updated',
+        body: 'A job has been assigned to you.',
+        referenceId: req.params.id,
+      });
+      if (previousTechnicianId && previousTechnicianId !== technicianId) {
+        await insertNotification({
+          userId: previousTechnicianId,
+          type: 'schedule_change',
+          title: 'Schedule updated',
+          body: 'A job has been reassigned from your schedule.',
+          referenceId: req.params.id,
+        });
+      }
+    } catch (err) {
+      console.error('[admin.reassign] notification trigger failed', err?.message || err);
+    }
+
+    return ok(res, updated);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
 router.get('/inbox', stub('get', '/admin/inbox'));
 router.patch('/inbox/:id', stub('patch', '/admin/inbox/:id'));
+
+router.post('/inbox/:id/confirm-visit', async (req, res) => {
+  try {
+    const { technicianId, scheduledDate, routeOrder = 1 } = req.body || {};
+    if (!technicianId || !scheduledDate) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'technicianId and scheduledDate are required');
+    }
+
+    const { data: inboxItem, error: inboxErr } = await supabase
+      .from('inbox_items')
+      .select('id, customer_id, company_id')
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+
+    if (inboxErr) return fail(res, 500, 'INTERNAL_ERROR', inboxErr.message);
+    if (!inboxItem) return fail(res, 404, 'NOT_FOUND', 'Inbox item not found');
+
+    const { data: pools, error: poolsErr } = await supabase
+      .from('pools')
+      .select('id')
+      .eq('customer_id', inboxItem.customer_id)
+      .eq('company_id', req.user.companyId)
+      .limit(1);
+
+    if (poolsErr) return fail(res, 500, 'INTERNAL_ERROR', poolsErr.message);
+    if (!pools || pools.length === 0) return fail(res, 422, 'VALIDATION_ERROR', 'Customer has no pools');
+
+    const { data: job, error: jobErr } = await supabase
+      .from('jobs')
+      .insert({
+        company_id: req.user.companyId,
+        technician_id: technicianId,
+        scheduled_date: scheduledDate,
+        route_order: routeOrder,
+        status: 'pending',
+        job_type: 'routine_service',
+        created_by: req.user.id,
+      })
+      .select('id')
+      .single();
+
+    if (jobErr) return fail(res, 500, 'INTERNAL_ERROR', jobErr.message);
+
+    const { error: jpErr } = await supabase
+      .from('job_pools')
+      .insert({ job_id: job.id, pool_id: pools[0].id });
+    if (jpErr) return fail(res, 500, 'INTERNAL_ERROR', jpErr.message);
+
+    await supabase
+      .from('inbox_items')
+      .update({ status: 'confirmed' })
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId);
+
+    try {
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('user_id')
+        .eq('id', inboxItem.customer_id)
+        .maybeSingle();
+      if (customer?.user_id) {
+        await insertNotification({
+          userId: customer.user_id,
+          type: 'visit_confirmed',
+          title: 'Visit confirmed',
+          body: 'Your requested visit has been confirmed.',
+          referenceId: job.id,
+        });
+      }
+    } catch (err) {
+      console.error('[admin.confirm-visit] notification trigger failed', err?.message || err);
+    }
+
+    return ok(res, { jobId: job.id });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
 router.get('/audit-log', stub('get', '/admin/audit-log'));
 
 // Plan-enforced creation endpoints
