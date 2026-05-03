@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
+  Keyboard,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -141,10 +142,22 @@ function readingState(value: string, min: number, max: number, isFocused = false
 }
 
 
+function shouldAutoAdvance(rule: ReadingRule, value: string): boolean {
+  if (!value || value.endsWith('.')) return false;
+  if (rule.step?.includes('.')) {
+    // Decimal field (e.g. pH, chlorine): advance once a decimal digit is present
+    return /^\d+\.\d+$/.test(value);
+  }
+  // Integer field: advance when value fills the max digit count for this range
+  const maxDigits = String(Math.ceil(rule.max)).length;
+  return value.length >= maxDigits;
+}
+
 function ReadingsTab() {
   const { readings, pools, readingsPoolIndex, setReadings, useLastReadings, setTreatmentPrefill, setTabComplete } = useActiveJob();
   const [focusedField, setFocusedField] = useState<ReadingKey | null>(null);
   const scrollRef = React.useRef<import('react-native').ScrollView>(null);
+  const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const currentPoolType = pools[readingsPoolIndex]?.type;
   const isSpa = currentPoolType === 'spa' || currentPoolType?.startsWith('spa-');
@@ -215,17 +228,36 @@ function ReadingsTab() {
         </View>
       )}
 
-      {derived.map((field) => (
+      {derived.map((field, index) => (
         <View key={field.key} style={styles.readingField}>
           <View style={[styles.trafficDot, { backgroundColor: field.dot }]} />
           <Text style={styles.readingLabel}>{field.label}</Text>
           <TextInput
+            ref={(r) => { inputRefs.current[index] = r; }}
             style={[styles.readingInput, field.status ? styles.readingInputError : null]}
             keyboardType="decimal-pad"
             value={readings[field.key] ?? ''}
-            onChangeText={(text) => setReadings({ [field.key]: text.replace(/[^0-9.]/g, '') })}
+            onChangeText={(text) => {
+              const cleaned = text.replace(/[^0-9.]/g, '');
+              setReadings({ [field.key]: cleaned });
+              if (shouldAutoAdvance(field, cleaned)) {
+                const next = inputRefs.current[index + 1];
+                if (next) {
+                  next.focus();
+                } else {
+                  Keyboard.dismiss();
+                }
+              }
+            }}
             onFocus={() => setFocusedField(field.key)}
             onBlur={() => setFocusedField(null)}
+            blurOnSubmit={false}
+            returnKeyType={index < derived.length - 1 ? 'next' : 'done'}
+            onSubmitEditing={() => {
+              const next = inputRefs.current[index + 1];
+              if (next) next.focus();
+              else Keyboard.dismiss();
+            }}
             placeholder="0"
             placeholderTextColor="#9CA3AF"
           />
