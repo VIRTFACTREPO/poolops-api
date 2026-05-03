@@ -46,11 +46,12 @@ router.get('/customers/:id', async (req, res) => {
     if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
 
     // Collect unique technician IDs across all pools/plans, then batch-fetch names
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const techIds = [
       ...new Set(
         (customer.pools ?? [])
           .flatMap((p) => (p.service_plans ?? []).map((sp) => sp.technician_id))
-          .filter(Boolean),
+          .filter((id) => id && UUID_RE.test(id)),
       ),
     ];
 
