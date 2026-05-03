@@ -4,6 +4,9 @@ import {
   Text,
   StyleSheet,
   TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useActiveJob } from '../context/ActiveJobContext';
 import { colors, spacing, borderRadius, typography } from '../theme/tokens';
@@ -13,7 +16,15 @@ export function JobNotesTab() {
   const { customerNote, officeNote, setCustomerNote, setOfficeNote } = useActiveJob();
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
       {/* Customer Note */}
       <View style={styles.noteCard}>
         <View style={styles.noteHeader}>
@@ -53,14 +64,17 @@ export function JobNotesTab() {
           textAlignVertical="top"
         />
       </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
     flex: 1,
     backgroundColor: '#F5F5F3',
+  },
+  container: {
     paddingVertical: 14,
     paddingHorizontal: 16,
     gap: 10,
