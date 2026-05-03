@@ -84,88 +84,66 @@ export default function CustomerForm() {
           </Fields>
         </Section>
 
-        <Section title='Pool'>
+        <Section title='Pool / Spa'>
           <Fields>
-            {pools.map((pool, i) => (
-              <div key={i} style={{ position: 'relative', background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: spacing.md }}>
-                {pools.length > 1 && (
-                  <button
-                    onClick={() => setPools(prev => prev.filter((_, idx) => idx !== i))}
-                    style={{
-                      position: 'absolute',
-                      top: spacing.sm,
-                      right: spacing.sm,
-                      background: 'transparent',
-                      border: 'none',
-                      color: colors.textMuted,
-                      cursor: 'pointer',
-                      fontSize: 16,
-                      lineHeight: 1,
-                      padding: '0 4px',
-                    }}
-                  >
-                    ×
-                  </button>
-                )}
-                <div style={{ display: 'grid', gap: spacing.sm }}>
-                  {/* Pool / Spa toggle */}
-                  <div style={{ display: 'flex', gap: 4, background: colors.surface2 || colors.surface, border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: 3 }}>
-                    {(['pool', 'spa'] as PoolCategory[]).map((cat) => (
+            {pools.map((pool, i) => {
+              const isSpa = pool.category === 'spa'
+              const pillBg = isSpa ? '#F5F3FF' : '#EFF6FF'
+              const pillBorder = isSpa ? '#DDD6FE' : '#BFDBFE'
+              const pillColor = isSpa ? '#6D28D9' : '#1D4ED8'
+              return (
+                <div key={i} style={{ position: 'relative', background: colors.surface, border: `1px solid ${isSpa ? '#DDD6FE' : colors.border}`, borderRadius: radii.md, padding: spacing.md }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 99, padding: '3px 10px', background: pillBg, border: `1px solid ${pillBorder}`, color: pillColor }}>
+                      {isSpa ? 'Spa Pool' : 'Pool'}
+                    </span>
+                    {pools.length > 1 && (
                       <button
-                        key={cat}
-                        type='button'
-                        onClick={() => updatePool(i, 'category', cat)}
-                        style={{
-                          flex: 1,
-                          padding: '6px 0',
-                          borderRadius: radii.md,
-                          border: 'none',
-                          fontSize: typography.sizes.small,
-                          fontWeight: typography.weights.semibold,
-                          cursor: 'pointer',
-                          background: pool.category === cat ? colors.white : 'transparent',
-                          color: pool.category === cat ? colors.ink : colors.textMuted,
-                          boxShadow: pool.category === cat ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        {cat === 'pool' ? 'Pool' : 'Spa Pool'}
-                      </button>
-                    ))}
-                  </div>
-                  <Row>
-                    <input style={field} placeholder='Volume (litres)' value={pool.volume_litres} onChange={(e) => updatePool(i, 'volume_litres', e.target.value)} type='number' min='1' />
-                    {pool.category === 'pool' ? (
-                      <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
-                        <option value='salt'>Salt</option>
-                        <option value='chlorine'>Chlorine</option>
-                        <option value='mineral'>Mineral</option>
-                        <option value='freshwater'>Freshwater</option>
-                      </select>
-                    ) : (
-                      <div style={{ ...field, color: colors.textMuted, display: 'flex', alignItems: 'center' }}>Spa Pool</div>
+                        onClick={() => setPools(prev => prev.filter((_, idx) => idx !== i))}
+                        style={{ background: 'transparent', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 4px' }}
+                      >×</button>
                     )}
-                  </Row>
-                  <input style={field} placeholder='Gate code / lockbox' value={pool.gate_access} onChange={(e) => updatePool(i, 'gate_access', e.target.value)} />
-                  <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={pool.warnings} onChange={(e) => updatePool(i, 'warnings', e.target.value)} />
+                  </div>
+                  <div style={{ display: 'grid', gap: spacing.sm }}>
+                    <Row>
+                      <input style={field} placeholder='Volume (litres)' value={pool.volume_litres} onChange={(e) => updatePool(i, 'volume_litres', e.target.value)} type='number' min='1' />
+                      {isSpa ? (
+                        <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
+                          <option value='spa'>Standard Spa</option>
+                          <option value='spa-chlorine'>Spa (Chlorine)</option>
+                          <option value='spa-bromine'>Spa (Bromine)</option>
+                        </select>
+                      ) : (
+                        <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
+                          <option value='salt'>Salt</option>
+                          <option value='chlorine'>Chlorine</option>
+                          <option value='mineral'>Mineral</option>
+                          <option value='freshwater'>Freshwater</option>
+                        </select>
+                      )}
+                    </Row>
+                    <input style={field} placeholder='Gate code / lockbox' value={pool.gate_access} onChange={(e) => updatePool(i, 'gate_access', e.target.value)} />
+                    <input style={field} placeholder='Site notes (pets, alarms, etc.)' value={pool.warnings} onChange={(e) => updatePool(i, 'warnings', e.target.value)} />
+                  </div>
                 </div>
-              </div>
-            ))}
-            <button
-              onClick={() => setPools(prev => [...prev, { category: 'pool', pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])}
-              style={{
-                background: 'transparent',
-                border: `1px dashed ${colors.border}`,
-                borderRadius: radii.md,
-                color: colors.textMuted,
-                padding: `${spacing.sm}px ${spacing.md}px`,
-                fontSize: typography.sizes.body,
-                cursor: 'pointer',
-                textAlign: 'center',
-              }}
-            >
-              + Add another pool
-            </button>
+              )
+            })}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.sm }}>
+              <button
+                type='button'
+                onClick={() => setPools(prev => [...prev, { category: 'pool', pool_type: 'salt', volume_litres: '', gate_access: '', warnings: '' }])}
+                style={{ background: 'transparent', border: `1px dashed #BFDBFE`, borderRadius: radii.md, color: '#1D4ED8', padding: `${spacing.sm}px ${spacing.md}px`, fontSize: typography.sizes.small, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const }}
+              >
+                + Add pool
+              </button>
+              <button
+                type='button'
+                onClick={() => setPools(prev => [...prev, { category: 'spa', pool_type: 'spa', volume_litres: '', gate_access: '', warnings: '' }])}
+                style={{ background: 'transparent', border: `1px dashed #DDD6FE`, borderRadius: radii.md, color: '#6D28D9', padding: `${spacing.sm}px ${spacing.md}px`, fontSize: typography.sizes.small, fontWeight: 600, cursor: 'pointer', textAlign: 'center' as const }}
+              >
+                + Add spa pool
+              </button>
+            </div>
           </Fields>
         </Section>
 
