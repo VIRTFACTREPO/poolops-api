@@ -46,16 +46,30 @@ export default function CustomerForm() {
       const { data: company } = await supabase.from('companies').select('id').limit(1).single()
       if (!company) throw new Error('No company found')
 
-      const { data: customer, error: custErr } = await supabase
+      // Find-or-create: if a previous save partially failed, reuse the existing customer row
+      let customerId: string
+      const { data: existing } = await supabase
         .from('customers')
-        .insert({ first_name: firstName, last_name: lastName, email, phone: phone || null, address, company_id: company.id })
         .select('id')
-        .single()
-      if (custErr) throw custErr
+        .eq('email', email.trim().toLowerCase())
+        .eq('company_id', company.id)
+        .maybeSingle()
+
+      if (existing) {
+        customerId = existing.id
+      } else {
+        const { data: customer, error: custErr } = await supabase
+          .from('customers')
+          .insert({ first_name: firstName, last_name: lastName, email, phone: phone || null, address, company_id: company.id })
+          .select('id')
+          .single()
+        if (custErr) throw custErr
+        customerId = customer.id
+      }
 
       for (const pool of pools) {
         const { error: poolErr } = await supabase.from('pools').insert({
-          customer_id: customer.id,
+          customer_id: customerId,
           company_id: company.id,
           volume_litres: Number(pool.volume_litres.replace(/,/g, '')),
           pool_type: pool.pool_type,
