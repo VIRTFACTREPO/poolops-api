@@ -28,6 +28,7 @@ type Pool = {
 type Customer = {
   id: string
   company_id: string
+  customer_number: number | null
   first_name: string
   last_name: string
   email: string
@@ -132,7 +133,14 @@ export default function CustomerDetail() {
             {initials}
           </div>
           <div>
-            <div style={{ fontSize: typography.sizes.h2, fontWeight: typography.weights.bold, color: colors.textHeading }}>{fullName}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: typography.sizes.h2, fontWeight: typography.weights.bold, color: colors.textHeading }}>{fullName}</div>
+              {customer.customer_number != null && (
+                <span style={{ fontSize: typography.sizes.label, color: colors.textMuted, fontWeight: typography.weights.medium }}>
+                  #{customer.customer_number}
+                </span>
+              )}
+            </div>
             <div style={{ fontSize: typography.sizes.small, color: colors.textSecondary, marginTop: 3 }}>
               {customer.address} · {freqLabel} · {techName}
             </div>

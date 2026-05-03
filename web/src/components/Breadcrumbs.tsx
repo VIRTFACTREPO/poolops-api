@@ -6,10 +6,11 @@ export default function Breadcrumbs() {
 
   let crumbs: { label: string; to?: string }[] = []
 
-  if (pathname.startsWith('/customers/') && params.id) {
+  if (pathname.startsWith('/customers/') && params.id && params.id !== 'new') {
+    const isNumber = /^\d+$/.test(params.id)
     crumbs = [
       { label: 'Customers', to: '/customers' },
-      { label: `Customer ${params.id}` },
+      { label: isNumber ? `Customer #${params.id}` : 'Customer' },
     ]
   } else if (pathname.startsWith('/records/') && params.id) {
     crumbs = [

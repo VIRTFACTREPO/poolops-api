@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 
 type Row = {
   id: string
+  customerNumber: number | null
   status: 'good' | 'warning' | 'inactive'
   name: string
   location: string
@@ -44,7 +45,7 @@ export default function Customers() {
       const { data: customers, error } = await supabase
         .from('customers')
         .select(`
-          id, first_name, last_name, address, active,
+          id, customer_number, first_name, last_name, address, active,
           pools(id, service_plans(frequency, technician_id))
         `)
         .order('last_name')
@@ -106,6 +107,7 @@ export default function Customers() {
 
         return {
           id: c.id,
+          customerNumber: c.customer_number ?? null,
           status,
           name: `${c.last_name}, ${c.first_name}`,
           location: suburb(c.address ?? ''),
@@ -185,7 +187,7 @@ export default function Customers() {
               {filtered.length === 0 ? (
                 <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>No customers found</td></tr>
               ) : filtered.map((r) => (
-                <tr key={r.id} onClick={() => navigate(`/customers/${r.id}`)} style={{ cursor: 'pointer' }}>
+                <tr key={r.id} onClick={() => navigate(`/customers/${r.customerNumber ?? r.id}`)} style={{ cursor: 'pointer' }}>
                   <td style={td}><StatusDot status={r.status} /></td>
                   <td style={{ ...td, color: '#111827', fontWeight: 600 }}>{r.name}</td>
                   <td style={td}>{r.location}</td>
