@@ -48,7 +48,7 @@ export function M11CompleteScreen() {
   const displayReadings = poolReadings[activePoolIndex] ?? poolReadings[0];
   const displayLsi = perPoolLsi[activePoolIndex] ?? perPoolLsi[0];
 
-  const photoCount = [photos.before, photos.after].filter(Boolean).length;
+  const photoCount = Object.values(photos).filter(Boolean).length;
 
   const treatments = treatmentEntries.map((t) => ({
     id: t.id,
