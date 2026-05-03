@@ -37,8 +37,24 @@ type ServiceRecord = {
   completed_at: string | null
 }
 
+type JobPool = {
+  id: string
+  poolType: string
+  volumeLitres: number | null
+  gateAccess: string | null
+  warnings: string | null
+}
+
+type JobInfo = {
+  scheduledDate: string | null
+  pools: JobPool[]
+  customerEmail: string | null
+  customerPhone: string | null
+}
+
 type JobDetail = {
   job: Job
+  jobInfo: JobInfo | null
   records: ServiceRecord[]
   loading: boolean
 }
@@ -350,14 +366,39 @@ export default function Schedule() {
   }
 
   const openDetail = async (job: Job) => {
-    setDetail({ job, records: [], loading: true })
-    const { data } = await supabase
-      .from('service_records')
-      .select('id, pool_id, readings, lsi_score, is_flagged, customer_note, office_note, completed_at, pools(pool_type)')
-      .eq('job_id', job.id)
+    setDetail({ job, jobInfo: null, records: [], loading: true })
+
+    const [recordsRes, jobRes] = await Promise.all([
+      supabase
+        .from('service_records')
+        .select('id, pool_id, readings, lsi_score, is_flagged, customer_note, office_note, completed_at, pools(pool_type)')
+        .eq('job_id', job.id),
+      supabase
+        .from('jobs')
+        .select('scheduled_date, job_pools(pools(id, pool_type, volume_litres, gate_access, warnings, customers(email, phone)))')
+        .eq('id', job.id)
+        .single(),
+    ])
+
+    type RawJobPool = { id: string; pool_type: string; volume_litres: number; gate_access: string | null; warnings: string | null; customers: { email: string; phone: string | null } | null }
+    const rawJobPools: RawJobPool[] = ((jobRes.data?.job_pools as unknown as { pools: RawJobPool }[]) || []).map((jp) => jp.pools).filter(Boolean)
+    const firstCustomer = rawJobPools[0]?.customers ?? null
+
     setDetail({
       job,
-      records: (data || []).map((r) => ({
+      jobInfo: {
+        scheduledDate: (jobRes.data as { scheduled_date?: string } | null)?.scheduled_date ?? null,
+        pools: rawJobPools.map((p) => ({
+          id: p.id,
+          poolType: p.pool_type,
+          volumeLitres: p.volume_litres,
+          gateAccess: p.gate_access,
+          warnings: p.warnings,
+        })),
+        customerEmail: firstCustomer?.email ?? null,
+        customerPhone: firstCustomer?.phone ?? null,
+      },
+      records: (recordsRes.data || []).map((r) => ({
         id: r.id,
         pool_id: r.pool_id,
         poolType: (r.pools as unknown as { pool_type: string } | null)?.pool_type ?? null,
@@ -412,8 +453,56 @@ export default function Schedule() {
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {detail.loading && <div style={{ textAlign: 'center', color: '#6B7280', fontSize: 13, paddingTop: 40 }}>Loading…</div>}
 
-            {!detail.loading && detail.records.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, paddingTop: 40 }}>No service record yet.</div>
+            {/* Job info — always shown once loaded */}
+            {!detail.loading && detail.jobInfo && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Contact */}
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6B7280', marginBottom: 8 }}>Contact</div>
+                  <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 10, overflow: 'hidden' }}>
+                    <InfoRow label='Address' value={detail.job.address} />
+                    {detail.jobInfo.customerEmail && <InfoRow label='Email' value={detail.jobInfo.customerEmail} />}
+                    {detail.jobInfo.customerPhone && <InfoRow label='Phone' value={detail.jobInfo.customerPhone} />}
+                    {detail.jobInfo.scheduledDate && <InfoRow label='Scheduled' value={new Date(detail.jobInfo.scheduledDate).toLocaleDateString('en-NZ', { weekday: 'long', day: 'numeric', month: 'long' })} />}
+                    <InfoRow label='Technician' value={detail.job.techName} />
+                  </div>
+                </div>
+
+                {/* Pools */}
+                {detail.jobInfo.pools.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6B7280', marginBottom: 8 }}>
+                      {detail.jobInfo.pools.length === 1 ? 'Pool' : 'Pools'}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {detail.jobInfo.pools.map((p) => {
+                        const isSpa = p.poolType === 'spa' || p.poolType?.startsWith('spa-')
+                        return (
+                          <div key={p.id} style={{ background: isSpa ? '#F5F3FF' : '#EFF6FF', border: `1px solid ${isSpa ? '#DDD6FE' : '#BFDBFE'}`, borderRadius: 10, padding: '10px 14px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: p.gateAccess || p.warnings ? 8 : 0 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 99, padding: '2px 8px', background: isSpa ? '#EDE9FE' : '#DBEAFE', color: isSpa ? '#6D28D9' : '#1D4ED8' }}>
+                                {isSpa ? 'Spa Pool' : 'Pool'}
+                              </span>
+                              <span style={{ fontSize: 12, color: isSpa ? '#5B21B6' : '#1E40AF', fontWeight: 500 }}>{poolTypeLabel(p.poolType)}</span>
+                              {p.volumeLitres && <span style={{ fontSize: 11, color: '#6B7280', marginLeft: 'auto' }}>{p.volumeLitres.toLocaleString()} L</span>}
+                            </div>
+                            {p.gateAccess && <div style={{ fontSize: 11, color: '#374151' }}>🔑 {p.gateAccess}</div>}
+                            {p.warnings && <div style={{ fontSize: 11, color: '#92400E', marginTop: 2 }}>⚠ {p.warnings}</div>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {detail.records.length === 0 && (
+                  <div style={{ textAlign: 'center', color: '#9CA3AF', fontSize: 13, paddingTop: 8, paddingBottom: 8 }}>No service record yet.</div>
+                )}
+
+                {detail.records.length > 0 && (
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, color: '#6B7280' }}>Service record</div>
+                )}
+              </div>
             )}
 
             {!detail.loading && detail.records.map((r, rIdx) => {
@@ -663,6 +752,15 @@ export default function Schedule() {
         <Legend color='#F0FDF4' border='#BBF7D0' label='Complete' />
         <Legend color='#FFF1F2' border='#FECDD3' label='Flagged reading' />
       </div>
+    </div>
+  )
+}
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 14px', borderBottom: '1px solid #E5E7EB' }}>
+      <span style={{ fontSize: 12, color: '#6B7280', minWidth: 80 }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 500, color: '#111827', textAlign: 'right', flex: 1, marginLeft: 8 }}>{value}</span>
     </div>
   )
 }
