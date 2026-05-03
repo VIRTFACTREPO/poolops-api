@@ -16,6 +16,7 @@ import Signup from './pages/Signup'
 import SetPasswordPage from './pages/SetPasswordPage'
 import Platform from './pages/Platform'
 import { isAuthenticated, getUser } from './lib/auth'
+import { useActivityRefresh } from './hooks/useActivityRefresh'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const location = useLocation()
@@ -30,6 +31,7 @@ function SuperAdminGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  useActivityRefresh()
   return (
     <BrowserRouter>
       <Routes>
