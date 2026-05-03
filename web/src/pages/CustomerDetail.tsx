@@ -72,12 +72,17 @@ export default function CustomerDetail() {
 
   const pool = customer.pools?.[0]
 
+  const formatVolume = (raw: string) => {
+    const digits = raw.replace(/\D/g, '')
+    return digits ? Number(digits).toLocaleString() : ''
+  }
+
   const handleAddPool = async () => {
     if (!poolForm.volume_litres.trim()) {
       setError('Volume is required')
       return
     }
-    const volume = Number(poolForm.volume_litres)
+    const volume = Number(poolForm.volume_litres.replace(/,/g, ''))
     if (!Number.isFinite(volume) || volume <= 0) {
       setError('Volume must be a positive number')
       return
@@ -218,10 +223,10 @@ export default function CustomerDetail() {
                 <input
                   style={field}
                   placeholder='Volume (litres)'
-                  type='number'
-                  min='1'
+                  type='text'
+                  inputMode='numeric'
                   value={poolForm.volume_litres}
-                  onChange={(e) => setPoolForm((prev) => ({ ...prev, volume_litres: e.target.value }))}
+                  onChange={(e) => setPoolForm((prev) => ({ ...prev, volume_litres: formatVolume(e.target.value) }))}
                 />
                 <select style={field as React.CSSProperties} value={poolForm.pool_type} onChange={(e) => setPoolForm((prev) => ({ ...prev, pool_type: e.target.value }))}>
                   <option value='salt'>Salt</option>

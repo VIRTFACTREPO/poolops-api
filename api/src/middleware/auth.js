@@ -25,7 +25,7 @@ export function requireAuth(req, res, next) {
 export function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user) return fail(res, 401, 'UNAUTHORIZED', 'Authentication required');
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.role) && req.user.role !== 'superadmin') {
       return fail(res, 403, 'FORBIDDEN', `Requires role: ${roles.join(', ')}`);
     }
     return next();

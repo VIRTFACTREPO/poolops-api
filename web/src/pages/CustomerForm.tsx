@@ -18,17 +18,25 @@ export default function CustomerForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const formatVolume = (raw: string) => {
+    const digits = raw.replace(/\D/g, '')
+    return digits ? Number(digits).toLocaleString() : ''
+  }
+
   const updatePool = (i: number, field: keyof PoolEntry, value: string) =>
     setPools(prev => prev.map((p, idx) => {
       if (idx !== i) return p
       if (field === 'category') {
         return { ...p, category: value as PoolCategory, pool_type: value === 'spa' ? 'spa-salt' : 'salt' }
       }
+      if (field === 'volume_litres') {
+        return { ...p, volume_litres: formatVolume(value) }
+      }
       return { ...p, [field]: value }
     }))
 
   const handleSubmit = async () => {
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !address.trim() || pools.some(p => !p.volume_litres)) {
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !address.trim() || pools.some(p => !p.volume_litres.replace(/,/g, ''))) {
       setError('Please fill in all required fields')
       return
     }
@@ -49,7 +57,7 @@ export default function CustomerForm() {
         const { error: poolErr } = await supabase.from('pools').insert({
           customer_id: customer.id,
           company_id: company.id,
-          volume_litres: Number(pool.volume_litres),
+          volume_litres: Number(pool.volume_litres.replace(/,/g, '')),
           pool_type: pool.pool_type,
           gate_access: pool.gate_access || null,
           warnings: pool.warnings || null,
@@ -106,7 +114,7 @@ export default function CustomerForm() {
                   </div>
                   <div style={{ display: 'grid', gap: spacing.sm }}>
                     <Row>
-                      <input style={field} placeholder='Volume (litres)' value={pool.volume_litres} onChange={(e) => updatePool(i, 'volume_litres', e.target.value)} type='number' min='1' />
+                      <input style={field} placeholder='Volume (litres)' value={pool.volume_litres} onChange={(e) => updatePool(i, 'volume_litres', e.target.value)} type='text' inputMode='numeric' />
                       <select style={field as React.CSSProperties} value={pool.pool_type} onChange={(e) => updatePool(i, 'pool_type', e.target.value)}>
                         {isSpa ? (
                           <>
