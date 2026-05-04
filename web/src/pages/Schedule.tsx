@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getUser } from '../lib/auth'
 
 type ViewMode = 'day' | 'week'
 type JobState = 'pending' | 'in_progress' | 'complete' | 'flagged'
@@ -177,10 +178,11 @@ export default function Schedule() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type RawJob = Record<string, any>
 
+      const cId = getUser()?.companyId ?? ''
       const [scheduledRes, overdueRes] = await Promise.all([
-        supabase.from('jobs').select(jobSelect).eq('scheduled_date', date).order('route_order'),
+        supabase.from('jobs').select(jobSelect).eq('scheduled_date', date).eq('company_id', cId).order('route_order'),
         isToday
-          ? supabase.from('jobs').select(jobSelect).lt('scheduled_date', today).in('status', ['pending', 'in_progress']).order('scheduled_date', { ascending: false }).order('route_order')
+          ? supabase.from('jobs').select(jobSelect).lt('scheduled_date', today).in('status', ['pending', 'in_progress']).eq('company_id', cId).order('scheduled_date', { ascending: false }).order('route_order')
           : Promise.resolve({ data: [], error: null }),
       ])
 
@@ -261,9 +263,10 @@ export default function Schedule() {
     setAddError(null)
     setShowAddJob(true)
 
+    const companyId = getUser()?.companyId
     const [customersRes, profilesRes] = await Promise.all([
-      supabase.from('customers').select('id, first_name, last_name, pools(id, pool_type, volume_litres)'),
-      supabase.from('profiles').select('id, full_name, company_id'),
+      supabase.from('customers').select('id, first_name, last_name, pools(id, pool_type, volume_litres)').eq('company_id', companyId ?? ''),
+      supabase.from('profiles').select('id, full_name, company_id').eq('company_id', companyId ?? ''),
     ])
 
     type RawPool = { id: string; pool_type: string; volume_litres: number }
