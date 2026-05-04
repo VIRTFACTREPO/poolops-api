@@ -142,8 +142,61 @@ router.patch('/jobs/:id/reassign', async (req, res) => {
   }
 });
 
-router.get('/inbox', stub('get', '/admin/inbox'));
-router.patch('/inbox/:id', stub('patch', '/admin/inbox/:id'));
+router.get('/inbox', async (req, res) => {
+  try {
+    const { data: items, error } = await supabase
+      .from('inbox_items')
+      .select(`
+        id, type, resolved, created_at, reference_id,
+        customer:customers(id, first_name, last_name, address)
+      `)
+      .eq('company_id', req.user.companyId)
+      .order('created_at', { ascending: false });
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+
+    const bookingIds = items.filter(i => i.type === 'booking_request').map(i => i.reference_id);
+    const flaggedIds = items.filter(i => i.type === 'flagged_reading').map(i => i.reference_id);
+
+    const [bookingsRes, recordsRes] = await Promise.all([
+      bookingIds.length
+        ? supabase.from('booking_requests').select('id, reason, description, photo_url, status, pool_id').in('id', bookingIds)
+        : { data: [] },
+      flaggedIds.length
+        ? supabase.from('service_records').select('id, readings, completed_at, technician_id').in('id', flaggedIds)
+        : { data: [] },
+    ]);
+
+    const bookingMap = Object.fromEntries((bookingsRes.data || []).map(b => [b.id, b]));
+    const recordMap = Object.fromEntries((recordsRes.data || []).map(r => [r.id, r]));
+
+    const result = items.map(item => ({
+      ...item,
+      booking: item.type === 'booking_request' ? (bookingMap[item.reference_id] ?? null) : undefined,
+      record: item.type === 'flagged_reading' ? (recordMap[item.reference_id] ?? null) : undefined,
+    }));
+
+    return ok(res, result);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/inbox/:id', async (req, res) => {
+  try {
+    const { resolved } = req.body || {};
+    const { error } = await supabase
+      .from('inbox_items')
+      .update({ resolved: !!resolved, resolved_at: resolved ? new Date().toISOString() : null })
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId);
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, { ok: true });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
 
 router.post('/inbox/:id/confirm-visit', async (req, res) => {
   try {
