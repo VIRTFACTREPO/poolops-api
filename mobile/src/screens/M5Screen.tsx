@@ -30,9 +30,9 @@ interface JobDetail {
     warnings?: string;
     equipmentNotes?: string;
   } | null;
-  pools?: { id: string; poolType: string; name?: string; volumeLitres?: number; gateAccess?: string | null; warnings?: string | null }[];
+  pools?: { id: string; poolType: string; name?: string; volumeLitres?: number; gateAccess?: string | null; warnings?: string | null; lastVisits?: { date: string; isFlagged: boolean; lsiLabel: string; lsiScore: number }[] }[];
   equipment: { id: string; name: string; type: string; manufacturer?: string; model?: string }[];
-  lastVisits: { date: string; isFlagged: boolean; lsiLabel: string; lsiScore: number }[];
+  lastVisits: { date: string; isFlagged: boolean; lsiLabel: string; lsiScore: number; poolType?: string }[];
 }
 
 function capitalize(str?: string) {
@@ -231,20 +231,38 @@ export function M5Screen() {
         )}
 
         {/* Last Visits */}
-        {job.lastVisits.length > 0 && (
-          <>
-            <Text style={styles.sectionLabel}>Last {job.lastVisits.length} visit{job.lastVisits.length !== 1 ? 's' : ''}</Text>
-            <View style={styles.visitsCard}>
-              {job.lastVisits.map((visit, idx) => (
-                <View key={idx} style={[styles.visitRow, idx === job.lastVisits.length - 1 && { borderBottomWidth: 0 }]}>
-                  <Text style={styles.visitDate}>{daysAgo(visit.date)}</Text>
-                  <Text style={styles.visitSummary}>LSI {visit.lsiScore?.toFixed(2) ?? '—'} · {visit.lsiLabel}</Text>
-                  <View style={[styles.visitDot, { backgroundColor: visit.isFlagged ? colors.error : colors.success }]} />
-                </View>
-              ))}
-            </View>
-          </>
-        )}
+        {(() => {
+          const isMultiPool = job.pools && job.pools.length > 1;
+          const visits = isMultiPool
+            ? (job.pools!.flatMap((p) => (p.lastVisits || []).map((v) => ({ ...v, poolType: p.poolType })))
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                .slice(0, 3))
+            : job.lastVisits;
+          return visits.length > 0 ? (
+            <>
+              <Text style={styles.sectionLabel}>Last {visits.length} visit{visits.length !== 1 ? 's' : ''}</Text>
+              <View style={styles.visitsCard}>
+                {visits.map((visit, idx) => {
+                  const spa = isMultiPool && isSpaType(visit.poolType);
+                  return (
+                    <View key={idx} style={[styles.visitRow, idx === visits.length - 1 && { borderBottomWidth: 0 }]}>
+                      <Text style={styles.visitDate}>{daysAgo(visit.date)}</Text>
+                      {isMultiPool && (
+                        <View style={[styles.visitTypePill, spa && styles.visitTypePillSpa]}>
+                          <Text style={[styles.visitTypePillText, spa && styles.visitTypePillTextSpa]}>
+                            {poolLabel(visit.poolType)}
+                          </Text>
+                        </View>
+                      )}
+                      <Text style={styles.visitSummary}>LSI {visit.lsiScore?.toFixed(2) ?? '—'} · {visit.lsiLabel}</Text>
+                      <View style={[styles.visitDot, { backgroundColor: visit.isFlagged ? colors.error : colors.success }]} />
+                    </View>
+                  );
+                })}
+              </View>
+            </>
+          ) : null;
+        })()}
 
         {job.lastVisits.length === 0 && (
           <View style={styles.noVisits}>
@@ -338,7 +356,14 @@ const styles = StyleSheet.create({
     paddingVertical: 11, paddingHorizontal: 14,
     borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
-  visitDate: { fontSize: 12, fontWeight: '600', color: '#374151', minWidth: 80 },
+  visitDate: { fontSize: 12, fontWeight: '600', color: '#374151', minWidth: 50 },
+  visitTypePill: {
+    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10,
+    backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BFDBFE',
+  },
+  visitTypePillSpa: { backgroundColor: '#F5F3FF', borderColor: '#DDD6FE' },
+  visitTypePillText: { fontSize: 10, fontWeight: '600', color: '#2563EB' },
+  visitTypePillTextSpa: { color: '#7C3AED' },
   visitSummary: { fontSize: 12, color: '#6B7280', flex: 1 },
   visitDot: { width: 7, height: 7, borderRadius: borderRadius.full },
   noVisits: { alignItems: 'center', paddingVertical: 24 },

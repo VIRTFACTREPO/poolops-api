@@ -14,6 +14,17 @@ import { Ionicons } from '@expo/vector-icons';
 import * as SecureStore from 'expo-secure-store';
 import { getApiClient } from '../services/api';
 
+function ToggleSwitch({ value, onPress }: { value: boolean; onPress: () => void }) {
+  return (
+    <TouchableOpacity
+      style={[styles.toggle, value ? styles.toggleOn : styles.toggleOff]}
+      onPress={onPress}
+    >
+      <View style={[styles.toggleThumb, { left: value ? 21 : 3, top: 3 }]} />
+    </TouchableOpacity>
+  );
+}
+
 export function ProfileScreen() {
   const navigation = useNavigation();
   const { logout, user, role } = useAuth();
@@ -112,12 +123,10 @@ export function ProfileScreen() {
                 {getSettingIcon(item.key)}
               </View>
               <Text style={styles.settingsLabel}>{item.label}</Text>
-              <TouchableOpacity
-                style={[styles.toggle, settings[item.key as keyof typeof settings] ? styles.toggleOn : styles.toggleOff]}
+              <ToggleSwitch
+                value={settings[item.key as keyof typeof settings]}
                 onPress={() => toggleSetting(item.key as keyof typeof settings)}
-              >
-                <View style={styles.toggleThumb} />
-              </TouchableOpacity>
+              />
             </TouchableOpacity>
           ))}
         </View>

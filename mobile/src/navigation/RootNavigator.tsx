@@ -15,6 +15,8 @@ import { M5Screen } from '../screens/M5Screen';
 import { M6ActiveJobScreen } from '../screens/M6ActiveJobScreen';
 import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { ScheduleScreen } from '../screens/ScheduleScreen';
+import { SearchScreen } from '../screens/SearchScreen';
 import { getApiClient, setApiToken } from '../services/api';
 import { colors } from '../theme/tokens';
 
@@ -86,12 +88,8 @@ function TechnicianTabs() {
       })}
     >
       <Tab.Screen name="Home" component={RunSheetScreen} options={{ title: 'Home' }} />
-      <Tab.Screen name="Schedule" options={{ title: 'Schedule' }}>
-        {() => <PlaceholderScreen name="Schedule" />}
-      </Tab.Screen>
-      <Tab.Screen name="Search" options={{ title: 'Search' }}>
-        {() => <PlaceholderScreen name="Search" />}
-      </Tab.Screen>
+      <Tab.Screen name="Schedule" component={ScheduleScreen} options={{ title: 'Schedule' }} />
+      <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Search' }} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Alerts' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
     </Tab.Navigator>
