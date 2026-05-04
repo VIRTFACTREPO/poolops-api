@@ -19,9 +19,9 @@ const supabaseAdmin = hasSupabase
   ? createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
   : null;
 
-function issueTokens(user) {
+function issueTokens(user, companyIdOverride) {
   const role = user?.user_metadata?.role || null;
-  const companyId = user?.user_metadata?.company_id || null;
+  const companyId = companyIdOverride ?? user?.user_metadata?.company_id ?? null;
   const email = user?.email || null;
 
   const token = jwt.sign(
@@ -69,9 +69,19 @@ export async function loginWithPassword(email, password) {
     throw err;
   }
 
-  const { token, refreshToken, role } = issueTokens(data.user);
+  // Resolve company_id: prefer user_metadata, fall back to profiles table
+  let companyId = data.user.user_metadata?.company_id || null;
+  if (!companyId) {
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('company_id')
+      .eq('id', data.user.id)
+      .maybeSingle();
+    companyId = profile?.company_id || null;
+  }
 
-  const companyId = data.user.user_metadata?.company_id || null;
+  const { token, refreshToken, role } = issueTokens(data.user, companyId);
+
   let company = null;
   if (companyId) {
     const { data: companyData } = await supabaseAdmin
