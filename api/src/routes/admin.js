@@ -279,6 +279,78 @@ router.post('/inbox/:id/confirm-visit', async (req, res) => {
 
 router.get('/audit-log', stub('get', '/admin/audit-log'));
 
+router.get('/technicians/:id', async (req, res) => {
+  try {
+    const techId = req.params.id;
+
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .eq('id', techId)
+      .eq('company_id', req.user.companyId)
+      .eq('role', 'technician')
+      .maybeSingle();
+    if (profileErr) return fail(res, 500, 'INTERNAL_ERROR', profileErr.message);
+    if (!profile) return fail(res, 404, 'NOT_FOUND', 'Technician not found');
+
+    const { data: authUser } = await supabase.auth.admin.getUserById(techId);
+    const email = authUser?.user?.email ?? null;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const [{ data: todayJobs }, { data: plans }, { data: recentRecords }] = await Promise.all([
+      supabase
+        .from('jobs')
+        .select('id, status, scheduled_date, job_type, job_pools(pools(customers(first_name, last_name, address)))')
+        .eq('technician_id', techId)
+        .eq('company_id', req.user.companyId)
+        .eq('scheduled_date', today),
+      supabase
+        .from('service_plans')
+        .select('id, frequency, day_of_week, pools(id, customers(id, first_name, last_name, address, customer_number))')
+        .eq('technician_id', techId)
+        .eq('active', true),
+      supabase
+        .from('service_records')
+        .select('id, completed_at, is_flagged, pools(customers(first_name, last_name, address))')
+        .eq('technician_id', techId)
+        .order('completed_at', { ascending: false })
+        .limit(8),
+    ]);
+
+    return ok(res, {
+      id: profile.id,
+      name: profile.full_name,
+      email,
+      today: {
+        assigned: (todayJobs ?? []).length,
+        completed: (todayJobs ?? []).filter((j) => j.status === 'complete').length,
+        jobs: (todayJobs ?? []).map((j) => {
+          const pool = (j.job_pools ?? [])[0]?.pools;
+          const c = pool?.customers;
+          return { id: j.id, status: j.status, customer: c ? `${c.last_name}, ${c.first_name}` : null, address: c?.address ?? null };
+        }),
+      },
+      assignments: (plans ?? []).map((sp) => ({
+        id: sp.id,
+        frequency: sp.frequency,
+        dayOfWeek: sp.day_of_week,
+        customer: sp.pools?.customers ? `${sp.pools.customers.last_name}, ${sp.pools.customers.first_name}` : null,
+        customerNumber: sp.pools?.customers?.customer_number ?? null,
+        address: sp.pools?.customers?.address ?? null,
+      })),
+      recentRecords: (recentRecords ?? []).map((r) => ({
+        id: r.id,
+        completedAt: r.completed_at,
+        isFlagged: r.is_flagged,
+        customer: r.pools?.customers ? `${r.pools.customers.last_name}, ${r.pools.customers.first_name}` : null,
+        address: r.pools?.customers?.address ?? null,
+      })),
+    });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
 // Plan-enforced creation endpoints
 router.post('/technicians', checkTechnicianLimit, stub('post', '/admin/technicians'));
 router.post('/pools', checkPoolLimit, stub('post', '/admin/pools'));
