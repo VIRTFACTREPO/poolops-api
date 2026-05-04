@@ -26,7 +26,7 @@ export default function Signup() {
     setError(null)
     try {
       const data = await api.post<{ token: string; refreshToken: string; role: string; user: { id: string; email: string; name?: string }; company: { id: string; name: string } }>('/auth/signup', { companyName, adminName, email, password })
-      saveAuth(data.token, { id: data.user.id, email: data.user.email, name: data.user.name, role: 'admin', companyName: data.company.name })
+      saveAuth(data.token, { id: data.user.id, email: data.user.email, name: data.user.name, role: 'admin', companyId: data.company.id, companyName: data.company.name }, data.refreshToken)
       navigate('/')
     } catch (err: any) {
       if ((err as any).status === 409) {
