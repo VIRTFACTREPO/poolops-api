@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
 
 type Tech = {
   id: string
@@ -25,6 +26,12 @@ function todayLocal(): string {
 export default function Team() {
   const [team, setTeam] = useState<Tech[]>([])
   const [loading, setLoading] = useState(true)
+  const [showInvite, setShowInvite] = useState(false)
+  const [inviteName, setInviteName] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting, setInviting] = useState(false)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteSuccess, setInviteSuccess] = useState(false)
 
   useEffect(() => {
     const today = todayLocal()
@@ -80,11 +87,71 @@ export default function Team() {
     assigned: team.reduce((a, t) => a + t.assigned, 0),
   }
 
+  const handleInvite = async () => {
+    if (!inviteName.trim() || !inviteEmail.trim()) { setInviteError('Name and email are required'); return }
+    setInviting(true)
+    setInviteError(null)
+    try {
+      await api.post('/admin/invite', { email: inviteEmail.trim(), fullName: inviteName.trim(), role: 'technician' })
+      setInviteSuccess(true)
+      setInviteName('')
+      setInviteEmail('')
+    } catch (err: any) {
+      setInviteError(err.message || 'Failed to send invite')
+    } finally {
+      setInviting(false)
+    }
+  }
+
   if (loading) return <div style={{ padding: 40, textAlign: 'center', color: '#6B7280', fontSize: 13 }}>Loading…</div>
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Team</h1>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Team</h1>
+        <button
+          onClick={() => { setShowInvite(true); setInviteSuccess(false); setInviteError(null) }}
+          style={{ background: '#111827', color: '#F9FAFB', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+        >
+          + Invite technician
+        </button>
+      </div>
+
+      {showInvite && (
+        <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Invite a technician</div>
+          {inviteSuccess ? (
+            <div style={{ fontSize: 13, color: '#16A34A' }}>Invite sent! They'll receive an email to set up their account.</div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <input
+                  placeholder='Full name'
+                  value={inviteName}
+                  onChange={e => setInviteName(e.target.value)}
+                  style={inputStyle}
+                />
+                <input
+                  placeholder='Email address'
+                  type='email'
+                  value={inviteEmail}
+                  onChange={e => setInviteEmail(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+              {inviteError && <div style={{ fontSize: 12, color: '#EF4444' }}>{inviteError}</div>}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={handleInvite} disabled={inviting} style={{ background: '#111827', color: '#F9FAFB', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: inviting ? 0.6 : 1 }}>
+                  {inviting ? 'Sending…' : 'Send invite'}
+                </button>
+                <button onClick={() => setShowInvite(false)} style={{ background: 'transparent', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
         <Stat title='Technicians' value={totals.technicians} />
@@ -129,6 +196,16 @@ export default function Team() {
       )}
     </div>
   )
+}
+
+const inputStyle: React.CSSProperties = {
+  flex: 1,
+  background: '#F9FAFB',
+  border: '1px solid #D1D5DB',
+  borderRadius: 8,
+  padding: '8px 12px',
+  fontSize: 13,
+  color: '#111827',
 }
 
 function Stat({ title, value, accent }: { title: string; value: number; accent?: string }) {
