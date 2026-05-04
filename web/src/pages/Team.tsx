@@ -31,54 +31,53 @@ export default function Team() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
-  const [inviteSuccess, setInviteSuccess] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadTeam = async () => {
     const today = todayLocal()
-    async function load() {
-      const [{ data: profiles }, { data: jobs }] = await Promise.all([
-        supabase.from('profiles').select('id, full_name'),
-        supabase
-          .from('jobs')
-          .select('technician_id, status, job_pools(pools(customers(first_name, last_name, address)))')
-          .eq('scheduled_date', today),
-      ])
+    const [{ data: profiles }, { data: jobs }] = await Promise.all([
+      supabase.from('profiles').select('id, full_name'),
+      supabase
+        .from('jobs')
+        .select('technician_id, status, job_pools(pools(customers(first_name, last_name, address)))')
+        .eq('scheduled_date', today),
+    ])
 
-      if (!profiles) { setLoading(false); return }
+    if (!profiles) { setLoading(false); return }
 
-      const byTech = new Map<string, { done: number; assigned: number; activeJob?: string }>()
-      for (const j of (jobs ?? []) as any[]) {
-        const tid = j.technician_id
-        if (!tid) continue
-        const cur = byTech.get(tid) ?? { done: 0, assigned: 0 }
-        cur.assigned++
-        if (j.status === 'complete') cur.done++
-        if (j.status === 'in_progress' && !cur.activeJob) {
-          const pool = (j.job_pools ?? [])[0]?.pools
-          const c = pool?.customers
-          cur.activeJob = c ? `${c.last_name}, ${c.first_name} · ${c.address}` : 'Active job'
-        }
-        byTech.set(tid, cur)
+    const byTech = new Map<string, { done: number; assigned: number; activeJob?: string }>()
+    for (const j of (jobs ?? []) as any[]) {
+      const tid = j.technician_id
+      if (!tid) continue
+      const cur = byTech.get(tid) ?? { done: 0, assigned: 0 }
+      cur.assigned++
+      if (j.status === 'complete') cur.done++
+      if (j.status === 'in_progress' && !cur.activeJob) {
+        const pool = (j.job_pools ?? [])[0]?.pools
+        const c = pool?.customers
+        cur.activeJob = c ? `${c.last_name}, ${c.first_name} · ${c.address}` : 'Active job'
       }
-
-      setTeam(
-        (profiles as any[]).map((p, idx) => {
-          const counts = byTech.get(p.id) ?? { done: 0, assigned: 0 }
-          return {
-            id: p.id,
-            name: p.full_name as string,
-            initials: initials(p.full_name as string),
-            color: COLORS[idx % COLORS.length],
-            done: counts.done,
-            assigned: counts.assigned,
-            currentJob: counts.activeJob,
-          }
-        }),
-      )
-      setLoading(false)
+      byTech.set(tid, cur)
     }
-    load().catch(() => setLoading(false))
-  }, [])
+
+    setTeam(
+      (profiles as any[]).map((p, idx) => {
+        const counts = byTech.get(p.id) ?? { done: 0, assigned: 0 }
+        return {
+          id: p.id,
+          name: p.full_name as string,
+          initials: initials(p.full_name as string),
+          color: COLORS[idx % COLORS.length],
+          done: counts.done,
+          assigned: counts.assigned,
+          currentJob: counts.activeJob,
+        }
+      }),
+    )
+    setLoading(false)
+  }
+
+  useEffect(() => { loadTeam().catch(() => setLoading(false)) }, [])
 
   const totals = {
     technicians: team.length,
@@ -87,15 +86,22 @@ export default function Team() {
     assigned: team.reduce((a, t) => a + t.assigned, 0),
   }
 
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 4000)
+  }
+
   const handleInvite = async () => {
     if (!inviteName.trim() || !inviteEmail.trim()) { setInviteError('Name and email are required'); return }
     setInviting(true)
     setInviteError(null)
     try {
       await api.post('/admin/invite', { email: inviteEmail.trim(), fullName: inviteName.trim(), role: 'technician' })
-      setInviteSuccess(true)
       setInviteName('')
       setInviteEmail('')
+      setShowInvite(false)
+      showToast(`Invite sent to ${inviteEmail.trim()}`)
+      await loadTeam()
     } catch (err: any) {
       setInviteError(err.message || 'Failed to send invite')
     } finally {
@@ -107,10 +113,15 @@ export default function Team() {
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
+      {toast && (
+        <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 1000, background: '#111827', color: '#F9FAFB', borderRadius: 10, padding: '12px 18px', fontSize: 13, fontWeight: 500, boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
+          ✓ {toast}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827' }}>Team</h1>
         <button
-          onClick={() => { setShowInvite(true); setInviteSuccess(false); setInviteError(null) }}
+          onClick={() => { setShowInvite(true); setInviteError(null) }}
           style={{ background: '#111827', color: '#F9FAFB', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
         >
           + Invite technician
@@ -120,10 +131,7 @@ export default function Team() {
       {showInvite && (
         <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Invite a technician</div>
-          {inviteSuccess ? (
-            <div style={{ fontSize: 13, color: '#16A34A' }}>Invite sent! They'll receive an email to set up their account.</div>
-          ) : (
-            <>
+          <>
               <div style={{ display: 'flex', gap: 10 }}>
                 <input
                   placeholder='Full name'
@@ -149,7 +157,6 @@ export default function Team() {
                 </button>
               </div>
             </>
-          )}
         </div>
       )}
 
