@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { api } from '../lib/api'
 
 
 type Row = {
@@ -39,6 +40,7 @@ export default function Customers() {
   const [planFilter, setPlanFilter] = useState('All plans')
   const [techFilter, setTechFilter] = useState('All technicians')
   const [techNames, setTechNames] = useState<string[]>([])
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -135,6 +137,20 @@ export default function Customers() {
     })
   }, [rows, q, planFilter, techFilter])
 
+  const handleDeleteCustomer = async (e: React.MouseEvent, row: Row) => {
+    e.stopPropagation()
+    if (!window.confirm(`Delete ${row.name}? This will remove all their pools and service history. This cannot be undone.`)) return
+    setDeletingId(row.id)
+    try {
+      await api.delete(`/admin/customers/${row.id}`)
+      setRows((prev) => prev.filter((r) => r.id !== row.id))
+    } catch (err: any) {
+      alert(`Failed to delete: ${err.message}`)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <div>
       <div style={{ fontSize: 20, fontWeight: 700, color: '#111827', marginBottom: 16 }}>Customers</div>
@@ -177,7 +193,7 @@ export default function Customers() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                {['Status', 'Name', 'Location', 'Plan', 'Last service', 'Technician', ''].map((h) => (
+                {['Status', 'Name', 'Location', 'Plan', 'Last service', 'Technician', '', ''].map((h) => (
                   <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, color: '#64748B', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                     {h}
                   </th>
@@ -186,7 +202,7 @@ export default function Customers() {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={7} style={{ padding: 32, textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>No customers found</td></tr>
+                <tr><td colSpan={8} style={{ padding: 32, textAlign: 'center', color: '#9CA3AF', fontSize: 13 }}>No customers found</td></tr>
               ) : filtered.map((r) => (
                 <tr key={r.id} onClick={() => navigate(`/customers/${r.customerNumber ?? r.id}`)} style={{ cursor: 'pointer' }}>
                   <td style={td}><StatusDot status={r.status} /></td>
@@ -196,6 +212,14 @@ export default function Customers() {
                   <td style={td}>{r.lastService}</td>
                   <td style={td}>{r.technician}</td>
                   <td style={td}>›</td>
+                  <td style={{ ...td, paddingLeft: 4 }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={(e) => handleDeleteCustomer(e, r)}
+                      disabled={deletingId === r.id}
+                      title='Delete customer'
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 15, padding: '2px 6px', lineHeight: 1, opacity: deletingId === r.id ? 0.4 : 1 }}
+                    >×</button>
+                  </td>
                 </tr>
               ))}
             </tbody>

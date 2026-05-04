@@ -290,6 +290,20 @@ router.post('/invite', async (req, res) => {
     if (!email || !fullName || !['technician', 'pool_owner'].includes(role)) {
       return fail(res, 422, 'VALIDATION_ERROR', 'email, fullName, and role (technician|pool_owner) are required');
     }
+
+    if (role === 'technician') {
+      const TECH_LIMITS = { solo: 1, pro: 3, business: Infinity };
+      const { data: company } = await supabase.from('companies').select('plan').eq('id', req.user.companyId).maybeSingle();
+      const plan = company?.plan || 'solo';
+      const limit = TECH_LIMITS[plan] ?? 1;
+      if (limit !== Infinity) {
+        const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('company_id', req.user.companyId).eq('role', 'technician');
+        if ((count ?? 0) >= limit) {
+          return fail(res, 403, 'PLAN_LIMIT_EXCEEDED', `Your ${plan} plan allows a maximum of ${limit} technician${limit === 1 ? '' : 's'}. Upgrade your plan to add more.`);
+        }
+      }
+    }
+
     const result = await createInviteForUser({
       email,
       fullName,
@@ -301,6 +315,50 @@ router.post('/invite', async (req, res) => {
   } catch (err) {
     if (err?.code === 'CONFLICT') return fail(res, 409, 'CONFLICT', err.message);
     console.error('POST /admin/invite', err);
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.delete('/technicians/:id', async (req, res) => {
+  try {
+    const techId = req.params.id;
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', techId)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+    if (profileErr) return fail(res, 500, 'INTERNAL_ERROR', profileErr.message);
+    if (!profile) return fail(res, 404, 'NOT_FOUND', 'Technician not found');
+    if (profile.role !== 'technician') return fail(res, 403, 'FORBIDDEN', 'Cannot delete non-technician profiles');
+
+    await supabase.from('service_plans').update({ technician_id: null }).eq('technician_id', techId).eq('company_id', req.user.companyId);
+    await supabase.from('jobs').update({ technician_id: null }).eq('technician_id', techId).eq('company_id', req.user.companyId);
+    await supabase.from('profiles').delete().eq('id', techId).eq('company_id', req.user.companyId);
+    await supabase.auth.admin.deleteUser(techId);
+
+    return ok(res, { ok: true });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.delete('/customers/:id', async (req, res) => {
+  try {
+    const { data: customer, error: fetchErr } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+    if (fetchErr) return fail(res, 500, 'INTERNAL_ERROR', fetchErr.message);
+    if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
+
+    const { error: delErr } = await supabase.from('customers').delete().eq('id', req.params.id).eq('company_id', req.user.companyId);
+    if (delErr) return fail(res, 500, 'INTERNAL_ERROR', delErr.message);
+
+    return ok(res, { ok: true });
+  } catch (err) {
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }
 });

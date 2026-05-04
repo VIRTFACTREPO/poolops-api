@@ -42,12 +42,13 @@ export default function Team() {
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const loadTeam = async () => {
     const today = todayLocal()
     const companyId = getCompanyId()
     const [{ data: profiles }, { data: jobs }] = await Promise.all([
-      supabase.from('profiles').select('id, full_name').eq('company_id', companyId),
+      supabase.from('profiles').select('id, full_name').eq('company_id', companyId).eq('role', 'technician'),
       supabase
         .from('jobs')
         .select('technician_id, status, job_pools(pools(customers(first_name, last_name, address)))')
@@ -101,6 +102,20 @@ export default function Team() {
   const showToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 4000)
+  }
+
+  const handleDelete = async (tech: Tech) => {
+    if (!window.confirm(`Remove ${tech.name} from your team? This cannot be undone.`)) return
+    setDeletingId(tech.id)
+    try {
+      await api.delete(`/admin/technicians/${tech.id}`)
+      showToast(`${tech.name} removed`)
+      await loadTeam()
+    } catch (err: any) {
+      showToast(`Failed to remove: ${err.message}`)
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   const handleInvite = async () => {
@@ -192,7 +207,13 @@ export default function Team() {
                   <div style={{ width: 34, height: 34, borderRadius: '50%', background: `${p.color}22`, color: p.color, display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 700 }}>
                     {p.initials}
                   </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{p.name}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827', flex: 1 }}>{p.name}</div>
+                  <button
+                    onClick={() => handleDelete(p)}
+                    disabled={deletingId === p.id}
+                    title='Remove technician'
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 16, padding: '2px 4px', lineHeight: 1, opacity: deletingId === p.id ? 0.4 : 1 }}
+                  >×</button>
                 </div>
 
                 <div style={{ marginTop: 10, fontSize: 12, color: allPending ? '#D97706' : '#6B7280' }}>
