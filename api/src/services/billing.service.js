@@ -65,7 +65,7 @@ export async function createBillingPortalSession(company) {
 
 export function getBillingStatus(company) {
   const trialDaysRemaining = company.trial_ends_at
-    ? Math.max(0, Math.ceil((new Date(company.trial_ends_at) - Date.now()) / 86400000))
+    ? Math.max(0, Math.floor((new Date(company.trial_ends_at) - Date.now()) / 86400000))
     : 0;
 
   return {
