@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader'
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete'
 import { supabase } from '../lib/supabase'
-import { getUser } from '../lib/auth'
+import { getUser, getToken } from '../lib/auth'
 import { colors, radii, spacing, typography } from '../theme/tokens'
 
 type PoolCategory = 'pool' | 'spa'
@@ -108,7 +108,14 @@ export default function CustomerForm() {
     setLoading(true)
     setError(null)
     try {
-      const companyId = getUser()?.companyId
+      let companyId = getUser()?.companyId
+      if (!companyId) {
+        // Fall back to JWT payload (handles stale localStorage from old login sessions)
+        const token = getToken()
+        if (token) {
+          try { companyId = JSON.parse(atob(token.split('.')[1]))?.company_id } catch { /* ignore */ }
+        }
+      }
       if (!companyId) throw new Error('No company found — please log in as a company admin')
       const company = { id: companyId }
 

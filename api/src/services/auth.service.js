@@ -70,6 +70,18 @@ export async function loginWithPassword(email, password) {
   }
 
   const { token, refreshToken, role } = issueTokens(data.user);
+
+  const companyId = data.user.user_metadata?.company_id || null;
+  let company = null;
+  if (companyId) {
+    const { data: companyData } = await supabaseAdmin
+      .from('companies')
+      .select('id, name')
+      .eq('id', companyId)
+      .maybeSingle();
+    company = companyData || null;
+  }
+
   return {
     token,
     refreshToken,
@@ -79,6 +91,7 @@ export async function loginWithPassword(email, password) {
       email: data.user.email,
       metadata: data.user.user_metadata || {},
     },
+    company,
   };
 }
 
