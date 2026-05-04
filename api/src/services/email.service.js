@@ -1,7 +1,7 @@
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
 
-const FROM_EMAIL = 'noreply@poolops.app';
+const FROM_EMAIL = 'onboarding@resend.dev';
 
 function escapeHtml(value) {
   return String(value ?? '')
