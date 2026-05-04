@@ -326,7 +326,7 @@ export async function signupCompany({ companyName, adminName, email, password })
     .insert({
       name: companyName,
       email,
-      plan: 'pro',
+      plan: 'solo',
       subscription_status: 'trialing',
       trial_started_at: new Date().toISOString(),
       trial_ends_at: new Date(Date.now() + 14 * 86400000).toISOString(),
