@@ -16,8 +16,8 @@ export default function Login() {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.post<{ token: string; refreshToken: string; role: string; user: { id: string; email: string; name?: string }; company?: { name: string } }>('/auth/login', { email, password })
-      saveAuth(data.token, { id: data.user.id, email: data.user.email, name: data.user.name, role: data.role as 'admin' | 'superadmin', companyName: data.company?.name }, data.refreshToken)
+      const data = await api.post<{ token: string; refreshToken: string; role: string; user: { id: string; email: string; name?: string }; company?: { id: string; name: string } }>('/auth/login', { email, password })
+      saveAuth(data.token, { id: data.user.id, email: data.user.email, name: data.user.name, role: data.role as 'admin' | 'superadmin', companyId: data.company?.id, companyName: data.company?.name }, data.refreshToken)
       navigate('/')
     } catch (err: any) {
       setError(err.message || 'Invalid email or password')

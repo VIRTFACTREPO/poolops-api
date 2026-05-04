@@ -7,6 +7,7 @@ export type WebUser = {
   email: string
   name?: string
   role: 'admin' | 'superadmin'
+  companyId?: string
   companyName?: string
 }
 

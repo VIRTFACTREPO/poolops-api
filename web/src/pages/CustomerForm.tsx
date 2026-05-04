@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader'
 import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete'
 import { supabase } from '../lib/supabase'
+import { getUser } from '../lib/auth'
 import { colors, radii, spacing, typography } from '../theme/tokens'
 
 type PoolCategory = 'pool' | 'spa'
@@ -107,8 +108,9 @@ export default function CustomerForm() {
     setLoading(true)
     setError(null)
     try {
-      const { data: company } = await supabase.from('companies').select('id').limit(1).single()
-      if (!company) throw new Error('No company found')
+      const companyId = getUser()?.companyId
+      if (!companyId) throw new Error('No company found — please log in as a company admin')
+      const company = { id: companyId }
 
       // Find-or-create: if a previous save partially failed, reuse the existing customer row
       let customerId: string
