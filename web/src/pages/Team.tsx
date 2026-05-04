@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { api } from '../lib/api'
-import { getUser } from '../lib/auth'
+import { getUser, getToken } from '../lib/auth'
+
+function getCompanyId(): string {
+  let id = getUser()?.companyId
+  if (!id) {
+    const token = getToken()
+    if (token) { try { id = JSON.parse(atob(token.split('.')[1]))?.company_id } catch { /* ignore */ } }
+  }
+  return id ?? ''
+}
 
 type Tech = {
   id: string
@@ -36,14 +45,14 @@ export default function Team() {
 
   const loadTeam = async () => {
     const today = todayLocal()
-    const companyId = getUser()?.companyId
+    const companyId = getCompanyId()
     const [{ data: profiles }, { data: jobs }] = await Promise.all([
-      supabase.from('profiles').select('id, full_name').eq('company_id', companyId ?? ''),
+      supabase.from('profiles').select('id, full_name').eq('company_id', companyId),
       supabase
         .from('jobs')
         .select('technician_id, status, job_pools(pools(customers(first_name, last_name, address)))')
         .eq('scheduled_date', today)
-        .eq('company_id', companyId ?? ''),
+        .eq('company_id', companyId),
     ])
 
     if (!profiles) { setLoading(false); return }

@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getUser } from '../lib/auth'
+import { getUser, getToken } from '../lib/auth'
+
+function getCompanyId(): string {
+  let id = getUser()?.companyId
+  if (!id) {
+    const token = getToken()
+    if (token) { try { id = JSON.parse(atob(token.split('.')[1]))?.company_id } catch { /* ignore */ } }
+  }
+  return id ?? ''
+}
 
 type ViewMode = 'day' | 'week'
 type JobState = 'pending' | 'in_progress' | 'complete' | 'flagged'
@@ -178,7 +187,7 @@ export default function Schedule() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type RawJob = Record<string, any>
 
-      const cId = getUser()?.companyId ?? ''
+      const cId = getCompanyId()
       const [scheduledRes, overdueRes] = await Promise.all([
         supabase.from('jobs').select(jobSelect).eq('scheduled_date', date).eq('company_id', cId).order('route_order'),
         isToday
@@ -263,10 +272,10 @@ export default function Schedule() {
     setAddError(null)
     setShowAddJob(true)
 
-    const companyId = getUser()?.companyId
+    const companyId = getCompanyId()
     const [customersRes, profilesRes] = await Promise.all([
-      supabase.from('customers').select('id, first_name, last_name, pools(id, pool_type, volume_litres)').eq('company_id', companyId ?? ''),
-      supabase.from('profiles').select('id, full_name, company_id').eq('company_id', companyId ?? ''),
+      supabase.from('customers').select('id, first_name, last_name, pools(id, pool_type, volume_litres)').eq('company_id', companyId),
+      supabase.from('profiles').select('id, full_name, company_id').eq('company_id', companyId),
     ])
 
     type RawPool = { id: string; pool_type: string; volume_litres: number }
