@@ -11,6 +11,7 @@ type InboxItem = {
   id: string
   type: InboxType
   resolved: boolean
+  status?: string
   created_at: string
   reference_id: string
   customer: Customer
@@ -45,9 +46,9 @@ export default function Inbox() {
   const selected = filtered.find(i => i.id === selectedId) ?? filtered[0] ?? null
   const actionCount = items.filter(i => !i.resolved).length
 
-  const markResolved = async (id: string) => {
+  const markResolved = async (id: string, status?: string) => {
     await api.patch(`/admin/inbox/${id}`, { resolved: true })
-    setItems(prev => prev.map(i => i.id === id ? { ...i, resolved: true } : i))
+    setItems(prev => prev.map(i => i.id === id ? { ...i, resolved: true, ...(status ? { status } : {}) } : i))
   }
 
   return (
@@ -131,8 +132,56 @@ export default function Inbox() {
   )
 }
 
-function BookingDetail({ item, onResolve }: { item: InboxItem; onResolve: (id: string) => void }) {
+function BookingDetail({ item, onResolve }: { item: InboxItem; onResolve: (id: string, status?: string) => Promise<void> }) {
   const customerName = `${item.customer.last_name}, ${item.customer.first_name}`
+  const [showConfirmForm, setShowConfirmForm] = useState(false)
+  const [techs, setTechs] = useState<Array<{ id: string; full_name: string }>>([])
+  const [techId, setTechId] = useState('')
+  const [scheduledDate, setScheduledDate] = useState(new Date(Date.now() + 86400000).toISOString().slice(0, 10))
+  const [submitting, setSubmitting] = useState(false)
+  const [successMsg, setSuccessMsg] = useState('')
+  const [errMsg, setErrMsg] = useState('')
+
+  useEffect(() => {
+    let active = true
+    api.get<Array<{ id: string; full_name: string }>>('/admin/technicians')
+      .then((rows) => {
+        if (!active) return
+        setTechs(rows || [])
+        if (rows?.[0]?.id) setTechId(rows[0].id)
+      })
+      .catch(async () => {
+        try {
+          const today = new Date().toISOString().slice(0, 10)
+          const rows = await api.get<Array<{ id: string; full_name: string }>>(`/admin/schedule/day?date=${today}`)
+          if (!active) return
+          setTechs(rows || [])
+          if (rows?.[0]?.id) setTechId(rows[0].id)
+        } catch {
+          if (!active) return
+          setTechs([])
+        }
+      })
+    return () => { active = false }
+  }, [])
+
+  const confirmVisit = async () => {
+    if (!techId || !scheduledDate) { setErrMsg('Select a technician and date.'); return }
+    setSubmitting(true)
+    setErrMsg('')
+    setSuccessMsg('')
+    try {
+      await api.post(`/admin/inbox/${item.id}/confirm-visit`, { technicianId: techId, scheduledDate })
+      await onResolve(item.id, 'confirmed')
+      setSuccessMsg('Visit scheduled')
+      setShowConfirmForm(false)
+    } catch (err) {
+      setErrMsg(err instanceof Error ? err.message : 'Failed to schedule visit')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
@@ -157,15 +206,47 @@ function BookingDetail({ item, onResolve }: { item: InboxItem; onResolve: (id: s
       <div style={{ fontSize: 13, color: '#374151' }}>{item.booking?.reason?.replace(/_/g, ' ') ?? '—'}</div>
 
       {!item.resolved && (
-        <button style={confirmBtn} onClick={() => onResolve(item.id)}>
-          Mark as resolved
-        </button>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={{ ...confirmBtn, width: 'auto', flex: 1, background: '#111827' }} onClick={() => setShowConfirmForm((v) => !v)}>
+              Confirm Visit
+            </button>
+            <button style={{ ...confirmBtn, width: 'auto', flex: 1, background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB' }} onClick={() => onResolve(item.id)}>
+              Dismiss
+            </button>
+          </div>
+
+          {showConfirmForm && (
+            <div style={{ border: '1px solid #E5E7EB', borderRadius: 10, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ fontSize: 12, color: '#374151', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                Technician
+                <select value={techId} onChange={(e) => setTechId(e.target.value)} style={{ border: '1px solid #D1D5DB', borderRadius: 8, padding: '8px 10px', fontSize: 13 }}>
+                  <option value="">Select technician</option>
+                  {techs.map((t) => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+                </select>
+              </label>
+              <label style={{ fontSize: 12, color: '#374151', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                Date
+                <input type='date' value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} style={{ border: '1px solid #D1D5DB', borderRadius: 8, padding: '8px 10px', fontSize: 13 }} />
+              </label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button style={{ ...confirmBtn, width: 'auto', flex: 1 }} onClick={confirmVisit} disabled={submitting}>{submitting ? 'Confirming…' : 'Confirm'}</button>
+                <button style={{ ...confirmBtn, width: 'auto', flex: 1, background: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB' }} onClick={() => { setShowConfirmForm(false); setErrMsg('') }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {successMsg && <div style={{ fontSize: 12, color: '#16A34A' }}>{successMsg}</div>}
+          {errMsg && <div style={{ fontSize: 12, color: '#DC2626' }}>{errMsg}</div>}
+        </div>
       )}
     </>
   )
 }
 
-function FlaggedDetail({ item, onResolve }: { item: InboxItem; onResolve: (id: string) => void }) {
+function FlaggedDetail({ item, onResolve }: { item: InboxItem; onResolve: (id: string, status?: string) => Promise<void> }) {
   const customerName = `${item.customer.last_name}, ${item.customer.first_name}`
   const readings = item.record?.readings ?? {}
   const flaggedReadings = Object.entries(readings).filter(([, v]) => v.status !== 'good' && v.status !== 'ok')
