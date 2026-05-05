@@ -14,6 +14,14 @@ const MIGRATIONS = [
     TO service_role`,
   },
   {
+    id: '008_settings_columns',
+    sql: `
+      ALTER TABLE companies ADD COLUMN IF NOT EXISTS company_chemicals JSONB;
+      ALTER TABLE companies ADD COLUMN IF NOT EXISTS service_defaults JSONB;
+      ALTER TABLE companies ADD COLUMN IF NOT EXISTS report_branding JSONB;
+    `,
+  },
+  {
     id: '006_subscription_and_invite',
     sql: `
       DO $$ BEGIN
