@@ -158,6 +158,8 @@ export default function Schedule() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [weekTechsByDate, setWeekTechsByDate] = useState<Map<string, Technician[]>>(new Map())
+  const [dragOverCell, setDragOverCell] = useState<string | null>(null)
+  const [hoveredCell, setHoveredCell] = useState<string | null>(null)
   const [detail, setDetail] = useState<JobDetail | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [showAddJob, setShowAddJob] = useState(false)
@@ -326,9 +328,9 @@ export default function Schedule() {
     return () => { cancelled = true }
   }, [selectedDate, refreshKey, view, weekDates])
 
-  const openAddJob = async (preTechId = '') => {
+  const openAddJob = async (preTechId = '', preDate = '') => {
     setAddJobPreTech(preTechId)
-    setAddForm({ customerId: '', poolIds: [], techId: preTechId, date: toISODate(selectedDate) })
+    setAddForm({ customerId: '', poolIds: [], techId: preTechId, date: preDate || toISODate(selectedDate) })
     setAddError(null)
     setShowAddJob(true)
 
@@ -410,8 +412,8 @@ export default function Schedule() {
     setRefreshKey((k) => k + 1)
   }
 
-  const onDragStart = (jobId: string, fromTechId: string) => (event: React.DragEvent<HTMLDivElement>) => {
-    event.dataTransfer.setData('application/json', JSON.stringify({ jobId, fromTechId }))
+  const onDragStart = (jobId: string, fromTechId: string, fromDate = toISODate(selectedDate)) => (event: React.DragEvent<HTMLDivElement>) => {
+    event.dataTransfer.setData('application/json', JSON.stringify({ jobId, fromTechId, fromDate }))
     event.dataTransfer.effectAllowed = 'move'
   }
 
@@ -435,6 +437,44 @@ export default function Schedule() {
     })
 
     await supabase.from('jobs').update({ technician_id: toTechId }).eq('id', jobId)
+  }
+
+  const onDropWeekCell = (toTechId: string, toDate: string) => async (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setDragOverCell(null)
+
+    const raw = event.dataTransfer.getData('application/json')
+    if (!raw) return
+    const { jobId, fromTechId, fromDate } = JSON.parse(raw) as { jobId: string; fromTechId: string; fromDate: string }
+    if (fromTechId === toTechId && fromDate === toDate) return
+
+    setWeekTechsByDate((prev) => {
+      const next = new Map<string, Technician[]>()
+      for (const [d, techList] of prev.entries()) {
+        next.set(d, techList.map((t) => ({ ...t, jobs: [...t.jobs] })))
+      }
+
+      const fromTech = (next.get(fromDate) || []).find((t) => t.id === fromTechId)
+      if (!fromTech) return prev
+      const jobIdx = fromTech.jobs.findIndex((j) => j.id === jobId)
+      if (jobIdx < 0) return prev
+      const [moved] = fromTech.jobs.splice(jobIdx, 1)
+
+      const toList = next.get(toDate) || []
+      let toTech = toList.find((t) => t.id === toTechId)
+      if (!toTech) {
+        const fromMeta = (next.get(fromDate) || []).find((t) => t.id === toTechId) || (techs.find((t) => t.id === toTechId) ?? null)
+        if (!fromMeta) return prev
+        toTech = { id: fromMeta.id, initials: fromMeta.initials, name: fromMeta.name, jobs: [] }
+        toList.push(toTech)
+        next.set(toDate, toList)
+      }
+      toTech.jobs.push(moved)
+      return next
+    })
+
+    await supabase.from('jobs').update({ technician_id: toTechId, scheduled_date: toDate }).eq('id', jobId)
+    setRefreshKey((k) => k + 1)
   }
 
   const openDetail = async (job: Job) => {
@@ -850,7 +890,7 @@ export default function Schedule() {
                   </div>
 
                   {weekTechs.map((tech, idx) => (
-                    <div key={tech.id} style={{ display: 'grid', gridTemplateColumns: '180px repeat(7, 1fr)', borderBottom: idx === weekTechs.length - 1 ? 'none' : '1px solid #E5E7EB', minHeight: 84 }}>
+                    <div key={tech.id} style={{ display: 'grid', gridTemplateColumns: '180px repeat(7, 1fr)', borderBottom: idx === weekTechs.length - 1 ? 'none' : '1px solid #E5E7EB', minHeight: 110 }}>
                       <div style={{ padding: '10px 12px', borderRight: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#E5E7EB', color: '#6B7280', fontSize: 10, fontWeight: 600, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{tech.initials}</div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>{tech.name}</div>
@@ -858,17 +898,56 @@ export default function Schedule() {
                       {dateStrs.map((ds) => {
                         const dayTech = (weekTechsByDate.get(ds) || []).find((t) => t.id === tech.id)
                         const jobs = dayTech?.jobs || []
+                        const cellKey = `${tech.id}-${ds}`
+                        const isDragOver = dragOverCell === cellKey
+                        const isHovered = hoveredCell === cellKey
                         return (
-                          <div key={`${tech.id}-${ds}`} style={{ borderLeft: '1px solid #E5E7EB', padding: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div
+                            key={cellKey}
+                            style={{
+                              borderLeft: '1px solid #E5E7EB',
+                              padding: 6,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 4,
+                              background: isDragOver ? '#F0F9FF' : undefined,
+                              outline: isDragOver ? '1px dashed #7DD3FC' : undefined,
+                              outlineOffset: '-1px',
+                            }}
+                            onMouseEnter={() => setHoveredCell(cellKey)}
+                            onMouseLeave={() => setHoveredCell(null)}
+                            onDragOver={(e) => { e.preventDefault(); setDragOverCell(cellKey) }}
+                            onDragLeave={() => setDragOverCell(null)}
+                            onDrop={onDropWeekCell(tech.id, ds)}
+                          >
                             {jobs.map((job) => {
                               const s = stateStyle[job.state]
                               return (
-                                <div key={job.id} onClick={() => openDetail(job)} style={{ borderRadius: 6, padding: '5px 6px', border: `1px solid ${s.border}`, background: s.bg, cursor: 'pointer' }}>
+                                <div
+                                  key={job.id}
+                                  draggable
+                                  onDragStart={onDragStart(job.id, tech.id, ds)}
+                                  onClick={() => openDetail(job)}
+                                  style={{ borderRadius: 6, padding: '5px 6px', border: `1px solid ${s.border}`, background: s.bg, cursor: 'grab' }}
+                                >
                                   <div style={{ fontSize: 10, fontWeight: 600, color: s.title }}>{truncate(job.customer, 15)}</div>
                                   <div style={{ fontSize: 9, marginTop: 1, color: s.sub }}>{truncate(job.area || job.address, 15)}</div>
                                 </div>
                               )
                             })}
+                            {jobs.length === 0 && !isHovered && (
+                              <div style={{ border: '1px dashed #E5E7EB', borderRadius: 6, flex: 1, minHeight: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <span style={{ color: '#D1D5DB', fontSize: 16 }}>+</span>
+                              </div>
+                            )}
+                            {(jobs.length > 0 || isHovered) && (
+                              <button
+                                style={{ ...addSlotBtn, visibility: isHovered ? 'visible' : 'hidden', alignSelf: 'flex-start' }}
+                                onClick={() => openAddJob(tech.id, ds)}
+                              >
+                                + Add job
+                              </button>
+                            )}
                           </div>
                         )
                       })}
