@@ -62,6 +62,9 @@ export default function CustomerDetail() {
   const [poolEditError, setPoolEditError] = useState<string | null>(null)
   const [poolEditForm, setPoolEditForm] = useState({ volume: '', pool_category: 'pool' as 'pool' | 'spa', type: 'salt', gate_access: '', site_notes: '' })
 
+  const [serviceRecords, setServiceRecords] = useState<any[]>([])
+  const [recordsLoading, setRecordsLoading] = useState(false)
+
   const loadCustomer = () => {
     if (!id) return
     setLoading(true)
@@ -74,6 +77,16 @@ export default function CustomerDetail() {
   useEffect(() => {
     loadCustomer()
   }, [id])
+
+  useEffect(() => {
+    if (tab === 'Service History' && id) {
+      setRecordsLoading(true)
+      api.get<any[]>(`/admin/customers/${id}/records`)
+        .then(setServiceRecords)
+        .catch(() => setServiceRecords([]))
+        .finally(() => setRecordsLoading(false))
+    }
+  }, [tab, id])
 
   useEffect(() => {
     if (!customer) return
@@ -507,7 +520,21 @@ export default function CustomerDetail() {
 
       {tab === 'Service History' && (
         <Card title='Service history'>
-          <div style={{ fontSize: typography.sizes.small, color: colors.textMuted, padding: `${spacing.sm}px 0` }}>No service records yet</div>
+          {recordsLoading ? (
+            <div style={{ fontSize: typography.sizes.small, color: colors.textMuted, padding: `${spacing.sm}px 0` }}>Loading…</div>
+          ) : serviceRecords.length === 0 ? (
+            <div style={{ fontSize: typography.sizes.small, color: colors.textMuted, padding: `${spacing.sm}px 0` }}>No service records yet</div>
+          ) : serviceRecords.map((r) => (
+            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: `${spacing.sm}px 0`, borderBottom: `1px solid ${colors.border}` }}>
+              <div>
+                <div style={{ fontSize: typography.sizes.body, fontWeight: typography.weights.medium, color: colors.textBody }}>
+                  {r.completedAt ? new Date(r.completedAt).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' }) : r.scheduledDate ? new Date(r.scheduledDate).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                </div>
+                {r.technician && <div style={{ fontSize: typography.sizes.small, color: colors.textSecondary, marginTop: 2 }}>{r.technician}</div>}
+              </div>
+              {r.isFlagged && <span style={{ fontSize: typography.sizes.label, color: colors.red, fontWeight: typography.weights.medium }}>Flagged</span>}
+            </div>
+          ))}
         </Card>
       )}
 

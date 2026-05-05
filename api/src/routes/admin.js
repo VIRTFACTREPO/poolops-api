@@ -86,6 +86,70 @@ router.get('/customers/:id', async (req, res) => {
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }
 });
+
+router.get('/customers/:id/records', async (req, res) => {
+  try {
+    const param = req.params.id;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(param);
+    const isNumber = /^\d+$/.test(param);
+    if (!isUuid && !isNumber) return fail(res, 400, 'BAD_REQUEST', 'Invalid customer identifier');
+
+    // Resolve customer to get pool IDs
+    const { data: customer, error: custErr } = await (
+      isUuid
+        ? supabase.from('customers').select('id, pools(id)').eq('id', param).eq('company_id', req.user.companyId)
+        : supabase.from('customers').select('id, pools(id)').eq('customer_number', Number(param)).eq('company_id', req.user.companyId)
+    ).maybeSingle();
+    if (custErr) return fail(res, 500, 'INTERNAL_ERROR', custErr.message);
+    if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
+
+    const poolIds = (customer.pools ?? []).map((p) => p.id);
+    if (poolIds.length === 0) return ok(res, []);
+
+    // Get job IDs for these pools
+    const { data: jobPools, error: jpErr } = await supabase
+      .from('job_pools')
+      .select('job_id')
+      .in('pool_id', poolIds);
+    if (jpErr) return fail(res, 500, 'INTERNAL_ERROR', jpErr.message);
+
+    const jobIds = [...new Set((jobPools ?? []).map((jp) => jp.job_id))];
+    if (jobIds.length === 0) return ok(res, []);
+
+    // Get service records for those jobs
+    const { data: records, error: recErr } = await supabase
+      .from('service_records')
+      .select('id, job_id, completed_at, is_flagged, readings, treatments, technician_id, jobs(scheduled_date)')
+      .in('job_id', jobIds)
+      .order('completed_at', { ascending: false })
+      .limit(50);
+    if (recErr) return fail(res, 500, 'INTERNAL_ERROR', recErr.message);
+
+    // Batch fetch technician names
+    const techIds = [...new Set((records ?? []).map((r) => r.technician_id).filter(Boolean))];
+    let techMap = {};
+    if (techIds.length > 0) {
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name').in('id', techIds);
+      techMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.full_name]));
+    }
+
+    const result = (records ?? []).map((r) => ({
+      id: r.id,
+      jobId: r.job_id,
+      completedAt: r.completed_at,
+      scheduledDate: r.jobs?.scheduled_date ?? null,
+      isFlagged: r.is_flagged,
+      technician: techMap[r.technician_id] ?? null,
+      readings: r.readings,
+      treatments: r.treatments,
+    }));
+
+    return ok(res, result);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
 router.post('/jobs', stub('post', '/admin/jobs'));
 
 router.patch('/jobs/:id/reassign', async (req, res) => {
