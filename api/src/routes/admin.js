@@ -94,33 +94,20 @@ router.get('/customers/:id/records', async (req, res) => {
     const isNumber = /^\d+$/.test(param);
     if (!isUuid && !isNumber) return fail(res, 400, 'BAD_REQUEST', 'Invalid customer identifier');
 
-    // Resolve customer to get pool IDs
+    // Resolve customer UUID
     const { data: customer, error: custErr } = await (
       isUuid
-        ? supabase.from('customers').select('id, pools(id)').eq('id', param).eq('company_id', req.user.companyId)
-        : supabase.from('customers').select('id, pools(id)').eq('customer_number', Number(param)).eq('company_id', req.user.companyId)
+        ? supabase.from('customers').select('id').eq('id', param).eq('company_id', req.user.companyId)
+        : supabase.from('customers').select('id').eq('customer_number', Number(param)).eq('company_id', req.user.companyId)
     ).maybeSingle();
     if (custErr) return fail(res, 500, 'INTERNAL_ERROR', custErr.message);
     if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
 
-    const poolIds = (customer.pools ?? []).map((p) => p.id);
-    if (poolIds.length === 0) return ok(res, []);
-
-    // Get job IDs for these pools
-    const { data: jobPools, error: jpErr } = await supabase
-      .from('job_pools')
-      .select('job_id')
-      .in('pool_id', poolIds);
-    if (jpErr) return fail(res, 500, 'INTERNAL_ERROR', jpErr.message);
-
-    const jobIds = [...new Set((jobPools ?? []).map((jp) => jp.job_id))];
-    if (jobIds.length === 0) return ok(res, []);
-
-    // Get service records for those jobs
+    // Query service_records directly via customer_id FK
     const { data: records, error: recErr } = await supabase
       .from('service_records')
       .select('id, job_id, completed_at, is_flagged, readings, treatments, technician_id, jobs(scheduled_date)')
-      .in('job_id', jobIds)
+      .eq('customer_id', customer.id)
       .order('completed_at', { ascending: false })
       .limit(50);
     if (recErr) return fail(res, 500, 'INTERNAL_ERROR', recErr.message);
