@@ -285,7 +285,7 @@ router.get('/technicians/:id', async (req, res) => {
 
     const { data: profile, error: profileErr } = await supabase
       .from('profiles')
-      .select('id, full_name, role')
+      .select('id, full_name, role, phone')
       .eq('id', techId)
       .eq('company_id', req.user.companyId)
       .eq('role', 'technician')
@@ -324,6 +324,7 @@ router.get('/technicians/:id', async (req, res) => {
       id: profile.id,
       name: profile.full_name,
       email,
+      phone: profile.phone ?? null,
       today: {
         assigned: (todayJobs ?? []).length,
         completed: (todayJobs ?? []).filter((j) => j.status === 'complete').length,
@@ -349,6 +350,52 @@ router.get('/technicians/:id', async (req, res) => {
         address: r.customers?.address ?? null,
       })),
     });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+
+router.patch('/technicians/:id', async (req, res) => {
+  try {
+    const techId = req.params.id;
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+    const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
+
+    if (!name || !email) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'name and email are required');
+    }
+
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', techId)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+
+    if (profileErr) return fail(res, 500, 'INTERNAL_ERROR', profileErr.message);
+    if (!profile) return fail(res, 404, 'NOT_FOUND', 'Technician not found');
+    if (profile.role !== 'technician') return fail(res, 403, 'FORBIDDEN', 'Cannot edit non-technician profiles');
+
+    const { error: updateProfileErr } = await supabase
+      .from('profiles')
+      .update({ full_name: name, email, phone: phone || null })
+      .eq('id', techId)
+      .eq('company_id', req.user.companyId);
+
+    if (updateProfileErr) return fail(res, 500, 'INTERNAL_ERROR', updateProfileErr.message);
+
+    const { error: updateAuthErr } = await supabase.auth.admin.updateUserById(techId, {
+      email,
+      user_metadata: { full_name: name, phone: phone || null },
+    });
+
+    if (updateAuthErr) {
+      return fail(res, 500, 'INTERNAL_ERROR', updateAuthErr.message);
+    }
+
+    return ok(res, { id: techId, name, email, phone: phone || null });
   } catch (err) {
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }

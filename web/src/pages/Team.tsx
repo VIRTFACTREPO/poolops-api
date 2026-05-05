@@ -26,6 +26,7 @@ type TechDetail = {
   id: string
   name: string
   email: string | null
+  phone: string | null
   today: {
     assigned: number
     completed: number
@@ -83,6 +84,12 @@ export default function Team() {
   const [selectedTech, setSelectedTech] = useState<Tech | null>(null)
   const [detail, setDetail] = useState<TechDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [isEditingDetail, setIsEditingDetail] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+  const [savingDetail, setSavingDetail] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const loadTeam = async () => {
     const today = todayLocal()
@@ -139,6 +146,11 @@ export default function Team() {
     try {
       const data = await api.get<TechDetail>(`/admin/technicians/${tech.id}`)
       setDetail(data)
+      setIsEditingDetail(false)
+      setEditName(data.name ?? '')
+      setEditEmail(data.email ?? '')
+      setEditPhone(data.phone ?? '')
+      setEditError(null)
     } catch {
       setDetail(null)
     } finally {
@@ -149,6 +161,8 @@ export default function Team() {
   const closeDetail = () => {
     setSelectedTech(null)
     setDetail(null)
+    setIsEditingDetail(false)
+    setEditError(null)
   }
 
   const totals = {
@@ -193,6 +207,50 @@ export default function Team() {
       setInviteError(err.message || 'Failed to send invite')
     } finally {
       setInviting(false)
+    }
+  }
+
+
+  const handleCancelEdit = () => {
+    if (!detail) return
+    setEditName(detail.name ?? '')
+    setEditEmail(detail.email ?? '')
+    setEditPhone(detail.phone ?? '')
+    setEditError(null)
+    setIsEditingDetail(false)
+  }
+
+  const handleSaveDetail = async () => {
+    if (!selectedTech || !detail) return
+    if (!editName.trim() || !editEmail.trim()) {
+      setEditError('Name and email are required')
+      return
+    }
+
+    setSavingDetail(true)
+    setEditError(null)
+    try {
+      const updated = await api.patch<{ id: string; name: string; email: string; phone: string | null }>(`/admin/technicians/${selectedTech.id}`, {
+        name: editName.trim(),
+        email: editEmail.trim(),
+        phone: editPhone.trim(),
+      })
+
+      const nextDetail: TechDetail = {
+        ...detail,
+        name: updated.name,
+        email: updated.email,
+        phone: updated.phone,
+      }
+      setDetail(nextDetail)
+      setSelectedTech({ ...selectedTech, name: updated.name, initials: initials(updated.name) })
+      setTeam((prev) => prev.map((t) => t.id === selectedTech.id ? { ...t, name: updated.name, initials: initials(updated.name) } : t))
+      setIsEditingDetail(false)
+      showToast('Technician details updated')
+    } catch (err: any) {
+      setEditError(err.message || 'Failed to update technician')
+    } finally {
+      setSavingDetail(false)
     }
   }
 
@@ -305,15 +363,50 @@ export default function Team() {
             <style>{`@keyframes slideIn { from { transform: translateX(100%) } to { transform: translateX(0) } }`}</style>
 
             {/* Drawer header */}
-            <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${selectedColor}22`, color: selectedColor, display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
-                {selectedTech.initials}
+            <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid #F3F4F6' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${selectedColor}22`, color: selectedColor, display: 'grid', placeItems: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                  {initials(isEditingDetail ? editName || selectedTech.name : selectedTech.name)}
+                </div>
+                <div style={{ flex: 1 }}>
+                  {isEditingDetail ? (
+                    <input value={editName} onChange={(e) => setEditName(e.target.value)} style={{ ...inputStyle, width: '100%', background: '#FFFFFF' }} placeholder='Full name' />
+                  ) : (
+                    <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{detail?.name ?? selectedTech.name}</div>
+                  )}
+                  {isEditingDetail ? (
+                    <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+                      <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} style={{ ...inputStyle, width: '100%', background: '#FFFFFF' }} placeholder='Email address' type='email' />
+                      <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} style={{ ...inputStyle, width: '100%', background: '#FFFFFF' }} placeholder='Phone number' />
+                    </div>
+                  ) : (
+                    <>
+                      {detail?.email && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{detail.email}</div>}
+                      {detail?.phone && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{detail.phone}</div>}
+                    </>
+                  )}
+                </div>
+                {!isEditingDetail && detail && (
+                  <button
+                    onClick={() => { setIsEditingDetail(true); setEditError(null) }}
+                    style={{ background: 'transparent', border: '1px solid #D1D5DB', borderRadius: 8, padding: '6px 10px', fontSize: 12, fontWeight: 600, color: '#374151', cursor: 'pointer' }}
+                  >
+                    Edit
+                  </button>
+                )}
+                <button onClick={closeDetail} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 20, padding: 4, lineHeight: 1 }}>×</button>
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#111827' }}>{selectedTech.name}</div>
-                {detail?.email && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{detail.email}</div>}
-              </div>
-              <button onClick={closeDetail} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9CA3AF', fontSize: 20, padding: 4, lineHeight: 1 }}>×</button>
+              {isEditingDetail && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  <button onClick={handleSaveDetail} disabled={savingDetail} style={{ background: '#111827', color: '#F9FAFB', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: savingDetail ? 0.6 : 1 }}>
+                    {savingDetail ? 'Saving…' : 'Save'}
+                  </button>
+                  <button onClick={handleCancelEdit} disabled={savingDetail} style={{ background: 'transparent', color: '#6B7280', border: '1px solid #E5E7EB', borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
+              )}
+              {editError && <div style={{ fontSize: 12, color: '#EF4444', marginTop: 8 }}>{editError}</div>}
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 20 }}>
