@@ -197,7 +197,7 @@ export default function Team() {
     setInviting(true)
     setInviteError(null)
     try {
-      await api.post('/admin/invite', { email: inviteEmail.trim(), fullName: inviteName.trim(), role: 'technician' })
+      await api.post('/admin/technicians', { name: inviteName.trim(), email: inviteEmail.trim() })
       setInviteName('')
       setInviteEmail('')
       setShowInvite(false)
@@ -272,13 +272,13 @@ export default function Team() {
           onClick={() => { setShowInvite(true); setInviteError(null) }}
           style={{ background: '#111827', color: '#F9FAFB', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
         >
-          + Invite technician
+          + Add technician
         </button>
       </div>
 
       {showInvite && (
         <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Invite a technician</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#111827' }}>Add technician</div>
           <div style={{ display: 'flex', gap: 10 }}>
             <input placeholder='Full name' value={inviteName} onChange={e => setInviteName(e.target.value)} style={inputStyle} />
             <input placeholder='Email address' type='email' value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} style={inputStyle} />

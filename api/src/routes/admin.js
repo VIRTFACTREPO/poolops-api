@@ -453,7 +453,36 @@ router.patch('/technicians/:id', async (req, res) => {
 });
 
 // Plan-enforced creation endpoints
-router.post('/technicians', checkTechnicianLimit, stub('post', '/admin/technicians'));
+router.post('/technicians', checkTechnicianLimit, async (req, res) => {
+  try {
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+
+    if (!name || !email) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'name and email are required');
+    }
+
+    const { data: existing, error: existingErr } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle();
+    if (existingErr) return fail(res, 500, 'INTERNAL_ERROR', existingErr.message);
+    if (existing) return fail(res, 409, 'CONFLICT', 'Email already registered');
+
+    const result = await createInviteForUser({
+      email,
+      fullName: name,
+      role: 'technician',
+      companyId: req.user.companyId,
+      customerId: null,
+    });
+
+    return ok(res, result.profile);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
 router.post('/pools', checkPoolLimit, async (req, res) => {
   try {
     const { customer_id, pool_category, volume_litres, pool_type, gate_access, site_notes } = req.body || {};
