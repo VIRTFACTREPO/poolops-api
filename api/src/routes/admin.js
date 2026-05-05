@@ -36,7 +36,7 @@ router.get('/customers/:id', async (req, res) => {
       .select(`
         id, company_id, customer_number, first_name, last_name, email, phone, address, active, created_at,
         pools (
-          id, volume_litres, pool_type, surface_type, equipment_notes, gate_access, warnings,
+          id, volume_litres, pool_type, pool_category, surface_type, equipment_notes, gate_access, warnings,
           service_plans (
             id, frequency, day_of_week, active, technician_id
           )
@@ -403,7 +403,46 @@ router.patch('/technicians/:id', async (req, res) => {
 
 // Plan-enforced creation endpoints
 router.post('/technicians', checkTechnicianLimit, stub('post', '/admin/technicians'));
-router.post('/pools', checkPoolLimit, stub('post', '/admin/pools'));
+router.post('/pools', checkPoolLimit, async (req, res) => {
+  try {
+    const { customer_id, pool_category, volume_litres, pool_type, gate_access, site_notes } = req.body || {};
+    if (!customer_id || !volume_litres || !pool_type) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'customer_id, volume_litres, and pool_type are required');
+    }
+    const volume = Number(volume_litres);
+    if (!Number.isFinite(volume) || volume <= 0) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'volume_litres must be a positive number');
+    }
+    const category = pool_category === 'spa' ? 'spa' : 'pool';
+
+    const { data: customer, error: custErr } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('id', customer_id)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+    if (custErr) return fail(res, 500, 'INTERNAL_ERROR', custErr.message);
+    if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
+
+    const { data: pool, error: insertErr } = await supabase
+      .from('pools')
+      .insert({
+        customer_id,
+        company_id: req.user.companyId,
+        pool_category: category,
+        volume_litres: volume,
+        pool_type,
+        gate_access: gate_access || null,
+        warnings: site_notes || null,
+      })
+      .select()
+      .single();
+    if (insertErr) return fail(res, 500, 'INTERNAL_ERROR', insertErr.message);
+    return ok(res, pool);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
 
 // Invite a technician or pool owner
 router.post('/invite', async (req, res) => {
@@ -513,6 +552,7 @@ router.patch('/pools/:id', async (req, res) => {
     const type = typeof req.body?.type === 'string' ? req.body.type.trim() : '';
     const gateAccess = typeof req.body?.gate_access === 'string' ? req.body.gate_access.trim() : '';
     const siteNotes = typeof req.body?.site_notes === 'string' ? req.body.site_notes.trim() : '';
+    const poolCategory = req.body?.pool_category === 'spa' ? 'spa' : 'pool';
 
     if (!Number.isFinite(volume) || volume <= 0 || !type) {
       return fail(res, 422, 'VALIDATION_ERROR', 'volume and type are required');
@@ -531,6 +571,7 @@ router.patch('/pools/:id', async (req, res) => {
     const { error: updateErr } = await supabase
       .from('pools')
       .update({
+        pool_category: poolCategory,
         volume_litres: volume,
         pool_type: type,
         gate_access: gateAccess || null,
@@ -540,7 +581,7 @@ router.patch('/pools/:id', async (req, res) => {
       .eq('company_id', req.user.companyId);
 
     if (updateErr) return fail(res, 500, 'INTERNAL_ERROR', updateErr.message);
-    return ok(res, { id: req.params.id, volume, type, gate_access: gateAccess || null, site_notes: siteNotes || null });
+    return ok(res, { id: req.params.id, pool_category: poolCategory, volume, type, gate_access: gateAccess || null, site_notes: siteNotes || null });
   } catch (err) {
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }

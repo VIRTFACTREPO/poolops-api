@@ -18,6 +18,7 @@ type Pool = {
   id: string
   volume_litres: number
   pool_type: string
+  pool_category: 'pool' | 'spa'
   surface_type: string | null
   equipment_notes: string | null
   gate_access: string | null
@@ -49,7 +50,7 @@ export default function CustomerDetail() {
   const [error, setError] = useState<string | null>(null)
   const [addingPool, setAddingPool] = useState(false)
   const [savingPool, setSavingPool] = useState(false)
-  const [poolForm, setPoolForm] = useState({ volume_litres: '', pool_type: 'salt', gate_access: '', warnings: '' })
+  const [poolForm, setPoolForm] = useState({ volume_litres: '', pool_category: 'pool' as 'pool' | 'spa', pool_type: 'salt', gate_access: '', warnings: '' })
 
   const [editingOverview, setEditingOverview] = useState(false)
   const [savingOverview, setSavingOverview] = useState(false)
@@ -59,7 +60,7 @@ export default function CustomerDetail() {
   const [editingPoolId, setEditingPoolId] = useState<string | null>(null)
   const [savingPoolId, setSavingPoolId] = useState<string | null>(null)
   const [poolEditError, setPoolEditError] = useState<string | null>(null)
-  const [poolEditForm, setPoolEditForm] = useState({ volume: '', type: 'salt', gate_access: '', site_notes: '' })
+  const [poolEditForm, setPoolEditForm] = useState({ volume: '', pool_category: 'pool' as 'pool' | 'spa', type: 'salt', gate_access: '', site_notes: '' })
 
   const loadCustomer = () => {
     if (!id) return
@@ -115,6 +116,7 @@ export default function CustomerDetail() {
       const { error: insertErr } = await supabase.from('pools').insert({
         customer_id: customer.id,
         company_id: customer.company_id,
+        pool_category: poolForm.pool_category,
         volume_litres: volume,
         pool_type: poolForm.pool_type,
         gate_access: poolForm.gate_access || null,
@@ -123,7 +125,7 @@ export default function CustomerDetail() {
       if (insertErr) throw insertErr
 
       setAddingPool(false)
-      setPoolForm({ volume_litres: '', pool_type: 'salt', gate_access: '', warnings: '' })
+      setPoolForm({ volume_litres: '', pool_category: 'pool', pool_type: 'salt', gate_access: '', warnings: '' })
       loadCustomer()
     } catch (err: any) {
       setError(err.message || 'Failed to add pool')
@@ -183,6 +185,7 @@ export default function CustomerDetail() {
     setEditingPoolId(p.id)
     setPoolEditForm({
       volume: p.volume_litres ? p.volume_litres.toLocaleString() : '',
+      pool_category: p.pool_category || 'pool',
       type: p.pool_type || 'salt',
       gate_access: p.gate_access || '',
       site_notes: p.warnings || '',
@@ -205,6 +208,7 @@ export default function CustomerDetail() {
     setPoolEditError(null)
     try {
       await api.patch(`/admin/pools/${poolId}`, {
+        pool_category: poolEditForm.pool_category,
         volume,
         type: poolEditForm.type,
         gate_access: poolEditForm.gate_access,
@@ -214,6 +218,7 @@ export default function CustomerDetail() {
         ...prev,
         pools: prev.pools.map((p) => p.id === poolId ? {
           ...p,
+          pool_category: poolEditForm.pool_category,
           volume_litres: volume,
           pool_type: poolEditForm.type,
           gate_access: poolEditForm.gate_access || null,
@@ -342,14 +347,30 @@ export default function CustomerDetail() {
               </>
             )}
           </Card>
-          {pool ? (
+          {customer.pools?.length === 1 ? (
             <Card title='Pool summary'>
-              <Row k='Volume' v={`${pool.volume_litres.toLocaleString()} L`} />
-              <Row k='Type' v={capitalize(pool.pool_type)} />
-              {pool.surface_type && <Row k='Surface' v={capitalize(pool.surface_type)} />}
-              {pool.equipment_notes && <Row k='Equipment' v={pool.equipment_notes} />}
-              {pool.gate_access && <Row k='Access' v={pool.gate_access} />}
-              {pool.warnings && <Row k='Notes' v={pool.warnings} warn />}
+              <Row k='Volume' v={`${pool!.volume_litres.toLocaleString()} L`} />
+              <Row k='Type' v={capitalize(pool!.pool_type)} />
+              {pool!.surface_type && <Row k='Surface' v={capitalize(pool!.surface_type)} />}
+              {pool!.equipment_notes && <Row k='Equipment' v={pool!.equipment_notes} />}
+              {pool!.gate_access && <Row k='Access' v={pool!.gate_access} />}
+              {pool!.warnings && <Row k='Notes' v={pool!.warnings} warn />}
+            </Card>
+          ) : customer.pools?.length > 1 ? (
+            <Card title='Pool summary'>
+              {customer.pools.map((p) => {
+                const isSpa = p.pool_category === 'spa'
+                const pillBg = isSpa ? '#14B8A6' : '#3B82F6'
+                const pillLabel = isSpa ? 'Spa' : 'Pool'
+                return (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: `1px solid ${colors.border}`, flexWrap: 'wrap' }}>
+                    <span style={{ background: pillBg, color: '#fff', fontSize: typography.sizes.label, fontWeight: typography.weights.semibold, borderRadius: radii.pill, padding: '2px 8px', flexShrink: 0 }}>{pillLabel}</span>
+                    <span style={{ fontSize: typography.sizes.small, color: colors.textBody }}>
+                      {p.volume_litres.toLocaleString()} L · {capitalize(p.pool_type)}{p.gate_access ? ` · Gate: ${p.gate_access}` : ''}
+                    </span>
+                  </div>
+                )
+              })}
             </Card>
           ) : (
             <Card title='Pool summary'>
@@ -382,6 +403,10 @@ export default function CustomerDetail() {
           {addingPool && (
             <div style={{ display: 'grid', gap: spacing.sm, marginBottom: spacing.md, background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: spacing.sm }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.sm }}>
+                <select style={field as React.CSSProperties} value={poolForm.pool_category} onChange={(e) => setPoolForm((prev) => ({ ...prev, pool_category: e.target.value as 'pool' | 'spa' }))}>
+                  <option value='pool'>Pool</option>
+                  <option value='spa'>Spa</option>
+                </select>
                 <input
                   style={field}
                   placeholder='Volume (litres)'
@@ -390,16 +415,15 @@ export default function CustomerDetail() {
                   value={poolForm.volume_litres}
                   onChange={(e) => setPoolForm((prev) => ({ ...prev, volume_litres: formatVolume(e.target.value) }))}
                 />
-                <select style={field as React.CSSProperties} value={poolForm.pool_type} onChange={(e) => setPoolForm((prev) => ({ ...prev, pool_type: e.target.value }))}>
-                  <option value='salt'>Salt</option>
-                  <option value='chlorine'>Chlorine</option>
-                  <option value='mineral'>Mineral</option>
-                  <option value='freshwater'>Freshwater</option>
-                  <option value='spa'>Spa Pool</option>
-                </select>
               </div>
+              <select style={field as React.CSSProperties} value={poolForm.pool_type} onChange={(e) => setPoolForm((prev) => ({ ...prev, pool_type: e.target.value }))}>
+                <option value='salt'>Salt</option>
+                <option value='chlorine'>Chlorine</option>
+                <option value='mineral'>Mineral</option>
+                <option value='spa-chlorine'>Spa-chlorine</option>
+                <option value='spa-salt'>Spa-salt</option>
+              </select>
               <input style={field} placeholder='Gate code' value={poolForm.gate_access} onChange={(e) => setPoolForm((prev) => ({ ...prev, gate_access: e.target.value }))} />
-              <input style={field} placeholder='Site notes' value={poolForm.warnings} onChange={(e) => setPoolForm((prev) => ({ ...prev, warnings: e.target.value }))} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing.sm }}>
                 <button onClick={() => setAddingPool(false)} style={{ background: 'transparent', border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: '8px 12px', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={handleAddPool} disabled={savingPool} style={{ background: colors.ink, color: colors.white, border: 'none', borderRadius: radii.md, padding: '8px 12px', cursor: savingPool ? 'not-allowed' : 'pointer' }}>{savingPool ? 'Saving…' : 'Save pool'}</button>
@@ -408,9 +432,10 @@ export default function CustomerDetail() {
           )}
 
           {customer.pools?.length ? customer.pools.map((p) => {
-            const typeLabel = capitalize(p.pool_type)
-            const volumeLabel = `${p.volume_litres.toLocaleString()} L`
             const isEditing = editingPoolId === p.id
+            const isSpa = p.pool_category === 'spa'
+            const pillBg = isSpa ? '#14B8A6' : '#3B82F6'
+            const pillLabel = isSpa ? 'Spa' : 'Pool'
 
             return (
               <div
@@ -423,31 +448,27 @@ export default function CustomerDetail() {
                   padding: spacing.sm,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
-                  <div style={{ fontSize: typography.sizes.small, fontWeight: typography.weights.semibold, color: colors.textHeading }}>
-                    {typeLabel} · {volumeLabel}
-                  </div>
-                  {!isEditing ? (
-                    <button onClick={() => startPoolEdit(p)} disabled={!!editingPoolId} style={{ background: colors.ink, color: colors.white, border: 'none', borderRadius: radii.pill, padding: '6px 10px', fontSize: typography.sizes.small, cursor: editingPoolId ? 'not-allowed' : 'pointer', opacity: editingPoolId ? 0.6 : 1 }}>Edit</button>
-                  ) : null}
-                </div>
-
                 {isEditing ? (
                   <div style={{ display: 'grid', gap: spacing.sm }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.sm }}>
+                      <select style={field as React.CSSProperties} value={poolEditForm.pool_category} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, pool_category: e.target.value as 'pool' | 'spa' }))}>
+                        <option value='pool'>Pool</option>
+                        <option value='spa'>Spa</option>
+                      </select>
                       <input
                         style={field}
                         placeholder='Volume (litres)'
                         value={poolEditForm.volume}
                         onChange={(e) => setPoolEditForm((prev) => ({ ...prev, volume: formatVolume(e.target.value) }))}
                       />
-                      <select style={field as React.CSSProperties} value={poolEditForm.type} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, type: e.target.value }))}>
-                        <option value='salt'>Salt</option>
-                        <option value='chlorine'>Chlorine</option>
-                        <option value='spa-chlorine'>Spa-chlorine</option>
-                        <option value='mineral'>Mineral</option>
-                      </select>
                     </div>
+                    <select style={field as React.CSSProperties} value={poolEditForm.type} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, type: e.target.value }))}>
+                      <option value='salt'>Salt</option>
+                      <option value='chlorine'>Chlorine</option>
+                      <option value='mineral'>Mineral</option>
+                      <option value='spa-chlorine'>Spa-chlorine</option>
+                      <option value='spa-salt'>Spa-salt</option>
+                    </select>
                     <input style={field} placeholder='Gate access' value={poolEditForm.gate_access} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, gate_access: e.target.value }))} />
                     <input style={field} placeholder='Site notes' value={poolEditForm.site_notes} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, site_notes: e.target.value }))} />
                     {poolEditError && <div style={{ color: colors.red, fontSize: typography.sizes.small }}>{poolEditError}</div>}
@@ -458,10 +479,15 @@ export default function CustomerDetail() {
                   </div>
                 ) : (
                   <>
-                    {p.gate_access && <Row k='Gate access' v={p.gate_access} />}
-                    {p.warnings && <Row k='Site notes' v={p.warnings} warn />}
-                    {!p.gate_access && !p.warnings && (
-                      <div style={{ fontSize: typography.sizes.small, color: colors.textMuted }}>No gate access or site notes</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ display: 'inline-block', background: pillBg, color: '#fff', fontSize: typography.sizes.label, fontWeight: typography.weights.semibold, borderRadius: radii.pill, padding: '2px 10px' }}>{pillLabel}</span>
+                      <button onClick={() => startPoolEdit(p)} disabled={!!editingPoolId} style={{ background: colors.ink, color: colors.white, border: 'none', borderRadius: radii.pill, padding: '6px 10px', fontSize: typography.sizes.small, cursor: editingPoolId ? 'not-allowed' : 'pointer', opacity: editingPoolId ? 0.6 : 1 }}>Edit</button>
+                    </div>
+                    <div style={{ fontSize: typography.sizes.small, color: colors.textBody, marginBottom: 4 }}>
+                      {p.volume_litres.toLocaleString()} L · {capitalize(p.pool_type)}
+                    </div>
+                    {p.gate_access && (
+                      <div style={{ fontSize: typography.sizes.small, color: colors.textSecondary }}>Gate: {p.gate_access}</div>
                     )}
                   </>
                 )}
