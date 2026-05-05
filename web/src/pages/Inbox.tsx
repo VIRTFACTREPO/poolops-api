@@ -46,7 +46,7 @@ export default function Inbox() {
   const actionCount = items.filter(i => !i.resolved).length
 
   const markResolved = async (id: string) => {
-    await api.post(`/admin/inbox/${id}`, { resolved: true })
+    await api.patch(`/admin/inbox/${id}`, { resolved: true })
     setItems(prev => prev.map(i => i.id === id ? { ...i, resolved: true } : i))
   }
 

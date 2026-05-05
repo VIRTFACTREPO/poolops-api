@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { getUser } from '../lib/auth'
+import { useInboxCount } from '../lib/useInboxCount'
 
 const NAV = [
   {
@@ -24,7 +25,7 @@ const NAV = [
   {
     to: '/inbox',
     label: 'Inbox',
-    badge: 2,
+    badge: 0,
     icon: (
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M3 4a2 2 0 0 0-2 2v1.161l8.441 4.221a1.25 1.25 0 0 0 1.118 0L19 7.162V6a2 2 0 0 0-2-2H3Z"/>
@@ -81,6 +82,7 @@ function initials(name?: string) {
 export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
   const user = getUser()
   const isSuperAdmin = user?.role === 'superadmin'
+  const inboxCount = useInboxCount()
   return (
     <div style={{
       width: 220,
@@ -150,7 +152,9 @@ export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
 
       {/* Nav */}
       <nav style={{ padding: '12px 10px', flex: 1 }}>
-        {NAV.map((item) => (
+        {NAV.map((item) => {
+          const badge = item.to === '/inbox' ? (inboxCount > 0 ? inboxCount : undefined) : item.badge
+          return (
           <NavLink
             key={item.to}
             to={item.to}
@@ -159,7 +163,7 @@ export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
           >
             {item.icon}
             {item.label}
-            {item.badge != null && (
+            {badge != null && (
               <span style={{
                 marginLeft: 'auto',
                 background: '#EF4444',
@@ -168,10 +172,10 @@ export default function Sidebar({ onLogout }: { onLogout?: () => void }) {
                 fontWeight: 600,
                 borderRadius: 10,
                 padding: '1px 6px',
-              }}>{item.badge}</span>
+              }}>{badge}</span>
             )}
           </NavLink>
-        ))}
+        )})}
 
         {isSuperAdmin && (
           <NavLink

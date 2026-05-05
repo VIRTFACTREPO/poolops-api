@@ -392,6 +392,16 @@ export async function completeJob(jobId, technicianId, payload) {
           referenceId: record.id,
         });
       }
+
+      if (draft?.is_flagged) {
+        await supabase.from('inbox_items').insert({
+          company_id: job.company_id,
+          customer_id: pool.customers.id,
+          type: 'flagged_reading',
+          reference_id: record.id,
+          resolved: false,
+        });
+      }
     }
   } catch (err) {
     console.error('[completeJob] notification trigger failed', err?.message || err);
