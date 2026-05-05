@@ -435,8 +435,6 @@ export default function CustomerDetail() {
                 <option value='salt'>Salt</option>
                 <option value='chlorine'>Chlorine</option>
                 <option value='mineral'>Mineral</option>
-                <option value='spa-chlorine'>Spa-chlorine</option>
-                <option value='spa-salt'>Spa-salt</option>
               </select>
               <input style={field} placeholder='Gate code' value={poolForm.gate_access} onChange={(e) => setPoolForm((prev) => ({ ...prev, gate_access: e.target.value }))} />
               <input style={field} placeholder='Site notes' value={poolForm.warnings} onChange={(e) => setPoolForm((prev) => ({ ...prev, warnings: e.target.value }))} />
@@ -482,8 +480,6 @@ export default function CustomerDetail() {
                       <option value='salt'>Salt</option>
                       <option value='chlorine'>Chlorine</option>
                       <option value='mineral'>Mineral</option>
-                      <option value='spa-chlorine'>Spa-chlorine</option>
-                      <option value='spa-salt'>Spa-salt</option>
                     </select>
                     <input style={field} placeholder='Gate access' value={poolEditForm.gate_access} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, gate_access: e.target.value }))} />
                     <input style={field} placeholder='Site notes' value={poolEditForm.site_notes} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, site_notes: e.target.value }))} />
