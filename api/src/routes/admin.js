@@ -424,6 +424,13 @@ router.post('/pools', checkPoolLimit, async (req, res) => {
     if (custErr) return fail(res, 500, 'INTERNAL_ERROR', custErr.message);
     if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
 
+    const { count: poolCount, error: countErr } = await supabase
+      .from('pools')
+      .select('id', { count: 'exact', head: true })
+      .eq('customer_id', customer_id);
+    if (countErr) return fail(res, 500, 'INTERNAL_ERROR', countErr.message);
+    if (poolCount >= 2) return fail(res, 422, 'LIMIT_EXCEEDED', 'Customers are limited to 2 pools');
+
     const { data: pool, error: insertErr } = await supabase
       .from('pools')
       .insert({

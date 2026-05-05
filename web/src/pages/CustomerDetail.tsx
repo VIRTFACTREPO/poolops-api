@@ -384,20 +384,22 @@ export default function CustomerDetail() {
         <Card
           title='Pools'
           right={
-            <button
-              onClick={() => setAddingPool((v) => !v)}
-              style={{
-                background: colors.ink,
-                color: colors.white,
-                border: 'none',
-                borderRadius: radii.pill,
-                padding: '6px 12px',
-                fontSize: typography.sizes.small,
-                cursor: 'pointer',
-              }}
-            >
-              Add pool
-            </button>
+            (customer.pools?.length ?? 0) < 2 ? (
+              <button
+                onClick={() => setAddingPool((v) => !v)}
+                style={{
+                  background: colors.ink,
+                  color: colors.white,
+                  border: 'none',
+                  borderRadius: radii.pill,
+                  padding: '6px 12px',
+                  fontSize: typography.sizes.small,
+                  cursor: 'pointer',
+                }}
+              >
+                Add pool
+              </button>
+            ) : undefined
           }
         >
           {addingPool && (
