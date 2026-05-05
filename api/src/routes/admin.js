@@ -668,6 +668,149 @@ router.delete('/customers/:id', async (req, res) => {
   }
 });
 
+router.get('/settings/company', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('name, email, phone')
+      .eq('id', req.user.companyId)
+      .maybeSingle();
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    if (!data) return fail(res, 404, 'NOT_FOUND', 'Company not found');
+    return ok(res, data);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/settings/company', async (req, res) => {
+  try {
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'email')) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'Email cannot be changed via settings');
+    }
+
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
+    if (!name) return fail(res, 422, 'VALIDATION_ERROR', 'name is required');
+
+    const { data, error } = await supabase
+      .from('companies')
+      .update({ name, phone: phone || null })
+      .eq('id', req.user.companyId)
+      .select('name, email, phone')
+      .single();
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, data);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.get('/settings/chemicals', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('company_chemicals')
+      .eq('id', req.user.companyId)
+      .maybeSingle();
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, Array.isArray(data?.company_chemicals) ? data.company_chemicals : []);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/settings/chemicals', async (req, res) => {
+  try {
+    const chemicals = req.body?.chemicals;
+    if (!Array.isArray(chemicals)) return fail(res, 422, 'VALIDATION_ERROR', 'chemicals must be an array');
+
+    const { data, error } = await supabase
+      .from('companies')
+      .update({ company_chemicals: chemicals })
+      .eq('id', req.user.companyId)
+      .select('company_chemicals')
+      .single();
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, Array.isArray(data?.company_chemicals) ? data.company_chemicals : []);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.get('/settings/targets', async (req, res) => {
+  try {
+    const defaults = { ph_min: 7.2, ph_max: 7.6, chlorine_min: 1.0, chlorine_max: 3.0, lsi_min: -0.5, lsi_max: 0.5 };
+    const { data, error } = await supabase
+      .from('companies')
+      .select('service_defaults')
+      .eq('id', req.user.companyId)
+      .maybeSingle();
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, data?.service_defaults ?? defaults);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/settings/targets', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const keys = ['ph_min', 'ph_max', 'chlorine_min', 'chlorine_max', 'lsi_min', 'lsi_max'];
+    for (const key of keys) {
+      if (typeof payload[key] !== 'number' || Number.isNaN(payload[key])) {
+        return fail(res, 422, 'VALIDATION_ERROR', `${key} must be a number`);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('companies')
+      .update({ service_defaults: payload })
+      .eq('id', req.user.companyId)
+      .select('service_defaults')
+      .single();
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, data?.service_defaults || payload);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.get('/settings/branding', async (req, res) => {
+  try {
+    const defaults = { logo_on_pdf: true, show_tech_name: true, show_dosage: true, show_lsi: true, footer_note: '', primary_colour: '#0F172A' };
+    const { data, error } = await supabase
+      .from('companies')
+      .select('report_branding')
+      .eq('id', req.user.companyId)
+      .maybeSingle();
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, data?.report_branding ?? defaults);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/settings/branding', async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const { data, error } = await supabase
+      .from('companies')
+      .update({ report_branding: payload })
+      .eq('id', req.user.companyId)
+      .select('report_branding')
+      .single();
+
+    if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
+    return ok(res, data?.report_branding || payload);
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
 // Billing routes — requireActiveSubscription exempts /billing/* paths itself
 router.get('/billing/status', async (req, res) => {
   try {
