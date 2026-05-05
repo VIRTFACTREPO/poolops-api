@@ -359,7 +359,7 @@ export default function CustomerDetail() {
           ) : customer.pools?.length > 1 ? (
             <Card title='Pool summary'>
               {customer.pools.map((p) => {
-                const isSpa = p.pool_category === 'spa'
+                const isSpa = p.pool_category === 'spa' || p.pool_type?.startsWith('spa')
                 const pillBg = isSpa ? '#14B8A6' : '#3B82F6'
                 const pillLabel = isSpa ? 'Spa' : 'Pool'
                 return (
@@ -433,7 +433,7 @@ export default function CustomerDetail() {
 
           {customer.pools?.length ? customer.pools.map((p) => {
             const isEditing = editingPoolId === p.id
-            const isSpa = p.pool_category === 'spa'
+            const isSpa = p.pool_category === 'spa' || p.pool_type?.startsWith('spa')
             const pillBg = isSpa ? '#14B8A6' : '#3B82F6'
             const pillLabel = isSpa ? 'Spa' : 'Pool'
 
