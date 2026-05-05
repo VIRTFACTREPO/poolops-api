@@ -275,7 +275,7 @@ export default function Schedule() {
     const companyId = getCompanyId()
     const [customersRes, profilesRes] = await Promise.all([
       supabase.from('customers').select('id, first_name, last_name, pools(id, pool_type, volume_litres)').eq('company_id', companyId),
-      supabase.from('profiles').select('id, full_name, company_id').eq('company_id', companyId),
+      supabase.from('profiles').select('id, full_name, company_id').eq('company_id', companyId).eq('role', 'technician'),
     ])
 
     type RawPool = { id: string; pool_type: string; volume_litres: number }
