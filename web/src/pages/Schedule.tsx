@@ -112,7 +112,7 @@ function techStatus(jobs: Job[]): { label: string; color: string } {
   const inProgress = jobs.some((j) => j.state === 'in_progress')
   if (total === 0) return { label: 'No jobs today', color: '#6B7280' }
   if (done === total) return { label: `✓ Done · ${done}/${total}`, color: '#15803D' }
-  if (inProgress) return { label: `● On route · ${done}/${total}`, color: '#0369A1' }
+  if (inProgress) return { label: `● In progress · ${done}/${total}`, color: '#0369A1' }
   return { label: `${done}/${total} complete`, color: '#6B7280' }
 }
 
