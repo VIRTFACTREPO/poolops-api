@@ -175,7 +175,7 @@ export function M8TreatmentScreen() {
 
   const stockPreview = useMemo(() => {
     return treatmentEntries
-      .filter((entry) => entry.name.trim().length > 0)
+      .filter((entry) => entry.name.trim().length > 0 && !(entry.unit === 'L' && (entry.id.endsWith('cl-high') || entry.id.endsWith('calcium-high') || entry.id.endsWith('cya-high'))))
       .map((entry) => {
         const key = entry.name.trim().toLowerCase();
         const rule = STOCK_RULES[key] ?? { amount: 1500, lowThreshold: 400, unit: entry.unit };
