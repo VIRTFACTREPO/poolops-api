@@ -489,6 +489,9 @@ export default function CustomerDetail() {
                     {p.gate_access && (
                       <div style={{ fontSize: typography.sizes.small, color: colors.textSecondary }}>Gate: {p.gate_access}</div>
                     )}
+                    {p.warnings && (
+                      <div style={{ fontSize: typography.sizes.small, color: colors.textMuted, marginTop: 2 }}>{p.warnings}</div>
+                    )}
                   </>
                 )}
               </div>
