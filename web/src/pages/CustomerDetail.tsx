@@ -51,6 +51,16 @@ export default function CustomerDetail() {
   const [savingPool, setSavingPool] = useState(false)
   const [poolForm, setPoolForm] = useState({ volume_litres: '', pool_type: 'salt', gate_access: '', warnings: '' })
 
+  const [editingOverview, setEditingOverview] = useState(false)
+  const [savingOverview, setSavingOverview] = useState(false)
+  const [overviewError, setOverviewError] = useState<string | null>(null)
+  const [overviewForm, setOverviewForm] = useState({ name: '', email: '', phone: '', address: '' })
+
+  const [editingPoolId, setEditingPoolId] = useState<string | null>(null)
+  const [savingPoolId, setSavingPoolId] = useState<string | null>(null)
+  const [poolEditError, setPoolEditError] = useState<string | null>(null)
+  const [poolEditForm, setPoolEditForm] = useState({ volume: '', type: 'salt', gate_access: '', site_notes: '' })
+
   const loadCustomer = () => {
     if (!id) return
     setLoading(true)
@@ -63,6 +73,16 @@ export default function CustomerDetail() {
   useEffect(() => {
     loadCustomer()
   }, [id])
+
+  useEffect(() => {
+    if (!customer) return
+    setOverviewForm({
+      name: `${customer.first_name} ${customer.last_name}`.trim(),
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || '',
+    })
+  }, [customer])
 
   if (loading) {
     return <div style={{ color: colors.textMuted, fontSize: typography.sizes.body, padding: spacing.lg }}>Loading…</div>
@@ -111,6 +131,103 @@ export default function CustomerDetail() {
       setSavingPool(false)
     }
   }
+  const startOverviewEdit = () => {
+    setOverviewError(null)
+    setOverviewForm({
+      name: `${customer.first_name} ${customer.last_name}`.trim(),
+      email: customer.email || '',
+      phone: customer.phone || '',
+      address: customer.address || '',
+    })
+    setEditingOverview(true)
+  }
+
+  const cancelOverviewEdit = () => {
+    setEditingOverview(false)
+    setOverviewError(null)
+  }
+
+  const saveOverviewEdit = async () => {
+    if (!overviewForm.name.trim() || !overviewForm.email.trim() || !overviewForm.address.trim()) {
+      setOverviewError('Name, email and address are required')
+      return
+    }
+
+    setSavingOverview(true)
+    setOverviewError(null)
+    try {
+      await api.patch(`/admin/customers/${customer.id}`, {
+        name: overviewForm.name.trim(),
+        email: overviewForm.email.trim(),
+        phone: overviewForm.phone.trim(),
+        address: overviewForm.address.trim(),
+      })
+      setCustomer((prev) => prev ? {
+        ...prev,
+        first_name: overviewForm.name.trim().split(/\s+/)[0] || prev.first_name,
+        last_name: overviewForm.name.trim().split(/\s+/).slice(1).join(' ') || '-',
+        email: overviewForm.email.trim(),
+        phone: overviewForm.phone.trim() || null,
+        address: overviewForm.address.trim(),
+      } : prev)
+      setEditingOverview(false)
+    } catch (err: any) {
+      setOverviewError(err.message || 'Failed to save customer changes')
+    } finally {
+      setSavingOverview(false)
+    }
+  }
+
+  const startPoolEdit = (p: Pool) => {
+    setPoolEditError(null)
+    setEditingPoolId(p.id)
+    setPoolEditForm({
+      volume: p.volume_litres ? p.volume_litres.toLocaleString() : '',
+      type: p.pool_type || 'salt',
+      gate_access: p.gate_access || '',
+      site_notes: p.warnings || '',
+    })
+  }
+
+  const cancelPoolEdit = () => {
+    setEditingPoolId(null)
+    setPoolEditError(null)
+  }
+
+  const savePoolEdit = async (poolId: string) => {
+    const volume = Number(poolEditForm.volume.replace(/,/g, ''))
+    if (!Number.isFinite(volume) || volume <= 0 || !poolEditForm.type.trim()) {
+      setPoolEditError('Valid volume and type are required')
+      return
+    }
+
+    setSavingPoolId(poolId)
+    setPoolEditError(null)
+    try {
+      await api.patch(`/admin/pools/${poolId}`, {
+        volume,
+        type: poolEditForm.type,
+        gate_access: poolEditForm.gate_access,
+        site_notes: poolEditForm.site_notes,
+      })
+      setCustomer((prev) => prev ? {
+        ...prev,
+        pools: prev.pools.map((p) => p.id === poolId ? {
+          ...p,
+          volume_litres: volume,
+          pool_type: poolEditForm.type,
+          gate_access: poolEditForm.gate_access || null,
+          warnings: poolEditForm.site_notes || null,
+        } : p),
+      } : prev)
+      setEditingPoolId(null)
+    } catch (err: any) {
+      setPoolEditError(err.message || 'Failed to save pool changes')
+    } finally {
+      setSavingPoolId(null)
+    }
+  }
+
   const plan = pool?.service_plans?.find((p) => p.active) ?? pool?.service_plans?.[0]
   const techName = plan?.technician?.full_name ?? '—'
   const dayLabel = plan?.day_of_week != null ? DAYS[plan.day_of_week] : '—'
@@ -154,6 +271,27 @@ export default function CustomerDetail() {
             {customer.active ? 'Active' : 'Inactive'}
           </span>
         </div>
+        <button
+          onClick={() => {
+            if (tab === 'Overview') {
+              if (editingOverview) cancelOverviewEdit()
+              else startOverviewEdit()
+            }
+          }}
+          style={{
+            background: tab === 'Overview' && editingOverview ? 'transparent' : colors.ink,
+            color: tab === 'Overview' && editingOverview ? colors.textBody : colors.white,
+            border: tab === 'Overview' && editingOverview ? `1px solid ${colors.border}` : 'none',
+            borderRadius: radii.pill,
+            padding: '8px 14px',
+            fontSize: typography.sizes.small,
+            cursor: tab === 'Overview' ? 'pointer' : 'not-allowed',
+            opacity: tab === 'Overview' ? 1 : 0.5,
+          }}
+          disabled={tab !== 'Overview'}
+        >
+          {tab === 'Overview' && editingOverview ? 'Cancel' : 'Edit'}
+        </button>
       </div>
 
       {/* Tabs */}
@@ -181,12 +319,28 @@ export default function CustomerDetail() {
       {tab === 'Overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.md }}>
           <Card title='Contact'>
-            <Row k='Email' v={customer.email} />
-            <Row k='Phone' v={customer.phone || '—'} />
-            <Row k='Address' v={customer.address} />
-            <Row k='Service plan' v={plan ? `${freqLabel} — ${dayLabel}s` : '—'} />
-            <Row k='Assigned tech' v={techName} />
-            <Row k='Customer since' v={memberSince} />
+            {editingOverview ? (
+              <div style={{ display: 'grid', gap: spacing.sm }}>
+                <input style={field} placeholder='Name' value={overviewForm.name} onChange={(e) => setOverviewForm((p) => ({ ...p, name: e.target.value }))} />
+                <input style={field} placeholder='Email' value={overviewForm.email} onChange={(e) => setOverviewForm((p) => ({ ...p, email: e.target.value }))} />
+                <input style={field} placeholder='Phone' value={overviewForm.phone} onChange={(e) => setOverviewForm((p) => ({ ...p, phone: e.target.value }))} />
+                <input style={field} placeholder='Address' value={overviewForm.address} onChange={(e) => setOverviewForm((p) => ({ ...p, address: e.target.value }))} />
+                {overviewError && <div style={{ color: colors.red, fontSize: typography.sizes.small }}>{overviewError}</div>}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing.sm }}>
+                  <button onClick={cancelOverviewEdit} style={{ background: 'transparent', border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: '8px 12px', cursor: 'pointer' }}>Cancel</button>
+                  <button onClick={saveOverviewEdit} disabled={savingOverview} style={{ background: colors.ink, color: colors.white, border: 'none', borderRadius: radii.md, padding: '8px 12px', cursor: savingOverview ? 'not-allowed' : 'pointer' }}>{savingOverview ? 'Saving…' : 'Save'}</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Row k='Email' v={customer.email} />
+                <Row k='Phone' v={customer.phone || '—'} />
+                <Row k='Address' v={customer.address} />
+                <Row k='Service plan' v={plan ? `${freqLabel} — ${dayLabel}s` : '—'} />
+                <Row k='Assigned tech' v={techName} />
+                <Row k='Customer since' v={memberSince} />
+              </>
+            )}
           </Card>
           {pool ? (
             <Card title='Pool summary'>
@@ -254,9 +408,9 @@ export default function CustomerDetail() {
           )}
 
           {customer.pools?.length ? customer.pools.map((p) => {
-            const isSpa = p.pool_type === 'spa' || p.pool_type.startsWith('spa-')
-            const typeLabel = isSpa ? 'Spa' : 'Pool'
+            const typeLabel = capitalize(p.pool_type)
             const volumeLabel = `${p.volume_litres.toLocaleString()} L`
+            const isEditing = editingPoolId === p.id
 
             return (
               <div
@@ -269,13 +423,47 @@ export default function CustomerDetail() {
                   padding: spacing.sm,
                 }}
               >
-                <div style={{ fontSize: typography.sizes.small, fontWeight: typography.weights.semibold, color: colors.textHeading, marginBottom: spacing.xs }}>
-                  {typeLabel} · {volumeLabel}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+                  <div style={{ fontSize: typography.sizes.small, fontWeight: typography.weights.semibold, color: colors.textHeading }}>
+                    {typeLabel} · {volumeLabel}
+                  </div>
+                  {!isEditing ? (
+                    <button onClick={() => startPoolEdit(p)} disabled={!!editingPoolId} style={{ background: colors.ink, color: colors.white, border: 'none', borderRadius: radii.pill, padding: '6px 10px', fontSize: typography.sizes.small, cursor: editingPoolId ? 'not-allowed' : 'pointer', opacity: editingPoolId ? 0.6 : 1 }}>Edit</button>
+                  ) : null}
                 </div>
-                {p.gate_access && <Row k='Gate access' v={p.gate_access} />}
-                {p.warnings && <Row k='Site notes' v={p.warnings} warn />}
-                {!p.gate_access && !p.warnings && (
-                  <div style={{ fontSize: typography.sizes.small, color: colors.textMuted }}>No gate access or site notes</div>
+
+                {isEditing ? (
+                  <div style={{ display: 'grid', gap: spacing.sm }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: spacing.sm }}>
+                      <input
+                        style={field}
+                        placeholder='Volume (litres)'
+                        value={poolEditForm.volume}
+                        onChange={(e) => setPoolEditForm((prev) => ({ ...prev, volume: formatVolume(e.target.value) }))}
+                      />
+                      <select style={field as React.CSSProperties} value={poolEditForm.type} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, type: e.target.value }))}>
+                        <option value='salt'>Salt</option>
+                        <option value='chlorine'>Chlorine</option>
+                        <option value='spa-chlorine'>Spa-chlorine</option>
+                        <option value='mineral'>Mineral</option>
+                      </select>
+                    </div>
+                    <input style={field} placeholder='Gate access' value={poolEditForm.gate_access} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, gate_access: e.target.value }))} />
+                    <input style={field} placeholder='Site notes' value={poolEditForm.site_notes} onChange={(e) => setPoolEditForm((prev) => ({ ...prev, site_notes: e.target.value }))} />
+                    {poolEditError && <div style={{ color: colors.red, fontSize: typography.sizes.small }}>{poolEditError}</div>}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing.sm }}>
+                      <button onClick={cancelPoolEdit} style={{ background: 'transparent', border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: '8px 12px', cursor: 'pointer' }}>Cancel</button>
+                      <button onClick={() => savePoolEdit(p.id)} disabled={savingPoolId === p.id} style={{ background: colors.ink, color: colors.white, border: 'none', borderRadius: radii.md, padding: '8px 12px', cursor: savingPoolId === p.id ? 'not-allowed' : 'pointer' }}>{savingPoolId === p.id ? 'Saving…' : 'Save'}</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {p.gate_access && <Row k='Gate access' v={p.gate_access} />}
+                    {p.warnings && <Row k='Site notes' v={p.warnings} warn />}
+                    {!p.gate_access && !p.warnings && (
+                      <div style={{ fontSize: typography.sizes.small, color: colors.textMuted }}>No gate access or site notes</div>
+                    )}
+                  </>
                 )}
               </div>
             )

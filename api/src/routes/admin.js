@@ -465,6 +465,87 @@ router.delete('/technicians/:id', async (req, res) => {
   }
 });
 
+router.patch('/customers/:id', async (req, res) => {
+  try {
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim() : '';
+    const phone = typeof req.body?.phone === 'string' ? req.body.phone.trim() : '';
+    const address = typeof req.body?.address === 'string' ? req.body.address.trim() : '';
+
+    if (!name || !email || !address) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'name, email, and address are required');
+    }
+
+    const [firstName, ...rest] = name.split(/\s+/).filter(Boolean);
+    const lastName = rest.join(' ') || '-';
+
+    const { data: customer, error: fetchErr } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+    if (fetchErr) return fail(res, 500, 'INTERNAL_ERROR', fetchErr.message);
+    if (!customer) return fail(res, 404, 'NOT_FOUND', 'Customer not found');
+
+    const { error: updateErr } = await supabase
+      .from('customers')
+      .update({
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        phone: phone || null,
+        address,
+      })
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId);
+
+    if (updateErr) return fail(res, 500, 'INTERNAL_ERROR', updateErr.message);
+    return ok(res, { id: req.params.id, name, email, phone: phone || null, address });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
+router.patch('/pools/:id', async (req, res) => {
+  try {
+    const volume = Number(req.body?.volume);
+    const type = typeof req.body?.type === 'string' ? req.body.type.trim() : '';
+    const gateAccess = typeof req.body?.gate_access === 'string' ? req.body.gate_access.trim() : '';
+    const siteNotes = typeof req.body?.site_notes === 'string' ? req.body.site_notes.trim() : '';
+
+    if (!Number.isFinite(volume) || volume <= 0 || !type) {
+      return fail(res, 422, 'VALIDATION_ERROR', 'volume and type are required');
+    }
+
+    const { data: pool, error: fetchErr } = await supabase
+      .from('pools')
+      .select('id, company_id')
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId)
+      .maybeSingle();
+
+    if (fetchErr) return fail(res, 500, 'INTERNAL_ERROR', fetchErr.message);
+    if (!pool) return fail(res, 404, 'NOT_FOUND', 'Pool not found');
+
+    const { error: updateErr } = await supabase
+      .from('pools')
+      .update({
+        volume_litres: volume,
+        pool_type: type,
+        gate_access: gateAccess || null,
+        warnings: siteNotes || null,
+      })
+      .eq('id', req.params.id)
+      .eq('company_id', req.user.companyId);
+
+    if (updateErr) return fail(res, 500, 'INTERNAL_ERROR', updateErr.message);
+    return ok(res, { id: req.params.id, volume, type, gate_access: gateAccess || null, site_notes: siteNotes || null });
+  } catch (err) {
+    return fail(res, 500, 'INTERNAL_ERROR', err.message);
+  }
+});
+
 router.delete('/customers/:id', async (req, res) => {
   try {
     const { data: customer, error: fetchErr } = await supabase
