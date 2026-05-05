@@ -91,6 +91,19 @@ function toISODate(d: Date) {
   return `${y}-${m}-${day}`
 }
 
+function startOfWeekMonday(d: Date) {
+  const copy = new Date(d)
+  const day = copy.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  copy.setDate(copy.getDate() + diff)
+  copy.setHours(0, 0, 0, 0)
+  return copy
+}
+
+function truncate(v: string, n = 15) {
+  return v.length > n ? `${v.slice(0, n - 1)}…` : v
+}
+
 function jobState(status: string, isFlagged: boolean): JobState {
   if (status === 'complete') return isFlagged ? 'flagged' : 'complete'
   if (status === 'in_progress') return 'in_progress'
@@ -144,6 +157,7 @@ export default function Schedule() {
   const [techs, setTechs] = useState<Technician[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [weekTechsByDate, setWeekTechsByDate] = useState<Map<string, Technician[]>>(new Map())
   const [detail, setDetail] = useState<JobDetail | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [showAddJob, setShowAddJob] = useState(false)
@@ -161,10 +175,27 @@ export default function Schedule() {
     return d
   }, [offset])
 
-  const dateLabel = useMemo(() =>
-    selectedDate.toLocaleDateString('en-NZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
-    [selectedDate],
-  )
+  const weekDates = useMemo(() => {
+    const start = startOfWeekMonday(selectedDate)
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start)
+      d.setDate(start.getDate() + i)
+      return d
+    })
+  }, [selectedDate])
+
+  const dateLabel = useMemo(() => {
+    if (view === 'day') {
+      return selectedDate.toLocaleDateString('en-NZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    }
+    const start = weekDates[0]
+    const end = weekDates[6]
+    const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+    if (sameMonth) {
+      return `${start.getDate()} – ${end.getDate()} ${end.toLocaleDateString('en-NZ', { month: 'long', year: 'numeric' })}`
+    }
+    return `${start.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}`
+  }, [selectedDate, view, weekDates])
 
   useEffect(() => {
     const interval = setInterval(() => setRefreshKey((k) => k + 1), 30_000)
@@ -181,16 +212,19 @@ export default function Schedule() {
       const today = toISODate(new Date())
       const isToday = date === today
 
-      const jobSelect = `id, status, completed_at, route_order, technician_id,
+      const jobSelect = `id, status, completed_at, route_order, technician_id, scheduled_date,
         job_pools ( pools ( id, pool_type, customers ( first_name, last_name, address ) ) )`
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type RawJob = Record<string, any>
 
       const cId = getCompanyId()
+      const weekDateStrs = weekDates.map(toISODate)
       const [scheduledRes, overdueRes] = await Promise.all([
-        supabase.from('jobs').select(jobSelect).eq('scheduled_date', date).eq('company_id', cId).order('route_order'),
-        isToday
+        view === 'week'
+          ? supabase.from('jobs').select(jobSelect).in('scheduled_date', weekDateStrs).eq('company_id', cId).order('scheduled_date').order('route_order')
+          : supabase.from('jobs').select(jobSelect).eq('scheduled_date', date).eq('company_id', cId).order('route_order'),
+        view === 'day' && isToday
           ? supabase.from('jobs').select(jobSelect).lt('scheduled_date', today).in('status', ['pending', 'in_progress']).eq('company_id', cId).order('scheduled_date', { ascending: false }).order('route_order')
           : Promise.resolve({ data: [], error: null }),
       ])
@@ -211,7 +245,10 @@ export default function Schedule() {
       }
 
       if (!jobs.length) {
-        if (!cancelled) setTechs([])
+        if (!cancelled) {
+          setTechs([])
+          setWeekTechsByDate(new Map())
+        }
         return
       }
 
@@ -225,6 +262,7 @@ export default function Schedule() {
       const profileMap = new Map((profilesRes.data || []).map((p) => [p.id, p.full_name as string]))
 
       const byTech = new Map<string, Technician>()
+      const byDateTech = new Map<string, Map<string, Technician>>()
 
       for (const j of jobs || []) {
         const techName = profileMap.get(j.technician_id) || 'Unknown'
@@ -243,7 +281,7 @@ export default function Schedule() {
         }
 
         const isFlagged = flaggedSet.has(j.id)
-        byTech.get(j.technician_id)!.jobs.push({
+        const mappedJob = {
           id: j.id,
           customer: customer ? `${customer.last_name}, ${customer.first_name}` : 'Unknown',
           address: customer?.address || '',
@@ -253,10 +291,32 @@ export default function Schedule() {
           techName: profileMap.get(j.technician_id) || 'Unknown',
           poolCount: jPools?.length ?? 1,
           isOverdue: j._isOverdue ?? false,
-        })
+        }
+
+        byTech.get(j.technician_id)!.jobs.push(mappedJob)
+
+        const jobDate = String(j.scheduled_date || date)
+        if (!byDateTech.has(jobDate)) byDateTech.set(jobDate, new Map())
+        const dateMap = byDateTech.get(jobDate)!
+        if (!dateMap.has(j.technician_id)) {
+          dateMap.set(j.technician_id, {
+            id: j.technician_id,
+            initials: initials(techName),
+            name: techName,
+            jobs: [],
+          })
+        }
+        dateMap.get(j.technician_id)!.jobs.push(mappedJob)
       }
 
-      if (!cancelled) setTechs(Array.from(byTech.values()))
+      if (!cancelled) {
+        setTechs(Array.from(byTech.values()))
+        const mapped = new Map<string, Technician[]>()
+        for (const d of weekDates.map(toISODate)) {
+          mapped.set(d, Array.from(byDateTech.get(d)?.values() || []))
+        }
+        setWeekTechsByDate(mapped)
+      }
     }
 
     load()
@@ -264,7 +324,7 @@ export default function Schedule() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [selectedDate, refreshKey])
+  }, [selectedDate, refreshKey, view, weekDates])
 
   const openAddJob = async (preTechId = '') => {
     setAddJobPreTech(preTechId)
@@ -627,7 +687,7 @@ export default function Schedule() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {selectedCustomer.pools.map((p) => {
-                      const isSpa = p.poolType === 'spa' || p.poolType?.startsWith('spa-') || p.pool_category === 'spa'
+                      const isSpa = p.poolType === 'spa' || p.poolType?.startsWith('spa-')
                       const checked = addForm.poolIds.includes(p.id)
                       const pillBg = isSpa ? '#F5F3FF' : '#EFF6FF'
                       const pillBorder = isSpa ? '#DDD6FE' : '#BFDBFE'
@@ -695,67 +755,130 @@ export default function Schedule() {
       </div>
 
       <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 16px' }}>
-          <div style={headerCell}>Technician</div>
-          <div style={headerCell}>Jobs — drag to reassign</div>
-        </div>
+        {view === 'day' ? (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', padding: '10px 16px' }}>
+              <div style={headerCell}>Technician</div>
+              <div style={headerCell}>Jobs — drag to reassign</div>
+            </div>
 
-        {loading && (
-          <div style={{ padding: 32, textAlign: 'center', color: '#64748B', fontSize: 13 }}>Loading…</div>
-        )}
-        {error && (
-          <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontSize: 13 }}>{error}</div>
-        )}
-        {!loading && !error && techs.length === 0 && (
-          <div style={{ padding: 32, textAlign: 'center', color: '#64748B', fontSize: 13 }}>No jobs scheduled for this day.</div>
-        )}
+            {loading && <div style={{ padding: 32, textAlign: 'center', color: '#64748B', fontSize: 13 }}>Loading…</div>}
+            {error && <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontSize: 13 }}>{error}</div>}
+            {!loading && !error && techs.length === 0 && <div style={{ padding: 32, textAlign: 'center', color: '#64748B', fontSize: 13 }}>No jobs scheduled for this day.</div>}
 
-        {!loading && techs.map((tech, idx) => {
-          const { label: statusLabel, color: statusColor } = techStatus(tech.jobs)
-          return (
-            <div key={tech.id} style={{ display: 'grid', gridTemplateColumns: '160px 1fr', minHeight: 90, borderBottom: idx === techs.length - 1 ? 'none' : '1px solid #E5E7EB' }}>
-              <div style={{ padding: '14px 16px', borderRight: '1px solid #E5E7EB', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#E5E7EB', color: '#6B7280', fontSize: 10, fontWeight: 600, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{tech.initials}</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{tech.name}</div>
-                  <div style={{ fontSize: 11, marginTop: 3, color: statusColor }}>{statusLabel}</div>
+            {!loading && techs.map((tech, idx) => {
+              const { label: statusLabel, color: statusColor } = techStatus(tech.jobs)
+              return (
+                <div key={tech.id} style={{ display: 'grid', gridTemplateColumns: '160px 1fr', minHeight: 90, borderBottom: idx === techs.length - 1 ? 'none' : '1px solid #E5E7EB' }}>
+                  <div style={{ padding: '14px 16px', borderRight: '1px solid #E5E7EB', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#E5E7EB', color: '#6B7280', fontSize: 10, fontWeight: 600, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{tech.initials}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>{tech.name}</div>
+                      <div style={{ fontSize: 11, marginTop: 3, color: statusColor }}>{statusLabel}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: '10px 12px', display: 'flex', flexWrap: 'wrap', gap: 6, alignContent: 'flex-start' }} onDragOver={(e) => e.preventDefault()} onDrop={onDropTech(tech.id)}>
+                    {tech.jobs.map((job) => {
+                      const s = stateStyle[job.state]
+                      return (
+                        <div key={job.id} draggable onDragStart={onDragStart(job.id, tech.id)} onClick={() => openDetail(job)} style={{ borderRadius: 8, padding: '7px 10px', minWidth: 120, border: `1px solid ${s.border}`, background: s.bg, cursor: 'pointer' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: s.title }}>{job.customer}</div>
+                            {job.isOverdue && <span style={{ fontSize: 9, fontWeight: 700, background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', borderRadius: 4, padding: '1px 5px', lineHeight: 1.4 }}>OVERDUE</span>}
+                          </div>
+                          <div style={{ fontSize: 10, marginTop: 2, color: s.sub }}>{job.area}</div>
+                          {job.poolCount > 1 && <div style={{ fontSize: 10, marginTop: 2, color: s.sub, opacity: 0.75 }}>Pool + Spa</div>}
+                          <div style={{ fontSize: 10, marginTop: 3, opacity: 0.6, color: '#94A3B8' }}>{job.note}</div>
+                        </div>
+                      )
+                    })}
+                    <button style={addSlotBtn} onClick={() => openAddJob(tech.id)}>+ Add job</button>
+                  </div>
+                </div>
+              )
+            })}
+          </>
+        ) : (
+          (() => {
+            const dateStrs = weekDates.map(toISODate)
+            const todayStr = toISODate(new Date())
+            const union = new Map<string, Technician>()
+            for (const d of dateStrs) {
+              for (const t of weekTechsByDate.get(d) || []) {
+                if (!union.has(t.id)) union.set(t.id, { ...t, jobs: [] })
+              }
+            }
+            const weekTechs = Array.from(union.values()).sort((a, b) => a.name.localeCompare(b.name))
+
+            if (loading) return <div style={{ padding: 32, textAlign: 'center', color: '#64748B', fontSize: 13 }}>Loading…</div>
+            if (error) return <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontSize: 13 }}>{error}</div>
+            if (weekTechs.length === 0) return <div style={{ padding: 32, textAlign: 'center', color: '#64748B', fontSize: 13 }}>No jobs scheduled this week.</div>
+
+            return (
+              <div style={{ overflowX: 'auto' }}>
+                <div style={{ minWidth: 980 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '180px repeat(7, 1fr)', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
+                    <div style={{ ...headerCell, padding: '10px 12px' }}>Technician</div>
+                    {weekDates.map((d) => {
+                      const ds = toISODate(d)
+                      const isTodayCol = ds === todayStr
+                      return (
+                        <button
+                          key={ds}
+                          onClick={() => {
+                            const start = new Date()
+                            start.setHours(0, 0, 0, 0)
+                            const target = new Date(ds)
+                            const diff = Math.round((target.getTime() - start.getTime()) / 86400000)
+                            setOffset(diff)
+                            setView('day')
+                          }}
+                          style={{
+                            border: 'none',
+                            borderLeft: '1px solid #E5E7EB',
+                            background: isTodayCol ? '#EFF6FF' : 'transparent',
+                            cursor: 'pointer',
+                            padding: '10px 8px',
+                            textAlign: 'left',
+                          }}
+                        >
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>{d.toLocaleDateString('en-NZ', { weekday: 'short' })} {d.getDate()}</div>
+                        </button>
+                      )
+                    })}
+                  </div>
+
+                  {weekTechs.map((tech, idx) => (
+                    <div key={tech.id} style={{ display: 'grid', gridTemplateColumns: '180px repeat(7, 1fr)', borderBottom: idx === weekTechs.length - 1 ? 'none' : '1px solid #E5E7EB', minHeight: 84 }}>
+                      <div style={{ padding: '10px 12px', borderRight: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: '#E5E7EB', color: '#6B7280', fontSize: 10, fontWeight: 600, display: 'grid', placeItems: 'center', flexShrink: 0 }}>{tech.initials}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>{tech.name}</div>
+                      </div>
+                      {dateStrs.map((ds) => {
+                        const dayTech = (weekTechsByDate.get(ds) || []).find((t) => t.id === tech.id)
+                        const jobs = dayTech?.jobs || []
+                        return (
+                          <div key={`${tech.id}-${ds}`} style={{ borderLeft: '1px solid #E5E7EB', padding: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {jobs.map((job) => {
+                              const s = stateStyle[job.state]
+                              return (
+                                <div key={job.id} onClick={() => openDetail(job)} style={{ borderRadius: 6, padding: '5px 6px', border: `1px solid ${s.border}`, background: s.bg, cursor: 'pointer' }}>
+                                  <div style={{ fontSize: 10, fontWeight: 600, color: s.title }}>{truncate(job.customer, 15)}</div>
+                                  <div style={{ fontSize: 9, marginTop: 1, color: s.sub }}>{truncate(job.area || job.address, 15)}</div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ))}
                 </div>
               </div>
-
-              <div
-                style={{ padding: '10px 12px', display: 'flex', flexWrap: 'wrap', gap: 6, alignContent: 'flex-start' }}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={onDropTech(tech.id)}
-              >
-                {tech.jobs.map((job) => {
-                  const s = stateStyle[job.state]
-                  return (
-                    <div
-                      key={job.id}
-                      draggable
-                      onDragStart={onDragStart(job.id, tech.id)}
-                      onClick={() => openDetail(job)}
-                      style={{ borderRadius: 8, padding: '7px 10px', minWidth: 120, border: `1px solid ${s.border}`, background: s.bg, cursor: 'pointer' }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <div style={{ fontSize: 11, fontWeight: 600, color: s.title }}>{job.customer}</div>
-                        {job.isOverdue && (
-                          <span style={{ fontSize: 9, fontWeight: 700, background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A', borderRadius: 4, padding: '1px 5px', lineHeight: 1.4 }}>OVERDUE</span>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 10, marginTop: 2, color: s.sub }}>{job.area}</div>
-                      {job.poolCount > 1 && (
-                        <div style={{ fontSize: 10, marginTop: 2, color: s.sub, opacity: 0.75 }}>Pool + Spa</div>
-                      )}
-                      <div style={{ fontSize: 10, marginTop: 3, opacity: 0.6, color: '#94A3B8' }}>{job.note}</div>
-                    </div>
-                  )
-                })}
-                <button style={addSlotBtn} onClick={() => openAddJob(tech.id)}>+ Add job</button>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })()
+        )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16, padding: '0 2px' }}>
