@@ -45,7 +45,7 @@ async function sendTemplate({ template, to, subject, html }) {
 }
 
 export async function sendTechnicianInviteEmail({ to, name, companyName, token }) {
-  const setPasswordUrl = `${env.APP_URL}/set-password?token=${encodeURIComponent(token)}`;
+  const setPasswordUrl = `${env.APP_URL}/invite?token=${encodeURIComponent(token)}`;
   const html = cardHtml({
     title: `You've been invited to PoolOps`,
     body: `<p>Hi ${escapeHtml(name || 'there')},</p><p>${escapeHtml(companyName || 'A PoolOps company')} invited you as a technician.</p><p>Use the button below to set your password and access your schedule.</p>`,
