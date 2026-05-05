@@ -749,7 +749,20 @@ router.get('/settings/targets', async (req, res) => {
       .eq('id', req.user.companyId)
       .maybeSingle();
     if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
-    return ok(res, data?.service_defaults ?? defaults);
+
+    const raw = data?.service_defaults;
+    if (!raw) return ok(res, defaults);
+
+    const normalized = {
+      ph_min: Number(raw.ph_min ?? raw.ph?.min ?? defaults.ph_min),
+      ph_max: Number(raw.ph_max ?? raw.ph?.max ?? defaults.ph_max),
+      chlorine_min: Number(raw.chlorine_min ?? raw.chlorine?.min ?? defaults.chlorine_min),
+      chlorine_max: Number(raw.chlorine_max ?? raw.chlorine?.max ?? defaults.chlorine_max),
+      lsi_min: Number(raw.lsi_min ?? defaults.lsi_min),
+      lsi_max: Number(raw.lsi_max ?? defaults.lsi_max),
+    };
+
+    return ok(res, normalized);
   } catch (err) {
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }
@@ -788,7 +801,20 @@ router.get('/settings/branding', async (req, res) => {
       .eq('id', req.user.companyId)
       .maybeSingle();
     if (error) return fail(res, 500, 'INTERNAL_ERROR', error.message);
-    return ok(res, data?.report_branding ?? defaults);
+
+    const raw = data?.report_branding;
+    if (!raw) return ok(res, defaults);
+
+    const normalized = {
+      logo_on_pdf: Boolean(raw.logo_on_pdf ?? defaults.logo_on_pdf),
+      show_tech_name: Boolean(raw.show_tech_name ?? raw.include_technician_name ?? defaults.show_tech_name),
+      show_dosage: Boolean(raw.show_dosage ?? raw.include_dosage_details ?? defaults.show_dosage),
+      show_lsi: Boolean(raw.show_lsi ?? raw.include_lsi ?? defaults.show_lsi),
+      footer_note: String(raw.footer_note ?? defaults.footer_note),
+      primary_colour: String(raw.primary_colour ?? defaults.primary_colour),
+    };
+
+    return ok(res, normalized);
   } catch (err) {
     return fail(res, 500, 'INTERNAL_ERROR', err.message);
   }
