@@ -510,6 +510,9 @@ router.post('/invite', async (req, res) => {
       return fail(res, 422, 'VALIDATION_ERROR', 'email, fullName, and role (technician|pool_owner) are required');
     }
 
+    const { data: existing } = await supabase.from('profiles').select('id').eq('email', email).maybeSingle();
+    if (existing) return fail(res, 409, 'CONFLICT', 'Email already registered');
+
     if (role === 'technician') {
       const TECH_LIMITS = { solo: 1, pro: 3, business: Infinity };
       const { data: company } = await supabase.from('companies').select('plan').eq('id', req.user.companyId).maybeSingle();
