@@ -627,7 +627,7 @@ export default function Schedule() {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {selectedCustomer.pools.map((p) => {
-                      const isSpa = p.poolType === 'spa'
+                      const isSpa = p.poolType === 'spa' || p.poolType?.startsWith('spa-') || p.pool_category === 'spa'
                       const checked = addForm.poolIds.includes(p.id)
                       const pillBg = isSpa ? '#F5F3FF' : '#EFF6FF'
                       const pillBorder = isSpa ? '#DDD6FE' : '#BFDBFE'
