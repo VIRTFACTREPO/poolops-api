@@ -196,10 +196,14 @@ export default function CustomerDetail() {
   const startPoolEdit = (p: Pool) => {
     setPoolEditError(null)
     setEditingPoolId(p.id)
+    const rawType = p.pool_type || 'salt'
+    const isSpaType = rawType.startsWith('spa-')
+    const category = p.pool_category || (isSpaType ? 'spa' : 'pool')
+    const type = isSpaType ? rawType.replace('spa-', '') : rawType
     setPoolEditForm({
       volume: p.volume_litres ? p.volume_litres.toLocaleString() : '',
-      pool_category: p.pool_category || 'pool',
-      type: p.pool_type || 'salt',
+      pool_category: category,
+      type,
       gate_access: p.gate_access || '',
       site_notes: p.warnings || '',
     })
