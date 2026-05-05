@@ -424,6 +424,7 @@ export default function CustomerDetail() {
                 <option value='spa-salt'>Spa-salt</option>
               </select>
               <input style={field} placeholder='Gate code' value={poolForm.gate_access} onChange={(e) => setPoolForm((prev) => ({ ...prev, gate_access: e.target.value }))} />
+              <input style={field} placeholder='Site notes' value={poolForm.warnings} onChange={(e) => setPoolForm((prev) => ({ ...prev, warnings: e.target.value }))} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: spacing.sm }}>
                 <button onClick={() => setAddingPool(false)} style={{ background: 'transparent', border: `1px solid ${colors.border}`, borderRadius: radii.md, padding: '8px 12px', cursor: 'pointer' }}>Cancel</button>
                 <button onClick={handleAddPool} disabled={savingPool} style={{ background: colors.ink, color: colors.white, border: 'none', borderRadius: radii.md, padding: '8px 12px', cursor: savingPool ? 'not-allowed' : 'pointer' }}>{savingPool ? 'Saving…' : 'Save pool'}</button>
