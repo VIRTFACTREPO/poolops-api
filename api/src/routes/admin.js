@@ -337,16 +337,16 @@ router.get('/technicians/:id', async (req, res) => {
         id: sp.id,
         frequency: sp.frequency,
         dayOfWeek: sp.day_of_week,
-        customer: sp.pools?.customers ? `${(sp.pools.customers as any).last_name}, ${(sp.pools.customers as any).first_name}` : null,
-        customerNumber: (sp.pools?.customers as any)?.customer_number ?? null,
-        address: (sp.pools?.customers as any)?.address ?? null,
+        customer: sp.pools?.customers ? `${sp.pools.customers.last_name}, ${sp.pools.customers.first_name}` : null,
+        customerNumber: sp.pools?.customers?.customer_number ?? null,
+        address: sp.pools?.customers?.address ?? null,
       })),
       recentRecords: (recentRecords ?? []).map((r) => ({
         id: r.id,
         completedAt: r.completed_at,
         isFlagged: r.is_flagged,
-        customer: (r as any).customers ? `${(r as any).customers.last_name}, ${(r as any).customers.first_name}` : null,
-        address: (r as any).customers?.address ?? null,
+        customer: r.customers ? `${r.customers.last_name}, ${r.customers.first_name}` : null,
+        address: r.customers?.address ?? null,
       })),
     });
   } catch (err) {
