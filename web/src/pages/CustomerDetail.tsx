@@ -253,16 +253,33 @@ export default function CustomerDetail() {
             </div>
           )}
 
-          {customer.pools?.length ? customer.pools.map((p) => (
-            <div key={p.id} style={{ marginBottom: spacing.sm }}>
-              <Row k='Volume' v={`${p.volume_litres.toLocaleString()} L`} />
-              <Row k='Type' v={capitalize(p.pool_type)} />
-              {p.surface_type && <Row k='Surface' v={capitalize(p.surface_type)} />}
-              {p.equipment_notes && <Row k='Equipment' v={p.equipment_notes} />}
-              {p.gate_access && <Row k='Gate access' v={p.gate_access} />}
-              {p.warnings && <Row k='Site notes' v={p.warnings} warn />}
-            </div>
-          )) : (
+          {customer.pools?.length ? customer.pools.map((p) => {
+            const isSpa = p.pool_type === 'spa' || p.pool_type.startsWith('spa-')
+            const typeLabel = isSpa ? 'Spa' : 'Pool'
+            const volumeLabel = `${p.volume_litres.toLocaleString()} L`
+
+            return (
+              <div
+                key={p.id}
+                style={{
+                  marginBottom: spacing.sm,
+                  background: colors.surface,
+                  border: `1px solid ${colors.border}`,
+                  borderRadius: radii.md,
+                  padding: spacing.sm,
+                }}
+              >
+                <div style={{ fontSize: typography.sizes.small, fontWeight: typography.weights.semibold, color: colors.textHeading, marginBottom: spacing.xs }}>
+                  {typeLabel} · {volumeLabel}
+                </div>
+                {p.gate_access && <Row k='Gate access' v={p.gate_access} />}
+                {p.warnings && <Row k='Site notes' v={p.warnings} warn />}
+                {!p.gate_access && !p.warnings && (
+                  <div style={{ fontSize: typography.sizes.small, color: colors.textMuted }}>No gate access or site notes</div>
+                )}
+              </div>
+            )
+          }) : (
             <div style={{ fontSize: typography.sizes.small, color: colors.textMuted }}>No pool on record</div>
           )}
         </Card>
